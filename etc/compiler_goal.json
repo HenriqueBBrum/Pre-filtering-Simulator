@@ -1,0 +1,4 @@
+{
+    "target_platform": "bmv2",
+    "target_goal": "max_severity"
+}
