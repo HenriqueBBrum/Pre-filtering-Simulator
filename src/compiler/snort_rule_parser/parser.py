@@ -29,6 +29,9 @@ class Parser(object):
         header, has_negation = self.__parse_header(rule)
         options = self.__parse_options(rule) 
 
+        if options["sid"][1][0] == "498":
+            header = {}
+
         return Rule(rule, header, options, has_negation)
     
     def str_rule_id(self):

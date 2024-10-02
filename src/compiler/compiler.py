@@ -12,7 +12,10 @@ import sys
 from datetime import datetime
 from json import load
 import random
-import scapy
+
+import ipaddress
+from scapy.all import *
+import time
 
 
 ## Local imports
@@ -61,9 +64,74 @@ def pre_filtering_simulation(rules):
     # Find the optmial pre-filtering subset
     # pre_filter = optmial_pre_filter()
 
-    pcap = scapy.rdpcap 
-    run_simulation()
+    ip_proto = {"ip": 0, "icmp": 1, "tcp": 6, "udp": 17}
+    n = 10000
+    start = time.time()
+    pcap = rdpcap("/home/hbeckerbrum/NFSDatasets/CICIDS2017/Friday-WorkingHours.pcap", n)
+    print("Time to read ", n, " packets in seconds: ", time.time() - start)
+    for packet in pcap[0:10]:
+        if "IP" in packet:
+            for rule in rules:
+                rule_proto = ip_proto[rule.packet_header["proto"]]
+                if (packet["IP"].proto != rule_proto and rule_proto != 0):
+                    continue
 
+                if (not _compare_IP(packet["IP"].src, rule.packet_header["src_ip"])):
+                    continue
+
+                if (not _compare_IP(packet["IP"].dst, rule.packet_header["dst_ip"])):
+                    continue
+
+                if (rule_proto == 6 or rule_proto == 17):
+                    if (not _compare_ports(packet[rule.packet_header["proto"].upper()].sport, rule.packet_header["src_port"])):
+                        continue
+
+                    if (not _compare_ports(packet[rule.packet_header["proto"].upper()].dport, rule.packet_header["dst_port"])):
+                        continue
+                
+                print(packet[IP])
+                print(rule.id)
+                print(rule.packet_header)
+                print("valid rule")
+                break
+
+
+   
+
+
+def _compare_IP(packet_ip, rule_ips):
+    valid_ip = False
+    for ip in rule_ips:
+        if (ip[1] and ipaddress.ip_address(packet_ip) in ipaddress.ip_network(ip[0])):
+            valid_ip = True
+
+        if (not ip[1] and ipaddress.ip_address(packet_ip) in ipaddress.ip_network(ip[0])):
+            valid_ip = False
+            break
+
+        if (not ip[1] and ipaddress.ip_address(packet_ip) not in ipaddress.ip_network(ip[0])):
+            valid_ip = True
+    return valid_ip
+
+def _compare_ports(packet_port, rule_ports):
+    valid_port = False
+    for port in rule_ports:
+        if (port[1] and type(port[0]) != range and packet_port == port[0]):
+            valid_port = True
+            break
+        elif (not port[1] and type(port[0]) != range and packet_port != port[0]):
+            valid_port = True
+        elif (not port[1] and type(port[0]) != range and packet_port == port[0]):
+            valid_port = False
+            break
+        elif (port[1] and type(port[0]) == range and packet_port in port[0]):
+            valid_port = True
+        elif (not port[1] and type(port[0]) == range and packet_port in port[0]):
+            valid_port = False
+            break
+        elif (not port[1] and type(port[0]) == range and packet_port not in port[0]):
+            valid_port = True
+    return valid_port
 
 
 
@@ -72,6 +140,6 @@ if __name__ == '__main__':
     rules_path = sys.argv[2]
     compiler_goal = sys.argv[3]
 
-    main(config_path, rules_path, compiler_goal)
+    main(config_path, rules_path)
 
    

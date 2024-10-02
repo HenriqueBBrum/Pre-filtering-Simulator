@@ -69,6 +69,7 @@ def _parse_rules(rule_file):
 # Replace system variables, modify negated ports and group ports
 def adjust_rules(config, rules):
     modified_rules = []
+    count = 0
     for rule in rules:
         copied_header = copy.deepcopy(rule.header)
        
@@ -77,18 +78,12 @@ def adjust_rules(config, rules):
         copied_header['dst_ip'] = _replace_system_variables(copied_header['dst_ip'], config.ip_addresses)
         copied_header['dst_port'] = _replace_system_variables(copied_header['dst_port'],  config.ports)
 
-        # if(_IP_negated(copied_header["src_ip"]) or _IP_negated(copied_header["dst_ip"])):
-        #     continue
-    
-        # copied_header["src_port"] = _modify_negated_ports(copied_header["src_port"])
-        # copied_header["dst_port"] = _modify_negated_ports(copied_header["dst_port"])
-
-        # copied_header['src_port'] = _group_ports_into_ranges(copied_header['src_port'])
-        # copied_header['dst_port'] = _group_ports_into_ranges(copied_header['dst_port'])
-
         rule.header = copied_header
+        rule.id = count
         
         modified_rules.append(rule)
+
+        count+=1
 
     return modified_rules
 
