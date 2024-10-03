@@ -20,7 +20,7 @@ class SnortConfiguration():
     
     # Parses the Snort configuration file and the classification priority
     def __parse(self):
-        if(self.snort_version == 2):
+        if self.snort_version == 2:
             snort_config_file= "{}/snort.conf".format(self.configuration_dir) 
             priority_classification_file = "{}/classification.config".format(self.configuration_dir)
             self.__parse_snort_config(snort_config_file)
@@ -34,14 +34,14 @@ class SnortConfiguration():
         with open(snort_config_file, 'r') as config_file:
             lines  = config_file.readlines()
             for line in lines:
-                if("# Step #2:"in line): ## NETWORK SETTINGS ARE ONLY IN "STEP 1" FOR TYPICAL SNORT CONFIGURATION FILES
+                if "# Step #2:"in line: ## NETWORK SETTINGS ARE ONLY IN "STEP 1" FOR TYPICAL SNORT CONFIGURATION FILES
                     break
 
-                if (line.startswith("ipvar")):
+                if line.startswith("ipvar"):
                     ipvar_line_elements = line.split(" ", 2) # ipvar NAME IPs
                     name = ipvar_line_elements[1]
                     self.ip_addresses[name] = self.__parse_ips(ipvar_line_elements[2].rstrip('\n').replace(" ",""))
-                elif(line.startswith("portvar")):
+                elif line.startswith("portvar"):
                     portvar_line_elements = line.split(" ", 2) # portvar NAME IPs
                     name = portvar_line_elements[1]
                     self.ports[name] = self.__parse_ports(portvar_line_elements[2].rstrip('\n').replace(" ",""))

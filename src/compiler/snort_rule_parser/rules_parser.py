@@ -176,7 +176,7 @@ def group_header_and_payload_fields(rules):
             rule.packet_header[key] = rule.header[key]
 
         for option in rule.options:
-            if (option in non_payload_detect and option not in {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}):
+            if option in non_payload_detect and option not in {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}:
                 rule.packet_header[option] = rule.options[option][1]
             else:
                 rule.payload_fields[option] = rule.options[option]
@@ -220,7 +220,7 @@ def remove_port_wildcard_rules(rules):
     for rule in rules:
         # Assume wildcards IP and ports contain only one object, i.e. the wildcard IP and port values
         # Remove rules that are udp or tcp with empty flags that have wildcard src and dst port and with one wildcard IP
-        if ((rule.header["proto"] == "udp" or (rule.header["proto"] == "tcp" and len(rule.flags) == 0))  
+        if(rule.header["proto"] == "udp" or (rule.header["proto"] == "tcp" and len(rule.flags) == 0)  
             and (len(rule.header["src_port"]) == 1 and len(rule.header["dst_port"]) == 1 
             and rule.header["src_port"][0] == (range(0, 65536), True) and rule.header["dst_port"][0] == (range(0, 65536), True))
             and ((len(rule.header["src_ip"]) == 1 and rule.header["src_ip"][0] == ('0.0.0.0/0', True))
