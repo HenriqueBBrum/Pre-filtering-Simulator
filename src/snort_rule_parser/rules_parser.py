@@ -182,7 +182,6 @@ def group_header_and_payload_fields(rules):
                 rule.payload_fields[option] = rule.options[option]
 
 
-
 # Deduplicate signature rules with same match. Save each duplicate rule's priority and sid/rev 
 def dedup_rules(config, rules):
     deduped_rules = {}

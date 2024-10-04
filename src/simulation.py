@@ -1,65 +1,22 @@
-### Main file that compiles a Snort rule file according to the snort.conf and classification.conf to P4 table entries
-# Args: config path, rules_path
-#       - config_path: Path to the configuration files
-#       - rules_path: Path to a single rule file or to a directory containing multiple rule files
-#       - compiler_goal: Compiler goals, such as the p4 target and the rules priority
-#       - compiler_output_file: Output file path for the compiled p4 table entries
-
-
-
-## Standard and 3rd-party imports
-import sys
-from datetime import datetime
-from json import load
-import random
 import re
-
 import ipaddress
 from scapy.all import *
-import time
+from multiprocessing import Manager,Process,cpu_count
+
+from snort_rule_parser.rules_parser import group_header_and_payload_fields
+
+ip_proto = {"ip": 0, "icmp": 1, "tcp": 6, "udp": 17}
 
 
-## Local imports
-from snort_config_parser import SnortConfiguration
-from snort_rule_parser.rules_parser import get_rules, dedup_rules, adjust_rules, group_header_and_payload_fields
-from snort_rule_parser.rule_statistics import RuleStatistics
+possible_ipopts = {"RR": "rr", "EOL":"eol", "NOP":"nop", "Timestamp": "ts", "Security": "sec", "Extended Security": "esec", 
+                        "LSRR": "lsrr", "LSSRE": "lsrre", "SSRR": "ssrr", "Stream Id":"satid"}
 
 
-
-def main(config_path, rules_path):
-    config = SnortConfiguration(snort_version=2, configuration_dir=config_path)
-    print("*" * 80)
-    print("*" * 80)
-    print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
-    modified_rules = rule_parsing_stage(config, rules_path)
-
-    pre_filtering_simulation(modified_rules)
-   
-
-# Functions related to the parsing of Snort/Suricata rules from multiple files, and the subsequent deduplication, 
-# replacement of system variables, port groupping and fixing negated headers 
-def rule_parsing_stage(config, rules_path):
-    ignored_rule_files = {}
-
-    print("---- Getting and parsing rules..... ----")
-    print("---- Splitting bidirectional rules..... ----")
-    original_rules, fixed_bidirectional_rules = get_rules(rules_path, ignored_rule_files) # Get all rules from multiple files or just one
-    stats = RuleStatistics(config, original_rules)
-    
-    print("---- Adjusting rules. Replacing variables,grouping ports into ranges and adjusting negated port rules..... ----")
-    modified_rules = adjust_rules(config, fixed_bidirectional_rules) 
-
-    print("---- Separating fields into packet_header fields and payload fields ----")
-    group_header_and_payload_fields(modified_rules)
-
-    # stats.print_all()
-
-    print("\nResults:")
-    print("Total original rules: {}".format(len(original_rules)))
-    print("Total rules after fixing bidirectional rules: {}".format(len(fixed_bidirectional_rules)))
-    print("Total non-negated IP rules: {}".format(len(modified_rules)))
-    
-    return modified_rules
+ip_flags_dict = {
+    'M': 1,
+    'D': 2,
+    'R': 4
+}
 
 tcp_flags_dict = {
     'F': 1,
@@ -68,65 +25,104 @@ tcp_flags_dict = {
     'P': 8,
     'A': 16,
     'U': 32,
-    'E': 128,
-    'C': 256,
+    'E': 64,
+    'C': 128,
 }
 
-ip_flags_dict = {
-    'M': 1,
-    'D': 2,
-    'R': 4
-}
 
-ip_proto = {"ip": 0, "icmp": 1, "tcp": 6, "udp": 17}
+def pre_filtering_simulation(rules, n=1000):
+    # Find the optimal pre-filtering subset
+    print("---- Separtes fields into packet_header fields and payload fields ----")
+    group_header_and_payload_fields(rules)
 
-def pre_filtering_simulation(rules):
-    # Find the optmial pre-filtering subset
-    # pre_filtering_rules = optimal_pre_filtering_rules()
+    pre_filtering_rules = optimal_pre_filtering_rules()
 
-    n = 1000
     start = time.time()
     pcap = rdpcap("/home/hbeckerbrum/NFSDatasets/CICIDS2017/Friday-WorkingHours.pcap", n)
     print("Time to read ", n, " packets in seconds: ", time.time() - start)
-    packet_id, ip_packet_id = 0, 0
-    send_to_NIDS_pkts = []
-    for packet in pcap:
-        if "IP" in packet:
+
+    print(pcap[999].show2())
+    print(len(bytes(pcap[999][UDP].payload)))
+    return []
+
+    suspicious_pkts = Manager().list()
+    ip_pkt_count_list = Manager().list()
+    processes = []
+
+    num_processes = cpu_count()
+    share = round(len(pcap)/num_processes)
+    for i in range(num_processes):
+        pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]
+        process = Process(target=compare_header_fields, args=(pkts_sublist, rules, suspicious_pkts, ip_pkt_count_list, i*share))
+        process.start()
+        processes.append(process)
+
+    for process in processes:
+        process.join()
+
+    print(len(suspicious_pkts), sum(ip_pkt_count_list), n) # Count IP packets
+
+    processes = []
+    pkts_to_NIDS = Manager().list()
+    for i in range(num_processes):
+        pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]
+        process = Process(target=compare_payload, args=(pkts_sublist, rules, suspicious_pkts, ip_pkt_count_list, i*share))
+        process.start()
+        processes.append(process)
+
+    for process in processes:
+        process.join()
+
+    # send_pkts_to_NIDS(pkts_to_NIDS)
+
+
+# Generates the optimal pre-filtering ruleset using most header fields and part of the payload matches
+def optimal_pre_filtering_rules():
+    # get_header_and_payload_fields()
+
+    # select_optimal_payload_config()
+
+    return []
+
+# Compares the header fields of packet against the ones for a rule
+def compare_header_fields(pkts, rules, suspicious_pkts, ip_pkt_count_list, start):
+    pkt_id, ip_pkt_count = start, 0
+    for pkt in pkts:
+        if "IP" in pkt:
             for rule in rules:
                 rule_proto = ip_proto[rule.packet_header["proto"]]
-                if packet["IP"].proto != rule_proto and rule_proto != 0:
+                if pkt["IP"].proto != rule_proto and rule_proto != 0:
                     continue
 
-                if not _compare_IP(packet["IP"].src, rule.packet_header["src_ip"]):
+                if not _compare_IP(pkt["IP"].src, rule.packet_header["src_ip"]):
                     continue
 
-                if not _compare_IP(packet["IP"].dst, rule.packet_header["dst_ip"]):
+                if not _compare_IP(pkt["IP"].dst, rule.packet_header["dst_ip"]):
                     continue
 
-                if rule_proto == 6 or rule_proto == 17:
-                    if not _compare_ports(packet[rule.packet_header["proto"].upper()].sport, rule.packet_header["src_port"]):
+                if (rule_proto == 6 or rule_proto == 17) and (TCP in pkt or UDP in pkt):
+                    if not _compare_ports(pkt[rule.packet_header["proto"].upper()].sport, rule.packet_header["src_port"]):
                         continue
 
-                    if not _compare_ports(packet[rule.packet_header["proto"].upper()].dport, rule.packet_header["dst_port"]):
+                    if not _compare_ports(pkt[rule.packet_header["proto"].upper()].dport, rule.packet_header["dst_port"]):
                         continue
 
-                if not _matched_IP_fields(packet, rule.packet_header):
+                if not _matched_IP_fields(pkt, rule.packet_header):
                     continue
 
-                if rule_proto == 6 and not _matched_TCP_fields(packet, rule.packet_header):
+                if rule_proto == 6 and not _matched_TCP_fields(pkt, rule.packet_header):
+                    continue
+                
+                if rule_proto == 1 and not _matched_ICMP_fields(pkt, rule.packet_header):
                     continue
 
-                if rule_proto == 1 and not _matched_ICMP_fields(packet, rule.packet_header):
-                    continue
-
-                send_to_NIDS_pkts.append((packet_id, rule.id))
+                suspicious_pkts.append((pkt_id, rule.id))
                 break
-            ip_packet_id+=1
-        packet_id+=1
+            ip_pkt_count+=1
+        pkt_id+=1
+    ip_pkt_count_list.append(ip_pkt_count)
 
-    print(len(send_to_NIDS_pkts), ip_packet_id, packet_id)
-
-
+# Compares a packet's IP fields against the IP fields of a rule 
 def _matched_IP_fields(packet, rule_packet_header):
     if "ttl" in rule_packet_header and not _compare_fields(packet[IP].ttl, rule_packet_header["ttl"][0]):
         return False
@@ -145,8 +141,9 @@ def _matched_IP_fields(packet, rule_packet_header):
 
     return True
 
+# Compares a packet's TCP fields against the TCP fields of a rule 
 def _matched_TCP_fields(packet, rule_packet_header):
-    if "flags" in rule_packet_header and not _compare_tcp_flags(packet[TCP].flags, rule_packet_header["flags"][0]):
+    if "flags" in rule_packet_header and not _compare_tcp_flags(packet[TCP].flags, rule_packet_header["flags"]):
         return False
 
     if "seq" in rule_packet_header and not _compare_fields(packet[TCP].seq, rule_packet_header["seq"][0]):
@@ -160,6 +157,7 @@ def _matched_TCP_fields(packet, rule_packet_header):
 
     return True
 
+# Compares a packet's ICMP fields against the ICMP fields of a rule 
 def _matched_ICMP_fields(packet, rule_packet_header):
     if "itype" in rule_packet_header and not _compare_fields(packet[ICMP].type, rule_packet_header["itype"][0]):
         return False
@@ -175,7 +173,7 @@ def _matched_ICMP_fields(packet, rule_packet_header):
 
     return True
 
-
+# Compares a packet's IP(s) against the IP(s) of a rule
 def _compare_IP(packet_ip, rule_ips):
     valid_ip = False
     for ip in rule_ips:
@@ -190,6 +188,7 @@ def _compare_IP(packet_ip, rule_ips):
             valid_ip = True
     return valid_ip
 
+# Compares a packet's ports(s) against the ports(s) of a rule
 def _compare_ports(packet_port, rule_ports):
     valid_port = False
     for port in rule_ports:
@@ -210,10 +209,10 @@ def _compare_ports(packet_port, rule_ports):
             valid_port = True
     return valid_port
 
+# Compares a packet's fields(s) against the fields(s) of a rule using the follwoing operators: >,<,=,!,<=,>=,<>,<=>
 def _compare_fields(packet_data, rule_data):
     number = re.findall("[\d.]+", rule_data)
     comparator = re.sub("[\d.]", "", rule_data)
-    print(number, comparator)
 
     ops = {}
 
@@ -231,10 +230,8 @@ def _compare_fields(packet_data, rule_data):
 
     return ops[comparator]
 
+# Compares a packet's IP options against the IP options of a rule
 def _compare_ipopts(packet_ipopts, rule_ipopts):
-    possible_ipopts = {"RR": "rr", "EOL":"eol", "NOP":"nop", "Timestamp": "ts", "Security": "sec", "Extended Security": "esec", 
-                        "LSRR": "lsrr", "LSSRE": "lsrre", "SSRR": "ssrr", "Stream Id":"satid"}
-
     if not packet_ipopts:
         return False
 
@@ -244,9 +241,9 @@ def _compare_ipopts(packet_ipopts, rule_ipopts):
     elif packet_ipopts_name in possible_ipopts and possible_ipopts[packet_ipopts_name] == rule_ipopts:
         return True
 
-
     return False
 
+# Compares a packet's fragmentation bits against the fragmentation bits of a rule
 def _compare_fragbits(packet_fragbits, rule_fragbits):
     fragbits = re.sub("[\+\*\!]", "", rule_fragbits)
     fragbits_num = sum(ip_flags_dict[flag] for flag in fragbits)
@@ -266,6 +263,7 @@ def _compare_fragbits(packet_fragbits, rule_fragbits):
     
     return False
 
+# Compares a packet's IP protocol field against the IP protocol field of a rule
 def _compare_ip_proto(packet_ip_proto, rule_ip_proto):
     proto = re.sub("[^\d.]+", "", rule_ip_proto)
     comparator = re.sub("[\d.]+", "", rule_ip_proto)
@@ -280,13 +278,27 @@ def _compare_ip_proto(packet_ip_proto, rule_ip_proto):
 
     return False
 
+# Compares a packet's TCP flags against the TCP flags of a rule
 def _compare_tcp_flags(packet_tcp_flags, rule_tcp_flags):
-    tcp_flags = re.sub("[\+\*\!]", "", rule_tcp_flags)
-    tcp_flags_num = sum(tcp_flags_dict[flag] for flag in tcp_flags)
-    comparator = re.sub("[a-zA-Z.]", "", rule_tcp_flags)
+    def parse_flags(flags):
+        tcp_flags = re.sub("[1]", "C", flags)
+        tcp_flags = re.sub("[2]", "E", tcp_flags)
+        tcp_flags = re.sub("[\+\*\!]", "", tcp_flags)
 
-    if packet_tcp_flags == 0 and tcp_flags_num == 0:
-        return True
+        return tcp_flags
+
+    flags_to_match = rule_tcp_flags[0]
+    # flags_to_ignore_sum = 0
+
+    # if len(rule_tcp_flags)>1:
+    #     flags_to_ignore = rule_tcp_flags[1]
+    #     flags_to_ignore = parse_flags(flags_to_ignore)
+    #     flags_to_ignore_sum = sum(tcp_flags_dict[flag] for flag in flags_to_ignore)
+
+
+    tcp_flags = parse_flags(flags_to_match)
+    tcp_flags_num = sum(tcp_flags_dict[flag] for flag in tcp_flags) 
+    comparator = re.sub("[a-zA-Z.]", "", flags_to_match)
 
     if comparator == "" and packet_tcp_flags == tcp_flags_num:
         return True
@@ -299,11 +311,12 @@ def _compare_tcp_flags(packet_tcp_flags, rule_tcp_flags):
     
     return False
 
-if __name__ == '__main__':
-    config_path = sys.argv[1]
-    rules_path = sys.argv[2]
-    compiler_goal = sys.argv[3]
 
-    main(config_path, rules_path)
+def compare_payload(pkts, rules, pkts_to_NIDS, start):
+    for pkt in pkts:
+        for rule in rules:
+            
+            pass
 
-   
+# Sends the remaining packets to a NIDS using the desired configuration
+#def send_pkts_to_NIDS():
