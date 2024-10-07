@@ -284,13 +284,12 @@ class Parser(object):
                     key, value = option_string.split(":", 1)
                     
                 if key == "content" or key == "regex":
-                    split = value.split("\",")
-                    match = split[0]+"\""
-                    if len(split) > 1:
-                        value = value.split("\",")[1].split(",")
-                        value.insert(0, match)
+                    spl = value.split("\",")
+                    if len(spl) > 1:
+                        value = spl[1].split(",")
+                        value.insert(0, spl[0][1:])
                     else:
-                        value = [match]
+                        value = [spl[0][1:-1]]
                 elif key!="pcre":
                     value = value.split(",")
 

@@ -173,14 +173,13 @@ def group_header_and_payload_fields(rules):
     non_payload_detect = Dicts.non_payload_options()
     for rule in rules:
         for key in ["proto", "src_ip", "src_port", "dst_ip", "dst_port"]:
-            rule.packet_header[key] = rule.header[key]
+            rule.pkt_header[key] = rule.header[key]
 
-        for option in rule.options:
+        for option in rule.options: 
             if option in non_payload_detect and option not in {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}:
-                rule.packet_header[option] = rule.options[option][1]
+                rule.pkt_header[option] = rule.options[option][1]
             else:
                 rule.payload_fields[option] = rule.options[option]
-
 
 # Deduplicate signature rules with same match. Save each duplicate rule's priority and sid/rev 
 def dedup_rules(config, rules):

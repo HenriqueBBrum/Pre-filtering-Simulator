@@ -9,7 +9,7 @@ class Rule(object):
         self.header = header
         self.options = options
 
-        self.packet_header = {}
+        self.pkt_header = {}
         self.payload_fields = {}
         
         self.has_negation = has_negation # IP or port is negated
