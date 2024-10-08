@@ -33,7 +33,7 @@ tcp_flags_dict = {
 
 def pre_filtering_simulation(rules, n=1000):
     # Find the optimal pre-filtering subset
-    print("---- Separtes fields into pkt_header fields and payload fields ----")
+    print("---- Separates fields into pkt_header fields and payload fields ----")
     group_header_and_payload_fields(rules)
 
     pre_filtering_rules = optimal_pre_filtering_rules()
@@ -76,21 +76,19 @@ def compare_pkt(pkts, rules, suspicious_pkts, ip_pkt_count_list, start):
     pkt_id, ip_pkt_count = start, 0
     for pkt in pkts:
         if "IP" in pkt:
-            for rule in rules[0:20]:
-                print(rule.pkt_header)
+            for i, rule in enumerate(rules[0:400]):
                 rule_proto = ip_proto[rule.pkt_header["proto"]]
                 if pkt["IP"].proto != rule_proto and rule_proto != 0:
                     continue
                 
-                # if not compare_header_fields(pkt, rule, rule_proto):
-                #     continue
+                if not compare_header_fields(pkt, rule, rule_proto):
+                    continue
 
                 if not compare_payload(pkt, rule):
                     continue
 
-                # suspicious_pkts.append((pkt_id, rule))
-                # break 
-            return None
+                suspicious_pkts.append((pkt_id, rule))
+                break 
             ip_pkt_count+=1
         pkt_id+=1
     ip_pkt_count_list.append(ip_pkt_count)
@@ -313,87 +311,127 @@ def _compare_tcp_flags(pkt_tcp_flags, rule_tcp_flags):
 
 
 def compare_payload(pkt, rule):
-    # if "dsize" in rule.payload_fields and not _compare_fields(len(pkt[rule.pkt_header["proto"].upper()].payload), rule.payload_fields["dsize"][0][1][0]):
-    #     return False
+    if "dsize" in rule.payload_fields and not _compare_fields(len(pkt[rule.pkt_header["proto"].upper()].payload), rule.payload_fields["dsize"][0][1][0]):
+        return False
 
-    if "content" in rule.payload_fields and not _compare_content(pkt[rule.pkt_header["proto"].upper()].payload, rule.payload_fields["content"]):
+    if "content" in rule.payload_fields and not _compare_content(pkt[rule.pkt_header["proto"].upper()].payload,  rule.payload_fields["content"]):
         return False
     
-    if "pcre" in rule.payload_fields and not _compare_pcre():
-        return False
+    # if "pcre" in rule.payload_fields and not _compare_pcre():
+    #     return False
 
     return True
 
 
 
 def _compare_content(pkt_payload, rule_content):
+    hex_str_payload, hex_str_payload_nocase = _adjust_payload_case(pkt_payload) 
     position = 0
-    for content in rule_content:
-        print(content)
-        str_to_match = _clean_content_and_hexify(content[1][0]) 
-                
-        start, end = 0, len(pkt_payload)
-        for modifier in content[1][1:]:
-            modifier_split = modifier.split(" ")
-            modifier_name = modifier_split[0]
-            if len(modifier_split)>1:
-                num = int(modifier_split[1])
-                if modifier_name == "offset":
-                    start = num
-                elif modifier_name == "depth":
-                    end = start+num
-                elif modifier_name == "distance":
-                    start = position+num 
-                elif modifier_name == "within":
-                    end = position+num
-            elif modifier_name == "nocase":
-                str_to_match = str_to_match.lower()
-                # payload.lower()
+    for content_pos, content in rule_content:
+        nocase = False
+        start, end = position, len(pkt_payload)
+        if len(content) > 2:
+            for modifier in content[2].split(","):
+                modifier_split = modifier.split(" ")
+                modifier_name = modifier_split[0]
+                if len(modifier_split)>1:
+                    num = int(modifier_split[1])
+                    if modifier_name == "offset":
+                        start = 2*num # 2* because the string represent hex bytes where every 2 char is a hex number and one byte
+                    elif modifier_name == "depth":
+                        end = start+2*num
+                    elif modifier_name == "distance":
+                        start = position+2*num 
+                    elif modifier_name == "within":
+                        end = position+2*num
+                elif modifier_name == "nocase":
+                    nocase = True
         
-        if start > end:
+        str_to_match = _clean_content_and_hexify(content[1], nocase) 
+        if start > end: # Fix start,end in case "depth" appears before "offset"
             end+=start
 
-        position = end
-        print(str_to_match)
-        print(start, end)
-        # #if not pkt_payload.contains(str_to_match)
+        match_pos = hex_str_payload_nocase[start:end].find(str_to_match) if nocase else  hex_str_payload[start:end].find(str_to_match) # Number of char (not bytes) from start
+        # Did not find a match but the rule says to only accept if a match was found
+        # Found a match but the rule says to only accept if no matches were found
+        if (match_pos == -1 and content[0]) or (match_pos >= 0 and not content[0]): 
+            return False
 
-        # print(start, end)
-        # print(content)
+        position = start+match_pos+len(str_to_match)
     return True
 
-## Turn
-def _clean_content_and_hexify(str_to_match):
+def _adjust_payload_case(pkt_payload):
+    hex_str_payload = bytes(pkt_payload).hex()
+    hex_str_payload_nocase = ""
+    for pos, hex_num in enumerate(hex_str_payload[::2]):
+        byte = hex_str_payload[pos*2:pos*2+2]
+        if int(byte, 16) >= 65 and int(byte, 16) <= 90:
+            byte = hex(int(byte, 16) + 32)[2:]
+
+        hex_str_payload_nocase+=byte
+
+    return hex_str_payload, hex_str_payload_nocase
+
+## Turn content to hex string. Ex: "A|4E 20 3B| Ok" - > "414e203b4f6b"
+def _clean_content_and_hexify(str_to_match, nocase=False):
     clean_content = ""
-    temp = ""
+    temp_content = ""
     hex_now, escaped = False, False
+    add_to_clean_content = False
     for char in str_to_match:
-        if char == '|' and not hex_now:
-            hex_now = True
-            clean_content+=temp.encode('ascii').hex()
-            temp = ""
-            continue
-        elif char == '|' and hex_now:
-            hex_now = False
-            clean_content+=re.sub(r"\s+", "", temp)
-            temp = ""
-            continue
-
-        if escaped and (char == ';' or char == '"' or char == '\\'):
-            temp+=char
-        elif escaped:
-            temp+='/'
-
-        escaped = False
-
-        if char == '/':
-            escaped = True
+        if hex_now or char == '|':
+            temp_content, hex_now, add_to_clean_content = _process_hex(char, temp_content, nocase, hex_now)
+            if add_to_clean_content:
+                clean_content+=temp_content
+                temp_content=""
         else:
-            temp+=char
-
-    clean_content+=temp.encode('ascii').hex()
+            temp_content, escaped = _process_string(char, temp_content, nocase, escaped)
+    
+    clean_content+=temp_content.encode('ascii').hex()
     return clean_content
 
+
+def _process_hex(char, temp_content, nocase, hex_now):
+    add_to_clean_content = False
+    if hex_now and char == " ":
+        return temp_content, hex_now, add_to_clean_content
+
+    if nocase and hex_now and len(temp_content) == 2:
+        if (int(temp_content, 16) >= 65 and int(temp_content, 16) <= 90):
+            temp_content=hex(int(temp_content, 16) + 32)[2:] # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
+        else:
+            temp_content=temp_content.lower() #Uses lower case for hex string: 4E -> 4e
+        add_to_clean_content=True
+
+    if char == '|':
+        temp_content=(temp_content.lower() if hex_now else temp_content.encode('ascii').hex())
+        hex_now = not hex_now
+        add_to_clean_content = True
+    else:
+        temp_content+=char
+    
+    return temp_content, hex_now, add_to_clean_content
+
+
+def _process_string(char, temp_content, nocase, escaped):
+    if nocase and char.isupper():
+        char = char.lower()
+
+    # Add escaped char or add '/' since it was not used to escape a char
+    if escaped and (char == ';' or char == '"' or char == '\\'):
+        temp_content+=char
+    elif escaped:
+        temp_content+='/'
+
+    escaped = False
+
+    # Check if it is the escape char : "/" otherwise just add to the string
+    if char == '/':
+        escaped = True
+    else:
+        temp_content+=char
+
+    return temp_content, escaped
 
 def _compare_pcre():
     pass

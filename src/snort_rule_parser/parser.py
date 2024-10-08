@@ -29,8 +29,8 @@ class Parser(object):
         header, has_negation = self.__parse_header(rule)
         options = self.__parse_options(rule) 
 
-        if options["sid"][1][0] == "498":
-            header = {}
+        # if options["sid"][1][0] == "498":
+        #     header = {}
 
         return Rule(rule, header, options, has_negation)
     
@@ -283,13 +283,15 @@ class Parser(object):
                 if ':' in option_string:
                     key, value = option_string.split(":", 1)
                     
-                if key == "content" or key == "regex":
-                    spl = value.split("\",")
-                    if len(spl) > 1:
-                        value = spl[1].split(",")
-                        value.insert(0, spl[0][1:])
-                    else:
-                        value = [spl[0][1:-1]]
+                if key == "content":
+                    negate = re.search('^!', value)
+                    content = re.search('"([^"]*)"', value).group(0)[1:-1]
+                    modifiers = re.search('[\w, ]*$', value).group(0)[1:]
+                    value = [False if negate else True]
+                    value.append(content)
+                    if modifiers:
+                        value.append(modifiers)
+
                 elif key!="pcre":
                     value = value.split(",")
 
