@@ -1,7 +1,10 @@
 import re
 import ipaddress
 import binascii
+import urllib
 from scapy.all import *
+from scapy.layers.http import * 
+from urllib.parse import urlparse
 from multiprocessing import Manager,Process,cpu_count
 
 from snort_rule_parser.rules_parser import group_header_and_payload_fields
@@ -33,7 +36,7 @@ tcp_flags_dict = {
 
 def pre_filtering_simulation(rules, n=1000):
     # Find the optimal pre-filtering subset
-    print("---- Separates fields into pkt_header fields and payload fields ----")
+    # print("---- Separates fields into pkt_header fields and payload fields ----")
     group_header_and_payload_fields(rules)
 
     pre_filtering_rules = optimal_pre_filtering_rules()
@@ -46,8 +49,9 @@ def pre_filtering_simulation(rules, n=1000):
     ip_pkt_count_list = Manager().list()
     processes = []
 
-    num_processes = 1#cpu_count()
+    num_processes = cpu_count() # Use the cout_count as the number of processes
     share = round(len(pcap)/num_processes)
+    # Splits the rules each process processes
     for i in range(num_processes):
         pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]
         process = Process(target=compare_pkt, args=(pkts_sublist, rules, suspicious_pkts, ip_pkt_count_list, i*share))
@@ -71,16 +75,16 @@ def optimal_pre_filtering_rules():
     return []
 
 
-# Compare packets with rules
+# Compares a list of packets with rules
 def compare_pkt(pkts, rules, suspicious_pkts, ip_pkt_count_list, start):
     pkt_id, ip_pkt_count = start, 0
     for pkt in pkts:
-        if "IP" in pkt:
-            for i, rule in enumerate(rules[0:400]):
+        if IP in pkt:              
+            for i, rule in enumerate(rules):
                 rule_proto = ip_proto[rule.pkt_header["proto"]]
-                if pkt["IP"].proto != rule_proto and rule_proto != 0:
+                if pkt[IP].proto != rule_proto and rule_proto != 0:
                     continue
-                
+
                 if not compare_header_fields(pkt, rule, rule_proto):
                     continue
 
@@ -94,12 +98,13 @@ def compare_pkt(pkts, rules, suspicious_pkts, ip_pkt_count_list, start):
     ip_pkt_count_list.append(ip_pkt_count)
 
 
+
 # Compares the header fields of packet against the ones for a rule
 def compare_header_fields(pkt, rule, rule_proto): 
-    if not _compare_IP(pkt["IP"].src, rule.pkt_header["src_ip"]):
+    if not _compare_IP(pkt[IP].src, rule.pkt_header["src_ip"]):
         return False
 
-    if not _compare_IP(pkt["IP"].dst, rule.pkt_header["dst_ip"]):
+    if not _compare_IP(pkt[IP].dst, rule.pkt_header["dst_ip"]):
         return False
 
     if (rule_proto == 6 or rule_proto == 17) and (TCP in pkt or UDP in pkt):
@@ -314,8 +319,8 @@ def compare_payload(pkt, rule):
     if "dsize" in rule.payload_fields and not _compare_fields(len(pkt[rule.pkt_header["proto"].upper()].payload), rule.payload_fields["dsize"][0][1][0]):
         return False
 
-    if "content" in rule.payload_fields and not _compare_content(pkt[rule.pkt_header["proto"].upper()].payload,  rule.payload_fields["content"]):
-        return False
+    # if "content" in rule.payload_fields and not _compare_content(pkt[rule.pkt_header["proto"].upper()].payload,  rule.payload_fields["content"]):
+    #     return False
     
     # if "pcre" in rule.payload_fields and not _compare_pcre():
     #     return False
@@ -335,7 +340,7 @@ def _compare_content(pkt_payload, rule_content):
                 modifier_split = modifier.split(" ")
                 modifier_name = modifier_split[0]
                 if len(modifier_split)>1:
-                    num = int(modifier_split[1])
+                    num = int(modifier_split[1]) # !!!!! Check if modifier is a variable
                     if modifier_name == "offset":
                         start = 2*num # 2* because the string represent hex bytes where every 2 char is a hex number and one byte
                     elif modifier_name == "depth":
@@ -372,6 +377,7 @@ def _adjust_payload_case(pkt_payload):
 
     return hex_str_payload, hex_str_payload_nocase
 
+
 ## Turn content to hex string. Ex: "A|4E 20 3B| Ok" - > "414e203b4f6b"
 def _clean_content_and_hexify(str_to_match, nocase=False):
     clean_content = ""
@@ -390,7 +396,7 @@ def _clean_content_and_hexify(str_to_match, nocase=False):
     clean_content+=temp_content.encode('ascii').hex()
     return clean_content
 
-
+# Process hex number of content. Mainly checking if it is required to consider the case
 def _process_hex(char, temp_content, nocase, hex_now):
     add_to_clean_content = False
     if hex_now and char == " ":
@@ -412,7 +418,7 @@ def _process_hex(char, temp_content, nocase, hex_now):
     
     return temp_content, hex_now, add_to_clean_content
 
-
+# Process the strings of the "content" field
 def _process_string(char, temp_content, nocase, escaped):
     if nocase and char.isupper():
         char = char.lower()
@@ -433,10 +439,83 @@ def _process_string(char, temp_content, nocase, escaped):
 
     return temp_content, escaped
 
+
+def _http_sticky_buffer():
+    # Used buffer;  http_uri	
+                    # http_raw_uri	
+                    # http_header	
+                    # http_raw_header	
+                    # http_cookie	
+                    # http_raw_cookie	
+                    # http_client_body	
+                    # http_raw_body	
+                    # http_param
+                    # http_method
+                    # http_stat_code
+                    # http_stat_msg
+    pass
+
+
+def _normalize_http_uri(http):
+    scheme = "http"
+    path = "\\example.com/search?query=hello%20world&sort=ascending%26category=books"
+    segment = 0 # 0 - path, 1 - query, 2 - fragment
+    escape_hex, normalize_path = False, False
+    escape_temp = ""
+    adjusted_uri = ""
+    for char in path:
+        if char == "%":
+            escape_hex = True
+            continue
+
+        if escape_hex:
+            escape_temp+=char
+            if len(escape_temp) == 2:
+                adjusted_uri+=bytes.fromhex(escape_temp).decode('utf-8')
+                escape_temp = ""
+                escape_hex = False
+            continue
+        
+        if char == "?":
+            segment = 1
+            normalize_path = True
+
+        if char == "#":
+            segment = 2
+            normalize_path = True
+
+        if segment == 1 and char == "+":
+            char = " "
+
+        if char == "\\":
+            char = "/"
+
+        if normalize_path:
+            adjusted_uri = os.path.normpath(adjusted_uri)
+            normalize_path = False
+        
+        adjusted_uri+=char
+    print(adjusted_uri)
+    # path = http.Path
+    # host_port = http.Host
+   
+    return ""
+
+# def _http_uri():
+#     uri = ""
+#     # specific_part_of_URI can also include body 
+#     # Normalize it following this info https://github.com/snort3/snort3/blob/master/doc/user/http_inspect.txt
+#     # Turn to uft-8, convert plus to space, simpliy paths and turn backslashes to slashes and convert percent encode chars
+#     return uri
+
+# def _http_raw_uri():
+#     raw_uri = ""
+#     return raw_uri
+
+
 def _compare_pcre():
     pass
 
     
-
 # Sends the remaining packets to a NIDS using the desired configuration
 #def send_pkts_to_NIDS():
