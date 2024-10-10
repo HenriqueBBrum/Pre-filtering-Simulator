@@ -277,21 +277,26 @@ class Parser(object):
     def __parse_options(self, rule):
             options_list = self.__get_options(rule)
             options_dict = collections.OrderedDict()
+            current_buffer = ""
             for index, option_string in enumerate(options_list):
                 key = option_string
                 value = ""
+                
                 if ':' in option_string:
                     key, value = option_string.split(":", 1)
-                    
+
+                if self.dicts.buffers(key):
+                    current_buffer = key
+                          
                 if key == "content":
                     negate = re.search('^!', value)
                     content = re.search('"([^"]*)"', value).group(0)[1:-1]
                     modifiers = re.search('[\w, ]*$', value).group(0)[1:]
-                    value = [False if negate else True]
+                    value = [current_buffer]
+                    value.append(False if negate else True)
                     value.append(content)
                     if modifiers:
-                        value.append(modifiers)
-
+                        value.append(modifiers)   
                 elif key!="pcre":
                     value = value.split(",")
 

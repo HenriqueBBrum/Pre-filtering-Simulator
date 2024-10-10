@@ -283,6 +283,37 @@ class Dicts():
         else:
             return content_modifiers
 
+
+    @staticmethod
+    def buffers(option: str = None) -> Any:
+        buffers = {"http_uri",
+                            "http_raw_uri",	
+                            "http_header",	
+                            "http_raw_header",	
+                            "http_cookie",	
+                            "http_raw_cookie",	
+                            "http_client_body",	
+                            "http_raw_body",	
+                            "http_param",
+                            "http_method",
+                            "http_stat_code",
+                            "http_stat_msg",
+                            "pkt_data",	            
+                            "raw_data",	            
+                            "file_data",	                
+                            "base64_data",
+                            "json_data", 
+                            "vba_data"	 
+                             }
+
+        if option:
+            if option in buffers:
+                return option
+            else:
+                return False
+        else:
+            return buffers
+
     @staticmethod
     def rule_thresholds(option):
         threshold = {"threshold"}

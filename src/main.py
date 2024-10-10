@@ -13,7 +13,6 @@ def main(config_path, rules_path):
     print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
     modified_rules = parse_rules(config, rules_path)
     start = time.time()
-
     pre_filtering_simulation(modified_rules)
     print("Simulation time: ", time.time() - start)
 
