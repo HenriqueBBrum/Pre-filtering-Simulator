@@ -6,9 +6,19 @@ from scapy.layers.http import *
 
 unsupported_buffers = {"file_data", "json_data", "vba_data", "base64_data"}
 
+http_request_buffers = {"http_uri", "http_raw_uri", "http_method"}
+http_response_buffers = {"http_stat_code", "http_stat_msg"}
+
+# Compares a rules payload fields against a packet's payload. 
+# A "False" return value means the packet does not match the rule and is not suspicious acording to the rule
 def compare_payload(pkt, rule):
-    # if "dsize" in rule.payload_fields and not _compare_fields(len(pkt[rule.pkt_header["proto"].upper()].payload), rule.payload_fields["dsize"][0][1][0]):
+    len_pkt_payload = len(pkt[rule.pkt_header["proto"].upper()].payload)
+    # if "dsize" in rule.payload_fields and not _compare_fields(len_pkt_payload, rule.payload_fields["dsize"][0][1][0]):
     #     return False
+
+    # No payload but the rule has payload fields
+    if len_pkt_payload == 0 and ("content" in rule.payload_fields or "pcre" in rule.payload_fields):
+        return False
 
     if "content" in rule.payload_fields and not _compare_content(pkt, rule.pkt_header["proto"].upper(),  rule.payload_fields["content"]):
         return False
@@ -22,9 +32,9 @@ def compare_payload(pkt, rule):
 
 def _compare_content(pkt, proto, rule_content):
     buffers_dict = {}
-    buffer, buffer_nocase = "", ""
-    prev_buffer_name = ""
+    buffer, prev_buffer_name = "", ""
     position = 0
+    print("+==================+")
     for content_id, content in rule_content:
         nocase = False
         if content[0] in unsupported_buffers or (prev_buffer_name in unsupported_buffers and not content[0]):
@@ -34,25 +44,45 @@ def _compare_content(pkt, proto, rule_content):
         if "http" in content[0] and HTTP not in pkt:
             return False
 
+        if content[0] in http_response_buffers and not HTTPResponse in pkt:
+            return False 
+
+        if content[0] in http_request_buffers and not HTTPRequest in pkt:
+            return False 
+
+        print(content[0])
         if content[0]:
             if content[0] not in buffers_dict:
-                buffer, buffer_nocase = buffers_dict[content[0]] = buffer_functions["get_"+content[0]](pkt)
+                buffer = buffers_dict[content[0]] = buffer_functions["get_"+content[0]](pkt)
             else:
-                buffer, buffer_nocase = buffers_dict[content[0]]
+                buffer = buffers_dict[content[0]]
 
             if content[0] != prev_buffer_name:
                 position = 0
 
         if not buffer:
-            buffer, buffer_nocase = _adjust_payload_case(pkt[proto].payload)
+            buffer = buffer_functions["get_pkt_data"](pkt)
 
+        enconding = None
+        if type(buffer) == str:
+            enconding = 'utf-8'
+        
+        print(buffer)
         prev_buffer_name = content[0]
-
         start, end = _determine_buffer_matching_pos(content, position, len(buffer))
+        if nocase:
+            temp_buffer, temp_buffer_nocase = _adjust_payload_case(buffer[start:end], enconding)
+        else:
+            temp_buffer = bytes(buffer, enconding)[start:end].hex() if enconding else bytes(buffer)[start:end].hex()
+
+        print(temp_buffer)
+        print("---------------")
+        continue
         str_to_match = _clean_content_and_hexify(content[2], nocase) 
 
+
         # Match pos is the number of char (not bytes) from start
-        match_pos = buffer[start:end].find(str_to_match) if nocase else buffer_nocase[start:end].find(str_to_match)
+        match_pos = temp_buffer.find(str_to_match) if nocase else temp_buffer_nocase.find(str_to_match)
      
         # Did not find a match but the rule says to only accept if a match was found
         # Found a match but the rule says to only accept if no matches were found
@@ -64,7 +94,7 @@ def _compare_content(pkt, proto, rule_content):
 
 
 def get_http_uri(pkt):
-    uri, uri_nocase = "http://"+pkt[HTTP].Host.decode("utf-8"), "http://"+pkt[HTTP].Host.lower().decode("utf-8")
+    uri = "http://"+pkt[HTTP].Host.decode("utf-8")
     path = pkt[HTTP].Path.decode("utf-8")
     segment = 0 # 0 - path, 1 - query, 2 - fragment
     escape_temp = ""
@@ -78,7 +108,6 @@ def get_http_uri(pkt):
             escape_temp+=char
             if len(escape_temp) == 2:
                 uri+=bytes.fromhex(escape_temp).decode('utf-8')
-                uri_nocaseri+=bytes.fromhex(escape_temp).decode('utf-8').lower()
                 escape_temp = ""
                 escape_hex = False
             continue
@@ -86,30 +115,26 @@ def get_http_uri(pkt):
         if char == "?":
             segment = 1
             normalize_path = True
-
-        if char == "#":
+        elif char == "#":
             segment = 2
             normalize_path = True
-
-        if segment == 1 and char == "+":
-            char = " "
-
-        if char == "\\":
+        elif char == "\\":
             char = "/"
+
+        if segment >=1 and char == "+":
+            char = " "
 
         if normalize_path:
             uri = os.path.normpath(uri)
-            uri_nocase = os.path.normpath(uri_nocase)
             normalize_path = False
         
         uri+=char
-        uri_nocase+=char.lower()
-    return uri.encode('utf-8').hex(), uri_nocase.encode('utf-8').hex()
+    return uri
 
 def get_http_raw_uri(pkt):
-    uri, uri_nocase = "http://"+pkt[HTTP].Host.decode("utf-8"), "http://"+pkt[HTTP].Host.lower().decode("utf-8")
+    uri = "http://"+pkt[HTTP].Host.decode("utf-8")
     path = pkt[HTTP].Path.decode("utf-8")
-    return uri+path, uri_nocase+path.lower()
+    return uri+path
 
 def get_http_header(pkt):
     buffer, buffer_nocase = "", ""
@@ -149,17 +174,13 @@ def get_http_stat_code(pkt):
 
 def get_http_stat_msg(pkt):
     buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
+    return pkt[HTTP].Reason_Phrase
 
 def get_pkt_data(pkt):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
+    return pkt[TCP].payload
 
 def get_raw_data(pkt):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
-
-
+    return pkt[TCP].payload
 
 buffer_functions = {"get_http_uri": get_http_uri, "get_http_raw_uri": get_http_raw_uri, "get_http_header": get_http_header, "get_http_raw_header": get_http_raw_header,
         "get_http_client_body": get_http_client_body, "get_http_raw_body": get_http_raw_body, "get_http_cookie": get_http_cookie, "get_http_raw_cookie": get_http_raw_cookie,
@@ -167,17 +188,21 @@ buffer_functions = {"get_http_uri": get_http_uri, "get_http_raw_uri": get_http_r
         "get_pkt_data": get_pkt_data, "get_raw_data": get_raw_data}
 
 
-def _adjust_payload_case(pkt_payload):
-    hex_str_payload = bytes(pkt_payload).hex()
-    hex_str_payload_nocase = ""
-    for pos, hex_num in enumerate(hex_str_payload[::2]):
-        byte = hex_str_payload[pos*2:pos*2+2]
+def _adjust_buffer_case(buffer, enconding=None):
+    if enconding:
+        hex_str_buffer = bytes(buffer, enconding).hex()
+    else:
+        hex_str_buffer = bytes(buffer).hex()
+
+    hex_str_buffer_nocase = ""
+    for pos, hex_num in enumerate(hex_str_buffer[::2]):
+        byte = hex_str_buffer[pos*2:pos*2+2]
         if int(byte, 16) >= 65 and int(byte, 16) <= 90:
             byte = hex(int(byte, 16) + 32)[2:]
 
-        hex_str_payload_nocase+=byte
+        hex_str_buffer_nocase+=byte
 
-    return hex_str_payload, hex_str_payload_nocase
+    return hex_str_buffer, hex_str_buffer_nocase
 
 
 def _determine_buffer_matching_pos(content, position, len_current_buffer):
