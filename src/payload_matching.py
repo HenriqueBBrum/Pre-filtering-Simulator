@@ -4,7 +4,8 @@ import urllib
 from scapy.layers.http import * 
 
 
-unsupported_buffers = {"file_data", "json_data", "vba_data", "base64_data"}
+unsupported_buffers = {"file_data", "json_data", "vba_data", "base64_data", "http_body", "http_raw_body"} 
+# Scapy seesm to decompress and process chunks for HTTP so "http_body", "http_raw_body" "file_data" (for http) seem plausible
 
 http_request_buffers = {"http_uri", "http_raw_uri", "http_method"}
 http_response_buffers = {"http_stat_code", "http_stat_msg"}
@@ -50,14 +51,15 @@ def _compare_content(pkt, proto, rule_content):
 
         if content[0]:
             if content[0] not in buffers_dict:
-                buffer, position = buffers_dict[content[0]] = (buffer_functions["get_"+content[0]](pkt, proto), 0)
+                buffer, position = buffers_dict[content[0]] = (_get_sticky_buffer(pkt, proto, content[0]), 0)
             else:
                 buffer, position = buffers_dict[content[0]]
             
         prev_buffer_name = content[0]
         if not buffer:
-            buffer, position = buffers_dict["pkt_data"] = (buffer_functions["get_pkt_data"](pkt, proto), 0)
             prev_buffer_name = "pkt_data"
+            buffer, position = buffers_dict["pkt_data"] = (_get_sticky_buffer(pkt, proto, prev_buffer_name), 0)
+
 
         start, end, nocase = _process_content_modifiers(content, position, len(buffer))
         temp_buffer_nocase = ""
@@ -91,15 +93,43 @@ def _compare_content(pkt, proto, rule_content):
         buffers_dict[prev_buffer_name] = buffers_dict[prev_buffer_name][0], position
     return True
 
+def _get_sticky_buffer(pkt, proto, buffer_name):
+    if buffer_name == "http_uri":
+        return _normalize_http_text(pkt[HTTP].Path.decode("utf-8"), "http_uri", "http://"+pkt[HTTP].Host.decode("utf-8"))
+    elif buffer_name == "http_raw_uri":
+        return "http://"+pkt[HTTP].Host.decode("utf-8")+pkt[HTTP].Path.decode("utf-8")
+    elif buffer_name == "http_header":
+        return ""
+    elif buffer_name == "http_raw_header":
+        return ""
+    elif buffer_name == "http_client_body":
+        return ""
+    elif buffer_name == "http_raw_body":
+        return ""
+    elif buffer_name == "http_cookie":
+        return _get_http_cookie(pkt[HTTP], True)
+    elif buffer_name == "http_raw_cookie":
+        return _get_http_cookie(pkt[HTTP], False)
+    elif buffer_name == "http_param":
+        return ""
+    elif buffer_name == "http_method":
+        return pkt[HTTPRequest].Method
+    elif buffer_name == "http_stat_code":
+        return pkt[HTTPResponse].Status_Code  
+    elif buffer_name == "http_stat_msg":
+        return pkt[HTTPResponse].Reason_Phrase
+    elif buffer_name == "pkt_data" or buffer_name == "raw_data":
+        return pkt[proto].payload
+    elif buffer_name == "pkt_data":
+        return pkt[proto].payload
 
 
-def get_http_uri(pkt, proto):
-    uri = "http://"+pkt[HTTP].Host.decode("utf-8")
-    path = pkt[HTTP].Path.decode("utf-8")
-    segment = 0 # 0 - path, 1 - query, 2 - fragment
+def _normalize_http_text(raw_http_text, header_name, normalized_start=""):
+    normalized_text = normalized_start
+    uri_segment = 0 # 0 - path, 1 - query, 2 - fragment
     escape_temp = ""
-    escape_hex, normalize_path = False, False
-    for char in path:
+    escape_hex, normalize_path = False, 0
+    for i, char in enumerate(path):
         if char == "%":
             escape_hex = True
             continue
@@ -107,85 +137,43 @@ def get_http_uri(pkt, proto):
         if escape_hex:
             escape_temp+=char
             if len(escape_temp) == 2:
-                uri+=bytes.fromhex(escape_temp).decode('utf-8')
+                normalized_text+=bytes.fromhex(escape_temp).decode('utf-8')
                 escape_temp = ""
                 escape_hex = False
             continue
         
-        if char == "?":
-            segment = 1
-            normalize_path = True
-        elif char == "#":
-            segment = 2
-            normalize_path = True
-        elif char == "\\":
-            char = "/"
+        if header_name == "http_uri":
+            if char == "?":
+                segment = 1
+                normalize_path = 1
+            elif char == "#":
+                segment = 2
+                normalize_path = 1
+            elif char == "\\":
+                char = "/"
 
-        if segment >=1 and char == "+":
-            char = " "
+            if segment >=1 and char == "+":
+                char = " "
 
-        if normalize_path:
-            uri = os.path.normpath(uri)
-            normalize_path = False
+            if normalize_path == 1:
+                normalized_text = os.path.normpath(normalized_text)
+                normalize_path = -1
         
-        uri+=char
-    return uri
+        normalized_text+=char
 
-def get_http_raw_uri(pkt, proto):
-    uri = "http://"+pkt[HTTP].Host.decode("utf-8")
-    path = pkt[HTTP].Path.decode("utf-8")
-    return uri+path
+    if normalize_path != 1:
+        normalized_text = normalized_text = os.path.normpath(normalized_text)
 
-def get_http_header(pkt, proto):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
+    return normalized_text
 
-def get_http_raw_header(pkt, proto):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
+def _get_http_cookie(pkt, normalized):
+    cookie = ""  
+    if HTTPRequest in pkt and pkt[HTTPRequest].Cookie:
+        cookie = pkt[HTTPRequest].Cookie.decode("utf-8")
+    elif HTTPResponse in pkt and pkt[HTTPResponse].Set_Cookie:
+        cookie = pkt[HTTPResponse].Set_Cookie.decode("utf-8")
 
-def get_http_client_body(pkt, proto):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
-
-def get_http_raw_body(pkt, proto):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
-
-def get_http_cookie(pkt, proto):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
-
-def get_http_raw_cookie(pkt, proto):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
-
-def get_http_param(pkt, proto):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
-
-def get_http_method(pkt, proto):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
-
-def get_http_stat_code(pkt, proto):
-    buffer, buffer_nocase = "", ""
-    return buffer, buffer_nocase
-
-def get_http_stat_msg(pkt, proto):
-    buffer, buffer_nocase = "", ""
-    return pkt[HTTP].Reason_Phrase
-
-def get_pkt_data(pkt, proto):
-    return pkt[proto].payload
-
-def get_raw_data(pkt, proto):
-    return pkt[proto].payload
-
-buffer_functions = {"get_http_uri": get_http_uri, "get_http_raw_uri": get_http_raw_uri, "get_http_header": get_http_header, "get_http_raw_header": get_http_raw_header,
-        "get_http_client_body": get_http_client_body, "get_http_raw_body": get_http_raw_body, "get_http_cookie": get_http_cookie, "get_http_raw_cookie": get_http_raw_cookie,
-        "get_http_param": get_http_param, "get_http_method": get_http_method, "get_http_stat_code": get_http_stat_code, "get_http_stat_msg": get_http_stat_msg,
-        "get_pkt_data": get_pkt_data, "get_raw_data": get_raw_data}
+    return _normalize_http_text(cookie, "http_cookie") if normalized else cookie
 
 
 def _adjust_buffer_case(buffer):
