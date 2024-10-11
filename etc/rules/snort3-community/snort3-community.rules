@@ -14,7 +14,8 @@
 #-----------------
 # COMMUNITY RULES
 #-----------------
-alert tcp any any -> any any ( content:"test",offset 10,depth 60; http_uri; content:"login.live.com"; sid:1000000; )
+#  http_uri; content:"login.live.com";
+alert tcp any any -> any any (content:"ppcrlcheck"; "http_uri"; content:"login"; "pkt_data"; content:"login",within; sid:1000000; )
 
 alert tcp $HOME_NET 2589 -> $EXTERNAL_NET any ( msg:"MALWARE-BACKDOOR - Dagger_1.4.0"; flow:to_client,established; content:"2|00 00 00 06 00 00 00|Drives|24 00|",depth 16; metadata:ruleset community; classtype:misc-activity; sid:105; rev:14; )
 alert tcp $EXTERNAL_NET any -> $HOME_NET 7597 ( msg:"MALWARE-BACKDOOR QAZ Worm Client Login access"; flow:to_server,established; content:"qazwsx.hsq"; metadata:ruleset community; reference:mcafee,98775; classtype:misc-activity; sid:108; rev:11; )

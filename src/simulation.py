@@ -66,8 +66,8 @@ def compare_pkt(pkts, rules, suspicious_pkts, ip_pkt_count_list, start):
                 if not compare_payload(pkt, rule):
                     continue
 
-                # suspicious_pkts.append((pkt_id, rule))
-                # break 
+                suspicious_pkts.append((pkt_id, rule))
+                break 
             ip_pkt_count+=1
         pkt_id+=1
     ip_pkt_count_list.append(ip_pkt_count)
