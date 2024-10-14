@@ -24,7 +24,7 @@ def pre_filtering_simulation(rules, n=10000):
     ip_pkt_count_list = Manager().list()
     processes = []
 
-    num_processes = 1#cpu_count() # Use the cout_count as the number of processes
+    num_processes = cpu_count() # Use the cout_count as the number of processes
     share = round(len(pcap)/num_processes)
     # Splits the rules each process processes
     for i in range(num_processes):
@@ -38,7 +38,7 @@ def pre_filtering_simulation(rules, n=10000):
 
     print(len(suspicious_pkts), sum(ip_pkt_count_list), n) # Count IP packets
 
-    # send_pkts_to_NIDS(pkts_to_NIDS)
+    send_pkts_to_NIDS(pcap, suspicious_pkts)
 
 
 # Generates the optimal pre-filtering ruleset using most header fields and part of the payload matches
@@ -54,27 +54,21 @@ def optimal_pre_filtering_rules():
 def compare_pkt(pkts, rules, suspicious_pkts, ip_pkt_count_list, start):
     pkt_id, ip_pkt_count = start, 0
     for pkt in pkts:
-        if IP in pkt and HTTP in pkt:
-            print(len(pkt), len(pkt[HTTP].payload)) 
-            print()  
-            if HTTPResponse in pkt:
-                print(len(pkt[HTTPResponse]), len(pkt[HTTPResponse].payload)) 
-                print(HTTPResponse in pkt[HTTP])
-                pkt.show2() 
-            print("------")
-            # for i, rule in enumerate(rules[0:1]):
-            #     rule_proto = ip_proto[rule.pkt_header["proto"]]
-            #     if pkt[IP].proto != rule_proto and rule_proto != 0:
-            #         continue
+        if IP in pkt:
+            for i, rule in enumerate(rules):
+                rule_proto = ip_proto[rule.pkt_header["proto"]]
+                if pkt[IP].proto != rule_proto and rule_proto != 0:
+                    continue
 
-            #     # # if not compare_header_fields(pkt, rule, rule_proto):
-            #     # #     continue
+                if not compare_header_fields(pkt, rule, rule_proto):
+                    continue
 
-            #     if not compare_payload(pkt, rule):
-            #         continue
+                if not compare_payload(pkt, rule):
+                    continue
 
-            #     suspicious_pkts.append((pkt_id, rule))
-            #     break 
+                print(pkt_id, rule.payload_fields)
+                suspicious_pkts.append((pkt_id, rule))
+                break 
             ip_pkt_count+=1
         pkt_id+=1
     ip_pkt_count_list.append(ip_pkt_count)
@@ -82,4 +76,7 @@ def compare_pkt(pkts, rules, suspicious_pkts, ip_pkt_count_list, start):
 
     
 # Sends the remaining packets to a NIDS using the desired configuration
-#def send_pkts_to_NIDS():
+def send_pkts_to_NIDS(pcap, suspicious_pkts):
+    # get suspicious pacekts
+    # run os command to send packets to Snort and save the output somewhere
+    pass

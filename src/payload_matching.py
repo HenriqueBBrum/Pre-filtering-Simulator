@@ -43,6 +43,9 @@ def _compare_content(pkt, proto, rule_content):
         if "http" in content[0] and HTTP not in pkt:
             return False
 
+        if "http" in content[0] and HTTP in pkt and HTTPRequest not in pkt and HTTPResponse not in pkt:
+            return False
+
         if content[0] in http_response_buffers and not HTTPResponse in pkt:
             return False 
 
@@ -54,12 +57,11 @@ def _compare_content(pkt, proto, rule_content):
                 buffer, position = buffers_dict[content[0]] = (_get_sticky_buffer(pkt, proto, content[0]), 0)
             else:
                 buffer, position = buffers_dict[content[0]]
-            
+
         prev_buffer_name = content[0]
-        if not buffer:
+        if not buffer and not content[0]:
             prev_buffer_name = "pkt_data"
             buffer, position = buffers_dict["pkt_data"] = (_get_sticky_buffer(pkt, proto, prev_buffer_name), 0)
-
 
         start, end, nocase = _process_content_modifiers(content, position, len(buffer))
         temp_buffer_nocase = ""
@@ -70,11 +72,6 @@ def _compare_content(pkt, proto, rule_content):
             temp_buffer = bytes(buffer, 'utf-8')[start:end].hex() if type(buffer) == str else bytes(buffer)[start:end].hex()
 
         str_to_match = _clean_content_and_hexify(content[2], nocase) 
-
-        if position > 0:
-            print(str_to_match)
-            print(len(buffer), len(temp_buffer), start, end, position)
-            print(temp_buffer)
         # Match pos is the number of char (not bytes) from start
         match_pos = temp_buffer.find(str_to_match) if not nocase else temp_buffer_nocase.find(str_to_match)
 
@@ -83,53 +80,62 @@ def _compare_content(pkt, proto, rule_content):
         if (match_pos == -1 and content[1]) or (match_pos >= 0 and not content[1]): 
             return False
 
-        print(str_to_match)
-        print(len(buffer), len(temp_buffer), start, end)
-        print(temp_buffer)
         position = start+int(match_pos/2)+int(len(str_to_match)/2) # Match_pos and str_too_match are in the hex char string, while start is in bytes. That's why they are divided
-        print(position, match_pos/2, len(str_to_match)/2)
-        print("-------")
-        print(buffers_dict)
         buffers_dict[prev_buffer_name] = buffers_dict[prev_buffer_name][0], position
-    return True
+    return match
+
 
 def _get_sticky_buffer(pkt, proto, buffer_name):
-    if buffer_name == "http_uri":
-        return _normalize_http_text(pkt[HTTP].Path.decode("utf-8"), "http_uri", "http://"+pkt[HTTP].Host.decode("utf-8"))
-    elif buffer_name == "http_raw_uri":
-        return "http://"+pkt[HTTP].Host.decode("utf-8")+pkt[HTTP].Path.decode("utf-8")
-    elif buffer_name == "http_header":
-        return ""
-    elif buffer_name == "http_raw_header":
-        return ""
-    elif buffer_name == "http_client_body":
-        return ""
-    elif buffer_name == "http_raw_body":
-        return ""
-    elif buffer_name == "http_cookie":
-        return _get_http_cookie(pkt[HTTP], True)
-    elif buffer_name == "http_raw_cookie":
-        return _get_http_cookie(pkt[HTTP], False)
-    elif buffer_name == "http_param":
-        return ""
-    elif buffer_name == "http_method":
-        return pkt[HTTPRequest].Method
-    elif buffer_name == "http_stat_code":
-        return pkt[HTTPResponse].Status_Code  
-    elif buffer_name == "http_stat_msg":
-        return pkt[HTTPResponse].Reason_Phrase
-    elif buffer_name == "pkt_data" or buffer_name == "raw_data":
-        return pkt[proto].payload
-    elif buffer_name == "pkt_data":
-        return pkt[proto].payload
+    http_type = None
+    if HTTPRequest in pkt:
+        http_type = HTTPRequest
+    elif HTTPResponse in pkt:
+        http_type = HTTPResponse
 
+    match buffer_name:
+        case "http_uri":
+            return _normalize_http_text(buffer_name, pkt[HTTPRequest].Path.decode("utf-8"), "http://"+pkt[HTTPRequest].Host.decode("utf-8"))
+        case "http_raw_uri":
+            return "http://"+pkt[HTTPRequest].Host.decode("utf-8")+pkt[HTTPRequest].Path.decode("utf-8")
 
-def _normalize_http_text(raw_http_text, header_name, normalized_start=""):
+        case "http_header":
+            return _get_http_header(pkt[http_type], True)
+        case "http_raw_header":
+            return _get_http_header(pkt[http_type], False)
+
+        case "http_client_body":
+            return bytes(pkt[http_type].payload)
+        case "http_raw_body":
+            return bytes(pkt[http_type].payload)
+
+        case "http_cookie":
+            return _get_http_cookie(pkt[http_type], True)
+        case "http_raw_cookie":
+            return _get_http_cookie(pkt[http_type], False)
+
+        case "http_param":
+            return pkt[http_type]
+
+        case "http_method":
+            return pkt[HTTPRequest].Method
+
+        case "http_stat_code":
+            return pkt[HTTPResponse].Status_Code 
+
+        case "http_stat_msg":
+            return pkt[HTTPResponse].Reason_Phrase
+
+        case "pkt_data":
+            return pkt[proto].payload
+        case "raw_data":
+            return pkt[proto].payload
+
+def _normalize_http_text(header_name, raw_http_text, normalized_start=""):
     normalized_text = normalized_start
     uri_segment = 0 # 0 - path, 1 - query, 2 - fragment
     escape_temp = ""
     escape_hex, normalize_path = False, 0
-    for i, char in enumerate(path):
+    for i, char in enumerate(raw_http_text):
         if char == "%":
             escape_hex = True
             continue
@@ -144,15 +150,15 @@ def _normalize_http_text(raw_http_text, header_name, normalized_start=""):
         
         if header_name == "http_uri":
             if char == "?":
-                segment = 1
+                uri_segment = 1
                 normalize_path = 1
             elif char == "#":
-                segment = 2
+                uri_segment = 2
                 normalize_path = 1
             elif char == "\\":
                 char = "/"
 
-            if segment >=1 and char == "+":
+            if uri_segment >=1 and char == "+":
                 char = " "
 
             if normalize_path == 1:
@@ -161,19 +167,25 @@ def _normalize_http_text(raw_http_text, header_name, normalized_start=""):
         
         normalized_text+=char
 
-    if normalize_path != 1:
+    if normalize_path != 1 and normalized_text:
         normalized_text = normalized_text = os.path.normpath(normalized_text)
 
     return normalized_text
 
-def _get_http_cookie(pkt, normalized):
-    cookie = ""  
-    if HTTPRequest in pkt and pkt[HTTPRequest].Cookie:
-        cookie = pkt[HTTPRequest].Cookie.decode("utf-8")
-    elif HTTPResponse in pkt and pkt[HTTPResponse].Set_Cookie:
-        cookie = pkt[HTTPResponse].Set_Cookie.decode("utf-8")
+def _get_http_header(http_header, normalized):
+    http_header_copy = http_header
+    http_header_copy.remove_payload()
+    http_header_copy = bytes(http_header_copy).decode('utf-8')
+    return _normalize_http_text("http_header", http_header_copy) if normalized else http_header_copy
 
-    return _normalize_http_text(cookie, "http_cookie") if normalized else cookie
+def _get_http_cookie(http_header, normalized):
+    cookie = ""  
+    if HTTPRequest in http_header and http_header[HTTPRequest].Cookie:
+        cookie = http_header.Cookie.decode("utf-8")
+    elif HTTPResponse in http_header and http_header[HTTPResponse].Set_Cookie:
+        cookie = http_header.Set_Cookie.decode("utf-8")
+
+    return _normalize_http_text("http_cookie", cookie) if normalized else cookie
 
 
 def _adjust_buffer_case(buffer):
@@ -212,7 +224,7 @@ def _process_content_modifiers(content, position, len_current_buffer):
 
     return start, end, nocase
 
-## Turn content to hex string. Ex: "A|4E 20 3B| Ok" - > "414e203b4f6b"
+# Turn content to hex string. Ex: "A|4E 20 3B| Ok" - > "414e203b4f6b"
 def _clean_content_and_hexify(str_to_match, nocase):
     clean_content = ""
     temp_content = ""
