@@ -78,6 +78,12 @@ def adjust_rules(config, rules):
         copied_header['dst_ip'] = _replace_system_variables(copied_header['dst_ip'], config.ip_addresses)
         copied_header['dst_port'] = _replace_system_variables(copied_header['dst_port'],  config.ports)
 
+        copied_header["src_port"] = _modify_negated_ports(copied_header["src_port"])
+        copied_header["dst_port"] = _modify_negated_ports(copied_header["dst_port"])
+
+        copied_header['src_port'] = _group_ports_into_ranges(copied_header['src_port'])
+        copied_header['dst_port'] = _group_ports_into_ranges(copied_header['dst_port'])
+
         rule.header = copied_header
         rule.id = count
         
@@ -130,7 +136,7 @@ def _modify_negated_ports(ports):
 
     return new_port_list
 
-# Groups ports into ranges. Assumes no intersecting range value and duplicates. Sill simple
+# Groups ports into ranges. Assumes no intersecting range value and duplicates. Still simple
 def _group_ports_into_ranges(ports):
     count = 0
     initial_port = -1
@@ -138,10 +144,11 @@ def _group_ports_into_ranges(ports):
     if len(ports) == 1:
         return ports
 
+    final_port_structure = ({}, [])
     sorted_ports = sorted(ports, key=lambda x: (int(x[0].start) if isinstance(x[0], range) else int(x[0])))
     for index, item in enumerate(sorted_ports):
         if isinstance(item[0], range):
-            grouped_ports.append(item)
+            final_port_structure[1].append(item)
             continue
 
         if count == 0:

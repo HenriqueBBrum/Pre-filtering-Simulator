@@ -14,15 +14,15 @@ http_response_buffers = {"http_stat_code", "http_stat_msg"}
 # A "False" return value means the packet does not match the rule and is not suspicious acording to the rule
 def compare_payload(pkt, rule):
     len_pkt_payload = len(pkt[rule.pkt_header["proto"].upper()].payload)
-    # if "dsize" in rule.payload_fields and not _compare_fields(len_pkt_payload, rule.payload_fields["dsize"][0][1][0]):
-    #     return False
+    if "dsize" in rule.payload_fields and not _compare_fields(len_pkt_payload, rule.payload_fields["dsize"][0][1][0]):
+        return False
 
     # Packet has no payload but the rule has payload fields
     if len_pkt_payload == 0 and ("content" in rule.payload_fields or "pcre" in rule.payload_fields):
         return False
 
     # Only compare packets that have payload with rules that have fields for payload comparison
-    if "content" in rule.payload_fields and not _compare_content(pkt, rule.pkt_header["proto"].upper(),  rule.payload_fields["content"]):
+    if "content" in rule.payload_fields and not _compare_content(pkt, rule.pkt_header["proto"].upper(), rule.payload_fields["content"]):
         return False
     
     # if "pcre" in rule.payload_fields and not _compare_pcre():
@@ -82,7 +82,7 @@ def _compare_content(pkt, proto, rule_content):
 
         position = start+int(match_pos/2)+int(len(str_to_match)/2) # Match_pos and str_too_match are in the hex char string, while start is in bytes. That's why they are divided
         buffers_dict[prev_buffer_name] = buffers_dict[prev_buffer_name][0], position
-    return match
+    return True
 
 
 def _get_sticky_buffer(pkt, proto, buffer_name):

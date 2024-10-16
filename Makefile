@@ -12,12 +12,6 @@ ifndef EVAL_RULES
 EVAL_RULES=$(SNORT_COMMUNITY_RULES)
 endif
 
-# Generates the strings used to name the output files of the execution time evaluation
-ifneq ($(filter simulation.time_eval,$(MAKECMDGOALS)),)
-TIME_PROFILE_NAME=$(basename $(notdir $(EVAL_RULES)))_time_
-NUM_OF_FILES=$(shell ls -dq $(EXPERIMENTS_DIR)/$(TIME_PROFILE_NAME)* | wc -l)
-endif
-
 # Generates the strings used to name the output files of the memory usage evaluation
 ifneq ($(filter simulation.memory_eval,$(MAKECMDGOALS)),)
 MEM_PROFILE_NAME=$(basename $(notdir $(EVAL_RULES)))_mem_
@@ -28,6 +22,7 @@ endif
 build:
 	mkdir -p ${EXPERIMENTS_DIR} 
 
+#	python3 -m cProfile -o temp.dat -s time src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} ${COMPILER_GOAL}
 simulation.community: 
 	python3 src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} ${COMPILER_GOAL}
 
