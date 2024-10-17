@@ -7,6 +7,7 @@
 from os import listdir
 from os.path import isfile, join
 import copy
+import radix
 
 from .parser import Parser
 from .rule_related_classes import *
@@ -31,13 +32,13 @@ def get_rules(rules_path, ignored_rule_files):
 
     original_rules, modified_rules = [], []
     for rule_file in files:
-        parsed_rules, adjusted_rules = _parse_rules(rule_file)
+        parsed_rules, temp_modified_rules = __parse_rules(rule_file)
         original_rules.extend(parsed_rules)
-        modified_rules.extend(adjusted_rules)
+        modified_rules.extend(temp_modified_rules)
     return original_rules, modified_rules
 
 # Parse each rule from a rule file
-def _parse_rules(rule_file):
+def __parse_rules(rule_file):
     parsed_rules, modified_rules = [], []
     with open(rule_file, 'r') as file:
         lines = file.readlines()
@@ -63,38 +64,40 @@ def _parse_rules(rule_file):
                 modified_rules.append(swap_dir_rule)
             else:
                 modified_rules.append(copied_rule)
-
     return parsed_rules, modified_rules
 
-# Replace system variables, modify negated ports and group ports
+# Replace system variables
 def adjust_rules(config, rules):
     modified_rules = []
     count = 0
     for rule in rules:
+        if len(rule.header) <= 2:
+            modified_rules.append(rule)
+            continue
+
         copied_header = copy.deepcopy(rule.header)
        
-        copied_header['src_ip'] = _replace_system_variables(copied_header['src_ip'],  config.ip_addresses)
-        copied_header['src_port'] = _replace_system_variables(copied_header['src_port'],  config.ports)
-        copied_header['dst_ip'] = _replace_system_variables(copied_header['dst_ip'], config.ip_addresses)
-        copied_header['dst_port'] = _replace_system_variables(copied_header['dst_port'],  config.ports)
+        copied_header['src_ip'] = __replace_system_variables(copied_header['src_ip'],  config.ip_addresses)
+        copied_header['src_port'] = __replace_system_variables(copied_header['src_port'],  config.ports)
+        copied_header['dst_ip'] = __replace_system_variables(copied_header['dst_ip'], config.ip_addresses)
+        copied_header['dst_port'] = __replace_system_variables(copied_header['dst_port'],  config.ports)
 
-        copied_header["src_port"] = _modify_negated_ports(copied_header["src_port"])
-        copied_header["dst_port"] = _modify_negated_ports(copied_header["dst_port"])
 
-        copied_header['src_port'] = _group_ports_into_ranges(copied_header['src_port'])
-        copied_header['dst_port'] = _group_ports_into_ranges(copied_header['dst_port'])
+        copied_header['src_ip'] = __convert_ip_list_to_radix_tree(copied_header['src_ip'])
+        copied_header['dst_ip'] = __convert_ip_list_to_radix_tree(copied_header['dst_ip'])
+
+        copied_header['src_port'] = __turn_port_list_into_dict(copied_header['src_port'])
+        copied_header['dst_port'] = __turn_port_list_into_dict(copied_header['dst_port'])
 
         rule.header = copied_header
         rule.id = count
         
         modified_rules.append(rule)
-
         count+=1
-
     return modified_rules
 
-# Substitute system variables for the real values in the config file and group ports into range
-def _replace_system_variables(header_field, config_variables):
+# Substitute system variables for the real values in the config file
+def __replace_system_variables(header_field, config_variables):
     var_sub_results = []
     for value, bool_ in header_field:
         if isinstance(value, str) and "$" in value :
@@ -110,99 +113,68 @@ def _replace_system_variables(header_field, config_variables):
             var_sub_results.append((value, bool_))
 
     return var_sub_results
-           
-# Checks if an IP list has a negated entry
-def _IP_negated(ip_list):
-    for ip in ip_list:
-        if ip[1] == False:
-            print("WARNING -- Negated IPs are not supported ", ip)
-            return True
 
-    return False
 
-# Exchange the negated ports by their positive counterparts e.g., !10 == (range(0, 10), range(11, 65535)) 
-def _modify_negated_ports(ports):
-    new_port_list = []
+def __convert_ip_list_to_radix_tree(ips):
+    must_match = None
+    rtree = radix.Radix()
+    for ip in ips:
+        rnode = rtree.add(ip[0])
+        rnode.data["match"] = ip[1]
+
+        must_match = ip[1] if must_match == None else must_match | ip[1]
+
+    return (rtree, must_match)
+
+# Individual ports are saved in a dict for quick comparsions, ranges in a list for linear search, and a bool to signal if all values are accetable
+def __turn_port_list_into_dict(ports):
+    must_match = None
+    individual_ports = {}
+    port_ranges = []
     for port in ports:
-        if not port[1]:
-            if isinstance(port[0], range):
-                new_port_list.append((range(MIN_PORT, port[0].start), True))
-                new_port_list.append((range(port[0].stop, MAX_PORT+1), True))
-            else:
-                new_port_list.append((range(MIN_PORT, int(port[0])), True))
-                new_port_list.append((range(int(port[0])+1, MAX_PORT+1), True))
+        if isinstance(port[0], range):
+            port_ranges.append(port)
         else:
-            new_port_list.append(port)
+            individual_ports[port[0]] = port[1]
 
-    return new_port_list
+        must_match = port[1] if must_match == None else must_match | port[1]
 
-# Groups ports into ranges. Assumes no intersecting range value and duplicates. Still simple
-def _group_ports_into_ranges(ports):
-    count = 0
-    initial_port = -1
-    grouped_ports = []
-    if len(ports) == 1:
-        return ports
-
-    final_port_structure = ({}, [])
-    sorted_ports = sorted(ports, key=lambda x: (int(x[0].start) if isinstance(x[0], range) else int(x[0])))
-    for index, item in enumerate(sorted_ports):
-        if isinstance(item[0], range):
-            final_port_structure[1].append(item)
-            continue
-
-        if count == 0:
-            initial_port = item[0]
-            bool_ = item[1]
-
-        try:
-            next_tuple= sorted_ports[index+1] 
-            if isinstance(next_tuple[0], range):
-                next_tuple= (-1, False)
-        except Exception as e:
-            next_tuple= (-1, False)
-
-        if int(item[0]) == int(next_tuple[0]) - 1 and item[1]==next_tuple[1]:
-            count+=1
-        else:
-            if count == 0:
-                grouped_ports.append((initial_port, bool_))
-                continue
-            
-            grouped_ports.append((range(int(initial_port), int(initial_port)+count), bool_))
-            count = 0
-            initial_port = -1
-    return grouped_ports
+    return (individual_ports,port_ranges,must_match)
 
 
-# Define the fields that are part of the packet header and the one for the payload
+
+# Define the fields that are part of the packet header and the ones for the payload
 def group_header_and_payload_fields(rules):
-    non_payload_detect = Dicts.non_payload_options()
+    non_payload_options = Dicts.non_payload_options()
+    payload_options = Dicts.payload_options()
+
+    rule_header_fields = ["proto", "src_ip", "src_port", "dst_ip", "dst_port"]
+    unsupported_non_payload_fields = {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}
     for rule in rules:
-        for key in ["proto", "src_ip", "src_port", "dst_ip", "dst_port"]:
-            rule.pkt_header[key] = rule.header[key]
+        for key in rule_header_fields:
+            if key in rule.header:
+                rule.pkt_header[key] = rule.header[key]
 
         for option in rule.options: 
-            if option in non_payload_detect and option not in {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}:
+            if option in non_payload_options and option not in unsupported_non_payload_fields:
                 rule.pkt_header[option] = rule.options[option][1]
-            else:
+            elif option in payload_options:
                 rule.payload_fields[option] = rule.options[option]
 
-# Deduplicate signature rules with same match. Save each duplicate rule's priority and sid/rev 
+# Deduplicate signature rules with the same fields.
 def dedup_rules(config, rules):
     deduped_rules = {}
     for rule in rules:
-        rule_id = rule.rule_id()
-       
+        rule_id = rule.rule_to_string()
+      
         if rule_id not in deduped_rules:
-            deduped_rules[rule_id] = AggregatedRule(header=rule.header, flags=_get_simple_option_value("flags", rule.options, []), \
-                                                            priority_list=[], sid_rev_list=[])
+            deduped_rules[rule_id] = AggregatedRule(rule.pkt_header, rule.payload_fields, priority_list=[], sid_rev_list=[])
 
-        sid = _get_simple_option_value("sid", rule.options)
-        rev = _get_simple_option_value("rev", rule.options)
+        sid = __get_simple_option_value("sid", rule.options)
+        rev = __get_simple_option_value("rev", rule.options)
         sid_rev_string = f'{sid}/{rev}'
 
-        classtype = _get_simple_option_value("classtype", rule.options)
+        classtype = __get_simple_option_value("classtype", rule.options)
         priority = config.classification_priority.get(classtype)
         
         deduped_rules[rule_id].priority_list.append(priority)
@@ -211,34 +183,12 @@ def dedup_rules(config, rules):
     return list(deduped_rules.values())
 
 # Returns value of key in rule options. Option value format: (option_index, [option_index_values])
-def _get_simple_option_value(key, options, default="ERROR"):
+def __get_simple_option_value(key, options, position=0, default=""):
     try:
-        return options[key][1][0]
+        return options[key][1][position]
     except Exception as e:
         print("WARNING -- Error when searching for key {} in rule options \n Returning: {}".format(key, default))
         return default
-
-
-# Remove udp and tcp rules that have src port and dst port equal to any
-def remove_port_wildcard_rules(rules):
-    final_rules = []
-    for rule in rules:
-        # Assume wildcards IP and ports contain only one object, i.e. the wildcard IP and port values
-        # Remove rules that are udp or tcp with empty flags that have wildcard src and dst port and with one wildcard IP
-        if(rule.header["proto"] == "udp" or (rule.header["proto"] == "tcp" and len(rule.flags) == 0)  
-            and (len(rule.header["src_port"]) == 1 and len(rule.header["dst_port"]) == 1 
-            and rule.header["src_port"][0] == (range(0, 65536), True) and rule.header["dst_port"][0] == (range(0, 65536), True))
-            and ((len(rule.header["src_ip"]) == 1 and rule.header["src_ip"][0] == ('0.0.0.0/0', True))
-            or  (len(rule.header["dst_ip"]) == 1 and rule.header["dst_ip"][0] == ('0.0.0.0/0', True)))):
-            print("-------")
-            print(rule.header)
-            print(rule.flags)
-            print("-------")
-            continue
-        
-        final_rules.append(rule)
-    return final_rules
-
 
 
 

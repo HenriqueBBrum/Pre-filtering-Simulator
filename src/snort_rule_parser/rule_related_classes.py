@@ -18,16 +18,16 @@ class Rule(object):
         self.data = {"header": self.header, "options": self.options}
         self.all = self.data
 
-    def rule_id(self):
-        id = ""
-        for key, value in self.header.items():
-            id+=str(value)
+    def rule_to_string(self):
+        string = ""
+        for key, value in self.pkt_header.items():
+            #if "ip" in key:
+            string+=key+":"+str(value)+";"
 
-        flags = self.options.get("flags", [])
-        if flags:
-            flags = flags[1][0]
+        for key, value in self.payload_fields.items():
+            string+=key+":"+str(value)
 
-        return id+str(flags)
+        return string
     
 
     def __getitem__(self, key):
@@ -40,9 +40,9 @@ class Rule(object):
 
 # Class that aggreggates multiple rule with the same header values and tcp flag options
 class AggregatedRule(object):
-    def __init__(self, header={}, flags=str(), priority_list=[], sid_rev_list=[]):
-        self.header = header
-        self.flags = flags
+    def __init__(self, pkt_header, payload_fields, priority_list=[], sid_rev_list=[]):
+        self.pkt_header = pkt_header
+        self.payload_fields = payload_fields
 
         self.priority_list = priority_list
         self.sid_rev_list = sid_rev_list

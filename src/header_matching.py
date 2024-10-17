@@ -1,6 +1,7 @@
-from scapy.all import IP,TCP,UDP
+from scapy.all import IP,TCP,UDP,ICMP
 import ipaddress
 import re
+import radix
 
 
 possible_ipopts = {"RR": "rr", "EOL":"eol", "NOP":"nop", "Timestamp": "ts", "Security": "sec", "Extended Security": "esec", 
@@ -25,8 +26,7 @@ tcp_flags_dict = {
 }
 
 
-
-# Compares the header fields of packet against the ones for a rule
+# Compares the header fields of packet against the ones for a rule # !!!!!!!!!!!!!!!!Parse for the service key
 def compare_header_fields(pkt, rule, rule_proto): 
     if not _compare_IP(pkt[IP].src, rule.pkt_header["src_ip"]):
         return False
@@ -34,7 +34,7 @@ def compare_header_fields(pkt, rule, rule_proto):
     if not _compare_IP(pkt[IP].dst, rule.pkt_header["dst_ip"]):
         return False
 
-    if (rule_proto == 6 or rule_proto == 17) and (TCP in pkt or UDP in pkt):
+    if (rule_proto == "tcp" or rule_proto == "udp") and (TCP in pkt or UDP in pkt):
         if not _compare_ports(pkt[rule.pkt_header["proto"].upper()].sport, rule.pkt_header["src_port"]):
             return False
 
@@ -44,20 +44,20 @@ def compare_header_fields(pkt, rule, rule_proto):
     if not _matched_IP_fields(pkt, rule.pkt_header):
         return False
 
-    if rule_proto == 6 and not _matched_TCP_fields(pkt, rule.pkt_header):
+    if rule_proto == "tcp" and TCP in pkt and not _matched_TCP_fields(pkt, rule.pkt_header):
         return False
     
-    if rule_proto == 1 and not _matched_ICMP_fields(pkt, rule.pkt_header):
+    if rule_proto == "icmp" and ICMP in pkt and not _matched_ICMP_fields(pkt, rule.pkt_header):
         return False
 
     return True
 
 # Compares a packet's IP fields against the IP fields of a rule 
 def _matched_IP_fields(pkt, rule_pkt_header):
-    if "ttl" in rule_pkt_header and not _compare_fields(pkt[IP].ttl, rule_pkt_header["ttl"][0]):
+    if "ttl" in rule_pkt_header and not compare_fields(pkt[IP].ttl, rule_pkt_header["ttl"][0]):
         return False
 
-    if "id" in rule_pkt_header and not _compare_fields(pkt[IP].id, rule_pkt_header["id"][0]):
+    if "id" in rule_pkt_header and not compare_fields(pkt[IP].id, rule_pkt_header["id"][0]):
         return False
     
     if "ipopts" in rule_pkt_header and not _compare_ipopts(pkt[IP].options, rule_pkt_header["ipopts"][0]):
@@ -76,71 +76,66 @@ def _matched_TCP_fields(pkt, rule_pkt_header):
     if "flags" in rule_pkt_header and not _compare_tcp_flags(pkt[TCP].flags, rule_pkt_header["flags"]):
         return False
 
-    if "seq" in rule_pkt_header and not _compare_fields(pkt[TCP].seq, rule_pkt_header["seq"][0]):
+    if "seq" in rule_pkt_header and not compare_fields(pkt[TCP].seq, rule_pkt_header["seq"][0]):
         return False
 
-    if "ack" in rule_pkt_header and not _compare_fields(pkt[TCP].ack, rule_pkt_header["ack"][0]):
+    if "ack" in rule_pkt_header and not compare_fields(pkt[TCP].ack, rule_pkt_header["ack"][0]):
         return False
 
-    if "window" in rule_pkt_header and not _compare_fields(pkt[TCP].window, rule_pkt_header["window"][0]):
+    if "window" in rule_pkt_header and not compare_fields(pkt[TCP].window, rule_pkt_header["window"][0]):
         return False
 
     return True
 
 # Compares a packet's ICMP fields against the ICMP fields of a rule 
 def _matched_ICMP_fields(pkt, rule_pkt_header):
-    if "itype" in rule_pkt_header and not _compare_fields(pkt[ICMP].type, rule_pkt_header["itype"][0]):
+    if "itype" in rule_pkt_header and not compare_fields(pkt[ICMP].type, rule_pkt_header["itype"][0]):
         return False
 
-    if "icode" in rule_pkt_header and not _compare_fields(pkt[ICMP].code, rule_pkt_header["icode"][0]):
+    if "icode" in rule_pkt_header and not compare_fields(pkt[ICMP].code, rule_pkt_header["icode"][0]):
         return False
 
-    if "icmp_id" in rule_pkt_header and not _compare_fields(pkt[ICMP].id, rule_pkt_header["icmp_id"][0]):
+    if "icmp_id" in rule_pkt_header and not compare_fields(pkt[ICMP].id, rule_pkt_header["icmp_id"][0]):
         return False
 
-    if "icmp_seq" in rule_pkt_header and not _compare_fields(pkt[ICMP].seq, rule_pkt_header["icmp_seq"][0]):
+    if "icmp_seq" in rule_pkt_header and not compare_fields(pkt[ICMP].seq, rule_pkt_header["icmp_seq"][0]):
         return False
-
     return True
+
 
 # Compares a packet's IP(s) against the IP(s) of a rule
 def _compare_IP(pkt_ip, rule_ips):
-    valid_ip = False
-    for ip in rule_ips:
-        if ip[1] and ipaddress.ip_address(pkt_ip) in ipaddress.ip_network(ip[0]):
-            valid_ip = True
+    best_match = rule_ips[0].search_best(pkt_ip)
+    if best_match:
+        return best_match.data["match"]
 
-        if not ip[1] and ipaddress.ip_address(pkt_ip) in ipaddress.ip_network(ip[0]):
-            valid_ip = False
-            break
-
-        if not ip[1] and ipaddress.ip_address(pkt_ip) not in ipaddress.ip_network(ip[0]):
-            valid_ip = True
-    return valid_ip
+    return not rule_ips[1]
 
 # Compares a packet's ports(s) against the ports(s) of a rule
 def _compare_ports(pkt_port, rule_ports):
     valid_port = False
-    for port in rule_ports:
-        if port[1] and type(port[0]) != range and pkt_port == port[0]:
+    if pkt_port in rule_ports[0]:
+        if rule_ports[0][pkt_port]:
+            return True
+        else:
+            return False
+
+    for port_range in rule_ports[1]:
+        if port_range[1] and pkt_port in port_range[0]:
             valid_port = True
-            break
-        elif not port[1] and type(port[0]) != range and pkt_port != port[0]:
-            valid_port = True
-        elif not port[1] and type(port[0]) != range and pkt_port == port[0]:
-            valid_port = False
-            break
-        elif port[1] and type(port[0]) == range and pkt_port in port[0]:
-            valid_port = True
-        elif not port[1] and type(port[0]) == range and pkt_port in port[0]:
-            valid_port = False
-            break
-        elif not port[1] and type(port[0]) == range and pkt_port not in port[0]:
-            valid_port = True
-    return valid_port
+        elif not port_range[1] and pkt_port in port_range[0]:
+            return False
+        
+    if valid_port:
+        return True
+    
+    # If the pkt_port didn't match any port entry in the rule, there are two options: 
+    # If the rule says to match any port with the exception of the port defined (i.e. pkt_port=15, rule_port=[!15]), the pkt_port is valid
+    # Else, the pkt_port should have matched a port to match this rule but it did not
+    return not rule_ports[2]
 
 # Compares a packet's fields(s) against the fields(s) of a rule using the follwoing operators: >,<,=,!,<=,>=,<>,<=>
-def _compare_fields(pkt_data, rule_data):
+def compare_fields(pkt_data, rule_data):
     number = re.findall("[\d.]+", rule_data)
     comparator = re.sub("[\d.]", "", rule_data)
 

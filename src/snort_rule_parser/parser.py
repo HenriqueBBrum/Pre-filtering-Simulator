@@ -56,12 +56,7 @@ class Parser(object):
             raise ValueError("Header is missing, or unparsable")
         
         header = list(filter(None, header))
-        size = len(header)
-        if size == 2:
-            print("WARNING -- The new Snort 3 rule format without IPs and Port is not supported by this compiler as of now")
-            return {}, False
-
-        if not size == 7 and not size == 1:
+        if not len(header) == 7 and not len(header) == 2:
             msg = "Snort rule header is malformed %s" % header
             raise ValueError(msg)
         
@@ -84,6 +79,14 @@ class Parser(object):
         
         header_dict["action"] = self.__action(header[0])
         header_dict["proto"] = self.__proto(header[1])
+        if len(header) == 2:
+            header_dict["src_ip"] = self.__ip("any")
+            header_dict["src_port"] = self.__port("any")
+            header_dict["direction"] = self.__direction("<>")
+            header_dict["dst_ip"] = self.__ip("any")
+            header_dict["dst_port"] = self.__port("any")
+            return header_dict
+
         header_dict["src_ip"] = self.__ip(header[2])
         header_dict["src_port"] = self.__port(header[3])
         header_dict["direction"] = self.__direction(header[4])
@@ -113,7 +116,7 @@ class Parser(object):
             msg = "Invalid action specified %s" % action
             raise ValueError(msg)
 
-    # Validates protocols
+    # Validates protocols/services that are used by the Snort 3 Community and Registered rulesets
     @staticmethod
     def __proto(proto: str) -> str:
         protos = {
@@ -121,7 +124,11 @@ class Parser(object):
             "udp",
             "icmp",
             "ip", 
-            "http"
+            "http",
+            "file",
+            "smtp",
+            "ssh",
+            "ssl"
         }
 
         if proto.lower() in protos:
@@ -147,8 +154,7 @@ class Parser(object):
                 parsed_ips.append(self.__parse_ip(ip, True))
                 
             if not self.__validate_ip(parsed_ips):
-                raise ValueError("Unvalid ip or variable: %s" % ip)
-            
+                raise ValueError("Unvalid ip or variable: %s" % ip)        
         return parsed_ips   
 
     # Removes all sub-lists and parses the individual elements
@@ -192,12 +198,14 @@ class Parser(object):
     # Validate if the IP is either an OS variable (e.g. $HOME_NET) or a valid IPv4 or IPv6 address
     def __validate_ip(self, ips):
         for ip, bool_ in ips:
-            if isinstance(ip, str):
+            if ip[0] != "$":
+                try:
+                    ipaddress.ip_network(ip, False)
+                except:
+                    return False
+            else:
                 if not self.dicts.ip_variables(ip):
-                    if "/" in ip:
-                        ipaddress.ip_network(ip, False)
-                    else:
-                        ipaddress.ip_address(ip)
+                    return False 
         return True
     
     # Parses one port or a list of ports. 
@@ -259,7 +267,6 @@ class Parser(object):
                
         return True
               
-
     # Validates the direction
     def __direction(self, direction):
         directions = {"->": "unidirectional",
@@ -271,7 +278,6 @@ class Parser(object):
             msg = "Invalid direction variable %s" % direction
             raise ValueError(msg)
         
-
     ### OPTIONS PARSING FUNCTIONS ###
     # Parses the rule body or options, validates it and returns a dictionary
     def __parse_options(self, rule):
@@ -285,7 +291,7 @@ class Parser(object):
                 if ':' in option_string:
                     key, value = option_string.split(":", 1)
 
-                if self.dicts.buffers(key):
+                if self.dicts.sticky_buffers(key):
                     current_buffer = key
                           
                 if key == "content":
@@ -300,7 +306,7 @@ class Parser(object):
                 elif key!="pcre":
                     value = value.split(",")
 
-                if self.dicts.payload_detection(key): 
+                if self.dicts.payload_options(key): 
                     if key in options_dict:
                         options_dict[key].append((index, value))
                     else:
@@ -337,7 +343,7 @@ class Parser(object):
     # Verifies if the option key is valid or if the classtype option has a valid value
     def __validate_options(self, options):
         for key, data in options.items():
-            if self.dicts.payload_detection(key):
+            if self.dicts.payload_options(key):
                 for index, value in data:                
                     valid_option = self.dicts.verify_option(key)
                     if not valid_option[1]:

@@ -3,8 +3,10 @@ import binascii
 import urllib
 from scapy.layers.http import * 
 
+from header_matching import compare_fields
 
-unsupported_buffers = {"file_data", "json_data", "vba_data", "base64_data", "http_body", "http_raw_body"} 
+
+unsupported_buffers = {"file_data", "json_data", "vba_data", "base64_data"} 
 # Scapy seesm to decompress and process chunks for HTTP so "http_body", "http_raw_body" "file_data" (for http) seem plausible
 
 http_request_buffers = {"http_uri", "http_raw_uri", "http_method"}
@@ -12,9 +14,13 @@ http_response_buffers = {"http_stat_code", "http_stat_msg"}
 
 # Compares a rules payload fields against a packet's payload. 
 # A "False" return value means the packet does not match the rule and is not suspicious acording to the rule
-def compare_payload(pkt, rule):
-    len_pkt_payload = len(pkt[rule.pkt_header["proto"].upper()].payload)
-    if "dsize" in rule.payload_fields and not _compare_fields(len_pkt_payload, rule.payload_fields["dsize"][0][1][0]):
+def compare_payload(pkt, rule, rule_proto):
+    try:
+        len_pkt_payload = len(pkt[rule_proto.upper()].payload)
+    except:
+        len_pkt_payload = len(pkt[Raw])
+
+    if "dsize" in rule.payload_fields and not compare_fields(len_pkt_payload, rule.payload_fields["dsize"][0][1][0]):
         return False
 
     # Packet has no payload but the rule has payload fields
@@ -22,7 +28,7 @@ def compare_payload(pkt, rule):
         return False
 
     # Only compare packets that have payload with rules that have fields for payload comparison
-    if "content" in rule.payload_fields and not _compare_content(pkt, rule.pkt_header["proto"].upper(), rule.payload_fields["content"]):
+    if "content" in rule.payload_fields and not _compare_content(pkt,rule_proto.upper(), rule.payload_fields["content"]):
         return False
     
     # if "pcre" in rule.payload_fields and not _compare_pcre():
@@ -58,7 +64,7 @@ def _compare_content(pkt, proto, rule_content):
             else:
                 buffer, position = buffers_dict[content[0]]
 
-        prev_buffer_name = content[0]
+        prev_buffer_name = content[0] if content[0] else prev_buffer_name
         if not buffer and not content[0]:
             prev_buffer_name = "pkt_data"
             buffer, position = buffers_dict["pkt_data"] = (_get_sticky_buffer(pkt, proto, prev_buffer_name), 0)
@@ -207,7 +213,11 @@ def _process_content_modifiers(content, position, len_current_buffer):
             modifier_split = modifier.split(" ")
             modifier_name = modifier_split[0]
             if len(modifier_split)>1:
-                num = int(modifier_split[1]) # !!!!! Check if modifier is a variable
+                try:
+                    num = int(modifier_split[1]) # !!!!! Check if modifier is a variable
+                except:
+                    continue
+
                 if modifier_name == "offset":
                     start = num 
                 elif modifier_name == "depth":

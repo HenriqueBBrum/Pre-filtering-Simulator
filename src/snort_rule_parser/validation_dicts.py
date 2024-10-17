@@ -5,31 +5,36 @@ from typing import Any
 class Dicts():
     @staticmethod
     def ip_variables(ip_variable: str = None):
-        ip_variables_set= {
-            "$EXTERNAL_NET",
-            "$HTTP_SERVERS",
-            "$INTERNAL_NET",
-            "$SQL_SERVERS",
-            "$SMTP_SERVERS",
-            "$DNS_SERVERS",
-            "$TELNET_SERVERS",
-            "$AIM_SERVERS",
-            "$SIP_SERVERS",
-            "$HOME_NET",
-            "HOME_NET",
-            "any"
-        }
-
+        ip_variables_set= { "any",
+                            "$HOME_NET",
+                            "$EXTERNAL_NET",
+                            "$DNS_SERVERS",
+                            "$SMTP_SERVERS",
+                            "$HTTP_SERVERS",
+                            "$SQL_SERVERS",
+                            "$TELNET_SERVERS",
+                            "$SSH_SERVERS",
+                            "$FTP_SERVERS",
+                            "$SIP_SERVERS",
+                            "$AIM_SERVERS",            
+                        }
         if ip_variable in ip_variables_set:
             return True
         return False
          
     @staticmethod
     def port_variables(port_variable: str = None):
-        port_variables_set= {
-           "any", 
-           "$HTTP_PORTS"
-        }
+        port_variables_set= {   "any", 
+                                "$HTTP_PORTS",
+                                "$SHELLCODE_PORTS",
+                                "$MAIL_PORTS",
+                                "$ORACLE_PORTS",
+                                "$SSH_PORTS",
+                                "$FTP_PORTS",
+                                "$SIP_PORTS",
+                                "$FILE_DATA_PORTS",
+                                "$GTP_PORTS"
+                            }
 
         if port_variable in port_variables_set:
             return True
@@ -37,47 +42,46 @@ class Dicts():
 
     @staticmethod
     def classtypes(cltype: str = None):
-        classtypes = {
-                "attempted-admin": "Attempted Administrator Privilege Gain",
-                "attempted-dos": "Attempted Denial of Service",
-                "attempted-recon": "Attempted Information Leak",
-                "attempted-user": "Attempted User Privilege Gain",
-                "bad-unknown": "Potentially Bad Traffic",
-                "client-side-exploit": "Known client side exploit attempt",
-                "default-login-attempt": "Attempt to Login By a Default Username and Password",
-                "denial-of-service": "Detection of a Denial of Service Attack",
-                "file-format": "Known malicious file or file based exploit",
-                "icmp-event": "Generic ICMP Event",
-                "inappropriate-content": "Inappropriate content was detected",
-                "malware-cnc": "Known malware command and control traffic",
-                "misc-activity": "Misc Activity",
-                "misc-attack": "Misc Attack",
-                "network-scan": "Detection of a Network Scan",
-                "non-standard-protocol": "Detection of a Non-Standard Protocol or Event",
-                "not-suspicious": "Not Suspicious Traffic",
-                "policy-violation": "Potential Corporate Policy Violation",
-                "protocol-command-decode": "Generic Protocol Command Decode",
-                "rpc-portmap-decode": " Decode of an RPC Query",
-                "sdf": "Sensitive Data",
-                "shellcode-detect": "Executable Code was Detected",
-                "string-detect": "A Suspicious String was Detected",
-                "successful-admin": "Successful Administrator Privilege Gain",
-                "successful-dos": "Denial of Service",
-                "successful-recon-largescale": "Large Scale Information Leak",
-                "successful-recon-limited": "Information Leak",
-                "successful-user": "Successful User Privilege Gain",
-                "suspicious-filename-detect": "A Suspicious Filename was Detected",
-                "suspicious-login": "An Attempted Login Using a Suspicious Username was Detected",
-                "system-call-detect": "A System Call was Detected",
-                "tcp-connection": "A TCP Connection was Detected",
-                "trojan-activity": "A Network Trojan was Detected",
-                "unknown": "Unknown Traffic",
-                "unsuccessful-user": "Unsuccessful User Privilege Gain",
-                "unusual-client-port-connection": "A Client was Using an Unusual Port",
-                "web-application-activity": "Access to a Potentially Vulnerable Web Application",
-                "web-application-attack": "Web Application Attack",
-                "nonstd-tcp": "Detection of a Non-Standard TCP Protocol"
-                }
+        classtypes = {  "attempted-admin": "Attempted Administrator Privilege Gain",
+                        "attempted-dos": "Attempted Denial of Service",
+                        "attempted-recon": "Attempted Information Leak",
+                        "attempted-user": "Attempted User Privilege Gain",
+                        "bad-unknown": "Potentially Bad Traffic",
+                        "client-side-exploit": "Known client side exploit attempt",
+                        "default-login-attempt": "Attempt to Login By a Default Username and Password",
+                        "denial-of-service": "Detection of a Denial of Service Attack",
+                        "file-format": "Known malicious file or file based exploit",
+                        "icmp-event": "Generic ICMP Event",
+                        "inappropriate-content": "Inappropriate content was detected",
+                        "malware-cnc": "Known malware command and control traffic",
+                        "misc-activity": "Misc Activity",
+                        "misc-attack": "Misc Attack",
+                        "network-scan": "Detection of a Network Scan",
+                        "non-standard-protocol": "Detection of a Non-Standard Protocol or Event",
+                        "not-suspicious": "Not Suspicious Traffic",
+                        "policy-violation": "Potential Corporate Policy Violation",
+                        "protocol-command-decode": "Generic Protocol Command Decode",
+                        "rpc-portmap-decode": " Decode of an RPC Query",
+                        "sdf": "Sensitive Data",
+                        "shellcode-detect": "Executable Code was Detected",
+                        "string-detect": "A Suspicious String was Detected",
+                        "successful-admin": "Successful Administrator Privilege Gain",
+                        "successful-dos": "Denial of Service",
+                        "successful-recon-largescale": "Large Scale Information Leak",
+                        "successful-recon-limited": "Information Leak",
+                        "successful-user": "Successful User Privilege Gain",
+                        "suspicious-filename-detect": "A Suspicious Filename was Detected",
+                        "suspicious-login": "An Attempted Login Using a Suspicious Username was Detected",
+                        "system-call-detect": "A System Call was Detected",
+                        "tcp-connection": "A TCP Connection was Detected",
+                        "trojan-activity": "A Network Trojan was Detected",
+                        "unknown": "Unknown Traffic",
+                        "unsuccessful-user": "Unsuccessful User Privilege Gain",
+                        "unusual-client-port-connection": "A Client was Using an Unusual Port",
+                        "web-application-activity": "Access to a Potentially Vulnerable Web Application",
+                        "web-application-attack": "Web Application Attack",
+                        "nonstd-tcp": "Detection of a Non-Standard TCP Protocol"
+                    }
         if cltype in classtypes:
             return classtypes[cltype]
         else:
@@ -85,41 +89,18 @@ class Dicts():
 
     @staticmethod
     def general_options(option: str = None) -> Any:
-        general_options = {"msg",
-                           # The msg keyword tells the
-                           # logging and alerting engine
-                           # the message to print with the packet
-                           # dump or alert.
-                           "reference",
-                           # The reference keyword allows rules to include
-                           # references to external attack identification
-                           # systems.
-                           "gid",
-                           # The gid keyword (generator id) is used to
-                           # identify  what part of Snort generates the event
-                           # when a particular rule fires.
-                           "sid",
-                           # The sid keyword is used to uniquely identify Snort rules.
-                           "rev",           # The rev keyword is used to uniquely identify revisions of Snort rules.
-                           "classtype",
-                           # The classtype keyword is used to categorize
-                           # a rule as detecting  an attack that is part
-                           # of a more general type of attack class.
-                           "priority",
-                           # The priority keyword assigns a severity level to rules. "priority": "priority",
-                           "metadata",
-                           # The metadata keyword allows a rule writer
-                           # to embed additional  information about the rule,
-                           # typically in a key-value format.  Keys: engine
-                           # ( Indicate a Shared Library Rule ) ex: "shared",
-                           # soid ( Shared Library Rule Generator and
-                           # SID ) ex: "gid|sid", service ( Target-Based
-                           # Service Identifier ) ex: "http",
-                           "service",
-                           "rem",
-                           "file_meta"
-                           }
-
+        general_options = { "msg",           # The msg keyword tells the logging and alerting engine the message to print with the packet dump or alert.
+                            "reference",     # The reference keyword allows rules to include references to external attack identificationsystems.
+                            "gid",           # The gid keyword (generator id) is used to identify  what part of Snort generates the event when a particular rule fires.
+                            "sid",           # The sid keyword is used to uniquely identify Snort rules.
+                            "rev",           # The rev keyword is used to uniquely identify revisions of Snort rules.
+                            "classtype",     # The classtype keyword is used to categorize a rule as detecting  an attack that is part of a more general type of attack class.
+                            "priority",      # The priority keyword assigns a severity level to rules. "priority": "priority",
+                            "metadata",      # The metadata keyword allows a rule writer to embed additional  information about the rule, typically in a key-value format.
+                            "service",
+                            "rem",
+                            "file_meta"
+                        }
         if option:
             if option in general_options:
                 return option
@@ -128,11 +109,10 @@ class Dicts():
         else:
             return general_options
 
-    ## As specified in Snort 3 webpage
+    # As specified in Snort 3 webpage
     @staticmethod
-    def payload_detection(option: str = None) -> Any:
-        payload_detection = {"content",
-                            # The content keyword allows the user to set rules that search for specific content in the packet payload and trigger response based on that data.
+    def payload_options(option: str = None) -> Any:
+        payload_options = { "content",              # The content keyword allows the user to set rules that search for specific content in the packet payload and trigger response based on that data.
                             "http_uri",             # Normalized HTTP URI"
                             "http_raw_uri",         # Unnormalized HTTP URI
                             "http_header",          # Normalized HTTP headers
@@ -197,19 +177,18 @@ class Dicts():
                             "modbus_data",          # The modbus_data rule option is used to set the detection cursor to the start of Modbus data.
                             "modbus_func",          # The modbus_func rule option is used to check for a particular Modbus function code or function name.
                             "modbus_unit",          # The modbus_unit rule option is used to check for a particular Modbus unit identifier.
-                            }
-
+                        }
         if option:
-            if option in payload_detection:
+            if option in payload_options:
                 return option
             else:
                 return False
         else:
-            return payload_detection
+            return payload_options
 
     @staticmethod
     def non_payload_options(option: str = None) -> Any:
-        non_payload_detect = {"fragoffset",         # The fragoffset keyword allows one to compare the IP fragment offset field against a decimal value.
+        non_payload_detect = {  "fragoffset",         # The fragoffset keyword allows one to compare the IP fragment offset field against a decimal value.
                                 "ttl",              # The ttl keyword is used to check the IP time-to-live value.
                                 "tos",              # The tos keyword is used to check the IP TOS field for a specific value.
                                 "id",               # The id keyword is used to check the IP ID field for a specific value.
@@ -230,8 +209,7 @@ class Dicts():
                                 "rpc",              # The rpc keyword is used to check for a RPC application, version, and procedure numbers in SUNRPC CALL requests
                                 "stream_reassemble",# The stream_reassemble keyword allows a rule to enable or disable TCP stream reassembly on matching traffic.
                                 "stream_size"       # The stream_size keyword allows a rule to match traffic according to the number of bytes observed, as determined by the TCP sequence numbers.
-                              }
-
+                            }
         if option:
             if option in non_payload_detect:
                 return option
@@ -243,20 +221,10 @@ class Dicts():
     @staticmethod
     def post_detect_options(option: str = None) -> Any:
         post_detect = { "detection_filter",
-                       # Replace the prior matching content with the given
-                       # string of the same length. Available
-                       # in inline mode only.
-                       "replace",
-                       # Replace the prior matching content with the given
-                       # string of the same length. Available in inline
-                       # mode only. NOTE: As mentioned above, Snort evaluates
-                       #  detection_filter as the last step of the detection
-                       # and not in post-detection.
-                        "tag",
-                       # The tag keyword allow rules to log more than
-                       # just the single packet that triggered the rule
-                       }
-
+                        "replace",              # Replace the prior matching content with the given string of the same length. Available in inline mode only. 
+                                                # NOTE: As mentioned above, Snort evaluates detection_filter as the last step of the detection and not in post-detection.
+                        "tag",                  # The tag keyword allow rules to log more than just the single packet that triggered the rule
+                    }
         if option:
             if option in post_detect:
                 return option
@@ -267,14 +235,13 @@ class Dicts():
 
     @staticmethod
     def content_modifiers(option: str = None) -> Any:
-        content_modifiers = {"nocase",
-                             "depth",
-                             "offset",
-                             "distance",
-                             "within",
-                             "fast_pattern",
-                             }
-
+        content_modifiers = {   "nocase",
+                                "depth",
+                                "offset",
+                                "distance",
+                                "within",
+                                "fast_pattern",
+                            }
         if option:
             if option in content_modifiers:
                 return option
@@ -283,10 +250,9 @@ class Dicts():
         else:
             return content_modifiers
 
-
     @staticmethod
-    def buffers(option: str = None) -> Any:
-        buffers = {"http_uri",
+    def sticky_buffers(option: str = None) -> Any:
+        sticky_buffers = {  "http_uri",
                             "http_raw_uri",	
                             "http_header",	
                             "http_raw_header",	
@@ -304,49 +270,28 @@ class Dicts():
                             "base64_data",
                             "json_data", 
                             "vba_data"	 
-                             }
-
+                        }
         if option:
-            if option in buffers:
+            if option in sticky_buffers:
                 return option
             else:
                 return False
         else:
-            return buffers
-
-    @staticmethod
-    def rule_thresholds(option):
-        threshold = {"threshold"}
-
-        if option in threshold:
-            return option
-        else:
-            return False
+            return sticky_buffers
 
     def verify_option(self, option):
-        # TODO: maybe add Snort Default Classifications
         general_options = self.general_options()
-        payload_detection = self.payload_detection()
-        content_modifiers = self.content_modifiers()
+        payload_options = self.payload_options()
         non_payload_detect = self.non_payload_options()
         post_detect = self.post_detect_options()
 
-
-        # TODO: add threshold types ex: threshold:
-        # type limit <<, but for now, this will have to suffice
-        rule_tresholds = {"threshold": "threshold"}
-
         # Check if a rule option is a valid option type 
-        if option in payload_detection:
+        if option in payload_options:
             return "payload", True
         if option in non_payload_detect:
             return "non-payload", True
         if option in general_options:
             return "general", True
-        if option in rule_tresholds:
-            return "threshold", True
-        if option in content_modifiers:
-            return "content_modifier", True
         if option in post_detect:
             return "post_detect", True
         
