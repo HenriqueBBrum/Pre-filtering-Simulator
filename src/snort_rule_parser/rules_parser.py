@@ -82,7 +82,6 @@ def adjust_rules(config, rules):
         copied_header['dst_ip'] = __replace_system_variables(copied_header['dst_ip'], config.ip_addresses)
         copied_header['dst_port'] = __replace_system_variables(copied_header['dst_port'],  config.ports)
 
-
         copied_header['src_ip'] = __convert_ip_list_to_radix_tree(copied_header['src_ip'])
         copied_header['dst_ip'] = __convert_ip_list_to_radix_tree(copied_header['dst_ip'])
 

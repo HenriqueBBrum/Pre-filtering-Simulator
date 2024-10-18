@@ -21,8 +21,13 @@ class Rule(object):
     def rule_to_string(self):
         string = ""
         for key, value in self.pkt_header.items():
-            #if "ip" in key:
-            string+=key+":"+str(value)+";"
+            if key == "src_ip" or key == "dst_ip":
+                string+=key+":["
+                for rnode in value[0]:
+                    string+="("+rnode.prefix+","+str(rnode.data["match"])+")"
+                string+="];"
+            else:
+                string+=key+":"+str(value)+";"
 
         for key, value in self.payload_fields.items():
             string+=key+":"+str(value)
@@ -38,7 +43,7 @@ class Rule(object):
         
     
 
-# Class that aggreggates multiple rule with the same header values and tcp flag options
+# Class that aggreggates multiple rule with the same pre-filtering values in pkt_header and payload_fields
 class AggregatedRule(object):
     def __init__(self, pkt_header, payload_fields, priority_list=[], sid_rev_list=[]):
         self.pkt_header = pkt_header
