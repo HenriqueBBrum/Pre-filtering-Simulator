@@ -28,33 +28,33 @@ tcp_flags_dict = {
 
 # Compares the header fields of packet against the ones for a rule # !!!!!!!!!!!!!!!!Parse for the service key
 def compare_header_fields(pkt_fields, rule, rule_proto, icmp_in_pkt, tcp_in_pkt, upd_in_pkt): 
-    if not _compare_IP(pkt_fields["src_ip"], rule.pkt_header["src_ip"]):
+    if not __compare_IP(pkt_fields["src_ip"], rule.pkt_header["src_ip"]):
         return False
 
-    if not _compare_IP(pkt_fields["dst_ip"], rule.pkt_header["dst_ip"]):
+    if not __compare_IP(pkt_fields["dst_ip"], rule.pkt_header["dst_ip"]):
         return False
 
     if (rule_proto == "tcp" or rule_proto == "udp") and (tcp_in_pkt or upd_in_pkt):
-        if not _compare_ports(pkt_fields["src_port"], rule.pkt_header["src_port"]):
+        if not __compare_ports(pkt_fields["src_port"], rule.pkt_header["src_port"]):
             return False
 
-        if not _compare_ports(pkt_fields["dst_port"], rule.pkt_header["dst_port"]):
+        if not __compare_ports(pkt_fields["dst_port"], rule.pkt_header["dst_port"]):
             return False
 
-    if not _matched_IP_fields(pkt_fields, rule.pkt_header):
+    if not __matched_IP_fields(pkt_fields, rule.pkt_header):
         return False
 
-    if rule_proto == "tcp" and tcp_in_pkt and not _matched_TCP_fields(pkt_fields, rule.pkt_header):
+    if rule_proto == "tcp" and tcp_in_pkt and not __matched_TCP_fields(pkt_fields, rule.pkt_header):
         return False
     
-    if rule_proto == "icmp" and icmp_in_pkt and not _matched_ICMP_fields(pkt_fields, rule.pkt_header):
+    if rule_proto == "icmp" and icmp_in_pkt and not __matched_ICMP_fields(pkt_fields, rule.pkt_header):
         return False
 
     return True
 
 # Compares a packet's IP fields against the IP fields of a rule 
-def _matched_IP_fields(pkt_fields, rule_pkt_header):
-    if "ip_proto" in rule_pkt_header and not _compare_ip_proto(pkt_fields["ip_proto"], rule_pkt_header["ip_proto"][0]):
+def __matched_IP_fields(pkt_fields, rule_pkt_header):
+    if "ip_proto" in rule_pkt_header and not __compare_ip_proto(pkt_fields["ip_proto"], rule_pkt_header["ip_proto"][0]):
         return False
         
     if "ttl" in rule_pkt_header and not compare_fields(pkt_fields["ttl"], rule_pkt_header["ttl"][0]):
@@ -63,17 +63,17 @@ def _matched_IP_fields(pkt_fields, rule_pkt_header):
     if "id" in rule_pkt_header and not compare_fields(pkt_fields["id"], rule_pkt_header["id"][0]):
         return False
     
-    if "ipopts" in rule_pkt_header and not _compare_ipopts(pkt_fields["ipopts"], rule_pkt_header["ipopts"][0]):
+    if "ipopts" in rule_pkt_header and not __compare_ipopts(pkt_fields["ipopts"], rule_pkt_header["ipopts"][0]):
         return False
 
-    if "fragbits" in rule_pkt_header and not _compare_fragbits(pkt_fields["fragbits"], rule_pkt_header["fragbits"][0]):
+    if "fragbits" in rule_pkt_header and not __compare_fragbits(pkt_fields["fragbits"], rule_pkt_header["fragbits"][0]):
         return False
 
     return True
 
 # Compares a packet's TCP fields against the TCP fields of a rule 
-def _matched_TCP_fields(pkt_fields, rule_pkt_header):
-    if "flags" in rule_pkt_header and not _compare_tcp_flags(pkt_fields["flags"], rule_pkt_header["flags"]):
+def __matched_TCP_fields(pkt_fields, rule_pkt_header):
+    if "flags" in rule_pkt_header and not __compare_tcp_flags(pkt_fields["flags"], rule_pkt_header["flags"]):
         return False
 
     if "seq" in rule_pkt_header and not compare_fields(pkt_fields["seq"], rule_pkt_header["seq"][0]):
@@ -88,7 +88,7 @@ def _matched_TCP_fields(pkt_fields, rule_pkt_header):
     return True
 
 # Compares a packet's ICMP fields against the ICMP fields of a rule 
-def _matched_ICMP_fields(pkt_fields, rule_pkt_header):
+def __matched_ICMP_fields(pkt_fields, rule_pkt_header):
     if "itype" in rule_pkt_header and not compare_fields(pkt_fields["itype"], rule_pkt_header["itype"][0]):
         return False
 
@@ -104,7 +104,7 @@ def _matched_ICMP_fields(pkt_fields, rule_pkt_header):
 
 
 # Compares a packet's IP(s) against the IP(s) of a rule
-def _compare_IP(pkt_ip, rule_ips):
+def __compare_IP(pkt_ip, rule_ips):
     best_match = rule_ips[0].search_best(pkt_ip)
     if best_match:
         return best_match.data["match"]
@@ -112,7 +112,7 @@ def _compare_IP(pkt_ip, rule_ips):
     return not rule_ips[1]
 
 # Compares a packet's ports(s) against the ports(s) of a rule
-def _compare_ports(pkt_port, rule_ports):
+def __compare_ports(pkt_port, rule_ports):
     valid_port = False
     if pkt_port in rule_ports[0]:
         if rule_ports[0][pkt_port]:
@@ -156,7 +156,7 @@ def compare_fields(pkt_data, rule_data):
     return ops[comparator]
 
 # Compares a packet's IP options against the IP options of a rule
-def _compare_ipopts(pkt_ipopts, rule_ipopts):
+def __compare_ipopts(pkt_ipopts, rule_ipopts):
     if not pkt_ipopts:
         return False
 
@@ -169,7 +169,7 @@ def _compare_ipopts(pkt_ipopts, rule_ipopts):
     return False
 
 # Compares a packet's fragmentation bits against the fragmentation bits of a rule
-def _compare_fragbits(pkt_fragbits, rule_fragbits):
+def __compare_fragbits(pkt_fragbits, rule_fragbits):
     fragbits = re.sub("[\+\*\!]", "", rule_fragbits)
     fragbits_num = sum(ip_flags_dict[flag] for flag in fragbits)
     comparator = re.sub("[MDR.]", "", rule_fragbits)
@@ -189,7 +189,7 @@ def _compare_fragbits(pkt_fragbits, rule_fragbits):
     return False
 
 # Compares a packet's IP protocol field against the IP protocol field of a rule
-def _compare_ip_proto(pkt_ip_proto, rule_ip_proto):
+def __compare_ip_proto(pkt_ip_proto, rule_ip_proto):
     proto = re.sub("[^\d.]+", "", rule_ip_proto)
     comparator = re.sub("[\d.]+", "", rule_ip_proto)
 
@@ -204,7 +204,7 @@ def _compare_ip_proto(pkt_ip_proto, rule_ip_proto):
     return False
 
 # Compares a packet's TCP flags against the TCP flags of a rule
-def _compare_tcp_flags(pkt_tcp_flags, rule_tcp_flags):
+def __compare_tcp_flags(pkt_tcp_flags, rule_tcp_flags):
     def parse_flags(flags):
         tcp_flags = re.sub("[1]", "C", flags)
         tcp_flags = re.sub("[2]", "E", tcp_flags)
@@ -213,25 +213,24 @@ def _compare_tcp_flags(pkt_tcp_flags, rule_tcp_flags):
         return tcp_flags
 
     flags_to_match = rule_tcp_flags[0]
-    # flags_to_ignore_sum = 0
-
-    # if len(rule_tcp_flags)>1:
-    #     flags_to_ignore = rule_tcp_flags[1]
-    #     flags_to_ignore = parse_flags(flags_to_ignore)
-    #     flags_to_ignore_sum = sum(tcp_flags_dict[flag] for flag in flags_to_ignore)
-
+    pkt_tcp_flags = str(pkt_tcp_flags)
+    if len(rule_tcp_flags) > 1:
+        expression = "["+rule_tcp_flags[1]+"]*"
+        pkt_tcp_flags = re.sub(expression, "", pkt_tcp_flags)
 
     tcp_flags = parse_flags(flags_to_match)
     tcp_flags_num = sum(tcp_flags_dict[flag] for flag in tcp_flags) 
     comparator = re.sub("[a-zA-Z.]", "", flags_to_match)
 
-    if comparator == "" and pkt_tcp_flags == tcp_flags_num:
+    pkt_tcp_flags_num = sum(tcp_flags_dict[flag] for flag in pkt_tcp_flags) 
+
+    if comparator == "" and pkt_tcp_flags_num == tcp_flags_num:
         return True
-    elif comparator == "+" and (pkt_tcp_flags & tcp_flags_num == tcp_flags_num):
+    elif comparator == "+" and (pkt_tcp_flags_num & tcp_flags_num == tcp_flags_num):
         return True
-    elif comparator == "!" and pkt_tcp_flags != tcp_flags_num:
+    elif comparator == "!" and pkt_tcp_flags_num != tcp_flags_num:
         return True
-    elif comparator == "*" and (pkt_tcp_flags & tcp_flags_num >= 1):
+    elif comparator == "*" and (pkt_tcp_flags_num & tcp_flags_num >= 1):
         return True
     
     return False

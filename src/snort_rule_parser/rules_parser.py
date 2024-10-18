@@ -37,6 +37,9 @@ def get_rules(rules_path, ignored_rule_files):
         modified_rules.extend(temp_modified_rules)
     return original_rules, modified_rules
 
+
+non_supported_keywords = {"dce_iface", "dce_opnum", "dce_stub_data", "file_data", "base64_data"}
+
 # Parse each rule from a rule file
 def __parse_rules(rule_file):
     parsed_rules, modified_rules = [], []
@@ -49,6 +52,9 @@ def __parse_rules(rule_file):
 
             parsed_rule = parser.parse_rule(line)
             if not parsed_rule.header:
+                continue
+
+            if "content" not in parsed_rule.options.keys() or bool(parsed_rule.options.keys() & non_supported_keywords):
                 continue
 
             parsed_rules.append(parsed_rule)

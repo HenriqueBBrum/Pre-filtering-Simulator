@@ -79,9 +79,14 @@ def compare_pkts(pkts, rules_dict, suspicious_pkts, ip_pkt_count_list, start):
                 if not compare_header_fields(pkt_header_fields, rule, rule.pkt_header["proto"], icmp_in_pkt, tcp_in_pkt, upd_in_pkt):
                     continue
 
-                if not compare_payload(pkt, len_pkt_payload, pkt_payload_buffers, http_req_in_pkt, http_res_in_pkt, rule):
+                if not compare_payload(pkt, len_pkt_payload, pkt_payload_buffers, rule):
                     continue
 
+                # pkt.show2()
+                # print(rule.pkt_header)
+                # print(rule.payload_fields)
+                # print(rule.sid_rev_list)
+                # input()
                 suspicious_pkts.append((pkt_id, rule))
                 break 
             ip_pkt_count+=1
@@ -138,8 +143,8 @@ def get_pkt_payload_buffers(pkt, protocols_in_pkt, http_req_in_pkt, http_res_in_
             payload_buffers["http_raw_uri"] = bytes("http://"+pkt[HTTPRequest].Host.decode("utf-8")+pkt[HTTPRequest].Path.decode("utf-8"), 'utf-8') 
             payload_buffers["http_method"] = pkt[HTTPRequest].Method
         elif http_res_in_pkt:
-            payload_buffers["http_stat_code"] = pkt[HTTPResponse].Status_Code, 'utf-8'
-            payload_buffers["http_stat_msg"] = pkt[HTTPResponse].Reason_Phrase, 'utf-8'
+            payload_buffers["http_stat_code"] = pkt[HTTPResponse].Status_Code
+            payload_buffers["http_stat_msg"] = pkt[HTTPResponse].Reason_Phrase
     return payload_buffers
 
 def __normalize_http_text(header_name, raw_http_text, normalized_start=""):

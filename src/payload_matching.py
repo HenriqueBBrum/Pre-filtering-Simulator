@@ -12,21 +12,26 @@ http_response_buffers = {"http_stat_code", "http_stat_msg"}
 
 # Compares a rules payload fields against a packet's payload. 
 # A "False" return value means the packet does not match the rule and is not suspicious acording to the rule
-def compare_payload(pkt, pkt_payload_buffers, len_pkt_payload, rule):
+def compare_payload(pkt, len_pkt_payload, pkt_payload_buffers, rule):
     rule_proto = rule.pkt_header["proto"].upper()
-    if "dsize" in rule.payload_fields and not compare_fields(len_pkt_payload, rule.payload_fields["dsize"][0][1][0]):
+    try:
+        len_payload = len_pkt_payload[rule_proto]
+    except:
+        len_payload = len_pkt_payload["IP"] # Packet says its udp or tcp bu there is no udp or tcp layer. Happen with some fragmentated IPs
+
+    if "dsize" in rule.payload_fields and not compare_fields(len_payload, rule.payload_fields["dsize"][0][1][0]):
         return False
 
     # Packet has no payload but the rule has payload fields
-    if len_pkt_payload[rule_proto] == 0 and ("content" in rule.payload_fields or "pcre" in rule.payload_fields):
+    if len_payload == 0 and ("content" in rule.payload_fields or "pcre" in rule.payload_fields):
         return False
 
     # Only compare packets that have payload with rules that have fields for payload comparison
     if "content" in rule.payload_fields and not _compare_content(pkt, pkt_payload_buffers, rule_proto, rule.payload_fields["content"]):
         return False
     
-    if "pcre" in rule.payload_fields and not _compare_pcre():
-        return False
+    # if "pcre" in rule.payload_fields and not _compare_pcre():
+    #     return False
 
     return True
 
@@ -50,7 +55,13 @@ def _compare_content(pkt, pkt_payload_buffers, rule_proto, rule_content):
         if content[0]:
             if content[0] not in buffers_dict:
                 if content[0] == "pkt_data" or content[0] == "raw_data":
-                    buffer, position = buffers_dict[content[0]] = (pkt_payload_buffers[content[0]][rule_proto] , 0) 
+                    try:
+                        buffer, position = buffers_dict[content[0]] = (pkt_payload_buffers[content[0]].get(rule_proto, "") , 0)
+                    except:
+                        pkt.show2()
+                        print(rule_proto)
+                        print(rule_content)
+                        input()
                 else:
                     buffer, position = buffers_dict[content[0]] = (pkt_payload_buffers[content[0]], 0)
             else:
