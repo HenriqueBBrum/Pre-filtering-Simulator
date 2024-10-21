@@ -25,21 +25,20 @@ tcp_flags_dict = {
     'C': 128,
 }
 
-
 # Compares the header fields of packet against the ones for a rule # !!!!!!!!!!!!!!!!Parse for the service key
 def compare_header_fields(pkt_fields, rule, rule_proto, icmp_in_pkt, tcp_in_pkt, upd_in_pkt): 
-    if not __compare_IP(pkt_fields["src_ip"], rule.pkt_header["src_ip"]):
-        return False
-
-    if not __compare_IP(pkt_fields["dst_ip"], rule.pkt_header["dst_ip"]):
-        return False
-
     if (rule_proto == "tcp" or rule_proto == "udp") and (tcp_in_pkt or upd_in_pkt):
         if not __compare_ports(pkt_fields["src_port"], rule.pkt_header["src_port"]):
             return False
 
         if not __compare_ports(pkt_fields["dst_port"], rule.pkt_header["dst_port"]):
             return False
+
+    if not __compare_IP(pkt_fields["src_ip"], rule.pkt_header["src_ip"]):
+        return False
+
+    if not __compare_IP(pkt_fields["dst_ip"], rule.pkt_header["dst_ip"]):
+        return False
 
     if not __matched_IP_fields(pkt_fields, rule.pkt_header):
         return False
