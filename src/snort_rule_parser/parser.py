@@ -281,43 +281,38 @@ class Parser(object):
     ### OPTIONS PARSING FUNCTIONS ###
     # Parses the rule body or options, validates it and returns a dictionary
     def __parse_options(self, rule):
-            options_list = self.__get_options(rule)
-            options_dict = collections.OrderedDict()
+            options_list, options_dict = self.__get_options(rule), {}
             current_buffer = ""
             for index, option_string in enumerate(options_list):
-                key = option_string
-                value = ""
-                
+                key, value = option_string, ""
                 if ':' in option_string:
                     key, value = option_string.split(":", 1)
 
-                if self.dicts.sticky_buffers(key):
+                if not self.dicts.verify_option(key)[1]:
+                    raise ValueError("Unrecognized option: %s" % key)
+
+                if self.dicts.sticky_buffers(key): # Save the current buffer for the "content" and "pcre" keywords
                     current_buffer = key
-                          
-                if key == "content":
-                    negate = re.search('^!', value)
-                    content = re.search('"([^"]*)"', value).group(0)[1:-1]
-                    modifiers = re.search('[\w, ]*$', value).group(0)[1:]
-                    value = [current_buffer]
-                    value.append(False if negate else True)
-                    value.append(content)
-                    if modifiers:
-                        value.append(modifiers)   
-                elif key!="pcre":
+                
+                # Adjust "content" and "pcre" option by checking the buffer, if it has the "!" operator, cleaning the content to match and fidings the modifiers
+                if key == "content" or key == "pcre":
+                    key, parsed_value = self.__get_content_pcre(key, value,current_buffer)
+                else:
                     value = value.split(",")
+                    parsed_value = value[0] if len(value) == 1 else value
+                    if type(value) is str and value and value[0] == '"' and value[-1] == '"':  # If value is a string, remove redundant ""                   
+                        parsed_value = value[1:-1]
 
-                if self.dicts.payload_options(key): 
-                    if key in options_dict:
-                        options_dict[key].append((index, value))
-                    else:
-                        options_dict[key] = [(index, value)]
-                    continue
+                if key not in options_dict:
+                    options_dict[key] = (index, parsed_value)
+                else:
+                    if type(options_dict[key]) is not list:
+                        options_dict[key] = [options_dict[key]]
 
-                options_dict[key] = (index, value)
-
-            self.__validate_options(options_dict)
+                    options_dict[key].append((index, parsed_value))
             return options_dict
     
+
     # Turns the options string, i.e. "(<option>: <settings>; ... <option>: <settings>;)"), into a list of options
     def __get_options(self, rule):
         options = "{}".format(rule.split('(', 1)[-1].lstrip().rstrip())
@@ -339,23 +334,25 @@ class Parser(object):
 
             last_char = char
         return op_list
-    
-    # Verifies if the option key is valid or if the classtype option has a valid value
-    def __validate_options(self, options):
-        for key, data in options.items():
-            if self.dicts.payload_options(key):
-                for index, value in data:                
-                    valid_option = self.dicts.verify_option(key)
-                    if not valid_option[1]:
-                        raise ValueError("Unrecognized option: %s" % key)
-            else:
-                valid_option = self.dicts.verify_option(key)
-                if not valid_option[1]:
-                    raise ValueError("Unrecognized option: %s" % key)
-                
-                if key=="classtype":
-                    classification = self.dicts.classtypes(data[1][0]) # {"classtype : (index, [value])"}
-                    if not classification:
-                        raise ValueError("Unrecognized rule classification: %s" % value)
-            
-        return options
+
+
+    def __get_content_pcre(self, key, value, current_buffer):
+        negate = re.search('^!', value)
+        content = re.search('"([^"]*)"', value).group(0)[1:-1]
+        if key == "content":
+            modifiers = re.search('[\w, ]*$', value).group(0)[1:]
+            parsed_value = [0] # IDs it is content
+        else:
+            modifiers = re.search('[\w ]*$', content).group(0)
+            content = content[1:-1-len(modifiers)]
+            parsed_value = [1] # IDs it is pcre
+
+        parsed_value.append(current_buffer)
+        parsed_value.append(False if negate else True)
+        parsed_value.append(content)
+        if modifiers:
+            parsed_value.append(modifiers)
+        else:
+            parsed_value.append(None)
+
+        return "content_pcre" , parsed_value

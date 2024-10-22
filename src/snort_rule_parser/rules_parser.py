@@ -7,11 +7,11 @@
 from os import listdir
 from os.path import isfile, join
 import copy
-import radix
 
 from .parser import Parser
 from .rule_related_classes import *
 from .validation_dicts import Dicts
+
 
 MIN_PORT = 0
 MAX_PORT = 65535
@@ -54,8 +54,8 @@ def __parse_rules(rule_file):
             if not parsed_rule.header:
                 continue
 
-            if "content" not in parsed_rule.options.keys() or bool(parsed_rule.options.keys() & non_supported_keywords):
-                continue
+            # if "content" not in parsed_rule.options.keys() or bool(parsed_rule.options.keys() & non_supported_keywords):
+            #     continue
 
             parsed_rules.append(parsed_rule)
             copied_rule = copy.deepcopy(parsed_rule)
@@ -88,12 +88,6 @@ def adjust_rules(config, rules):
         copied_header['dst_ip'] = __replace_system_variables(copied_header['dst_ip'], config.ip_addresses)
         copied_header['dst_port'] = __replace_system_variables(copied_header['dst_port'],  config.ports)
 
-        copied_header['src_ip'] = __convert_ip_list_to_radix_tree(copied_header['src_ip'])
-        copied_header['dst_ip'] = __convert_ip_list_to_radix_tree(copied_header['dst_ip'])
-
-        copied_header['src_port'] = __turn_port_list_into_dict(copied_header['src_port'])
-        copied_header['dst_port'] = __turn_port_list_into_dict(copied_header['dst_port'])
-
         rule.header = copied_header
         rule.id = count
         
@@ -120,60 +114,14 @@ def __replace_system_variables(header_field, config_variables):
     return var_sub_results
 
 
-def __convert_ip_list_to_radix_tree(ips):
-    must_match = None
-    rtree = radix.Radix()
-    for ip in ips:
-        rnode = rtree.add(ip[0])
-        rnode.data["match"] = ip[1]
-
-        must_match = ip[1] if must_match == None else must_match | ip[1]
-
-    return (rtree, must_match)
-
-# Individual ports are saved in a dict for quick comparsions, ranges in a list for linear search, and a bool to signal if all values are accetable
-def __turn_port_list_into_dict(ports):
-    must_match = None
-    individual_ports = {}
-    port_ranges = []
-    for port in ports:
-        if isinstance(port[0], range):
-            port_ranges.append(port)
-        else:
-            individual_ports[port[0]] = port[1]
-
-        must_match = port[1] if must_match == None else must_match | port[1]
-
-    return (individual_ports,port_ranges,must_match)
-
-
-
-# Define the fields that are part of the packet header and the ones for the payload
-def group_header_and_payload_fields(rules):
-    non_payload_options = Dicts.non_payload_options()
-    payload_options = Dicts.payload_options()
-
-    rule_header_fields = ["proto", "src_ip", "src_port", "dst_ip", "dst_port"]
-    unsupported_non_payload_fields = {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}
-    for rule in rules:
-        for key in rule_header_fields:
-            if key in rule.header:
-                rule.pkt_header[key] = rule.header[key]
-
-        for option in rule.options: 
-            if option in non_payload_options and option not in unsupported_non_payload_fields:
-                rule.pkt_header[option] = rule.options[option][1]
-            elif option in payload_options:
-                rule.payload_fields[option] = rule.options[option]
-
-# Deduplicate signature rules with the same fields.
+# Deduplicate signature rules with the same fields and extract fields for quick matching with packets.
 def dedup_rules(config, rules):
     deduped_rules = {}
     for rule in rules:
-        rule_id = rule.rule_to_string()
-      
+        rule_id, pkt_header_fields, payload_fields = __get_header_and_payload_fields(rule.header, rule.options)
+
         if rule_id not in deduped_rules:
-            deduped_rules[rule_id] = AggregatedRule(rule.pkt_header, rule.payload_fields, priority_list=[], sid_rev_list=[])
+            deduped_rules[rule_id] = RuleToMatch(pkt_header_fields, payload_fields, priority_list=[], sid_rev_list=[])
 
         sid = __get_simple_option_value("sid", rule.options)
         rev = __get_simple_option_value("rev", rule.options)
@@ -187,10 +135,36 @@ def dedup_rules(config, rules):
 
     return list(deduped_rules.values())
 
+
+ # Define the fields that are part of the packet header and the ones for the payload
+def __get_header_and_payload_fields(rule_header, rule_options):
+    non_payload_options = Dicts.non_payload_options()
+    payload_options = Dicts.payload_options()
+
+    pkt_header_fields, payload_fields = {}, {}
+
+    desired_header_fields = ["proto", "src_ip", "src_port", "dst_ip", "dst_port"]
+    unsupported_non_payload_fields = {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}
+    for key in desired_header_fields:
+        if key in rule_header:
+            pkt_header_fields[key] = rule_header[key]
+
+    for option in rule_options: 
+        if option in non_payload_options and option not in unsupported_non_payload_fields:
+            pkt_header_fields[option] = rule_options[option][1]
+        elif option in payload_options or option == "content_pcre":
+            payload_fields[option] = rule_options[option]
+
+    return str(pkt_header_fields)+str(payload_fields), pkt_header_fields, payload_fields
+
+
 # Returns value of key in rule options. Option value format: (option_index, [option_index_values])
 def __get_simple_option_value(key, options, position=0, default=""):
     try:
-        return options[key][1][position]
+        if type(options[key]) is tuple:
+            return options[key][1]
+        else:
+            return options[key][1][position]
     except Exception as e:
         print("WARNING -- Error when searching for key {} in rule options \n Returning: {}".format(key, default))
         return default

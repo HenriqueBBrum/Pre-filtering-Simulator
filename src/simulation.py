@@ -7,20 +7,20 @@ from socket import getservbyport
 from header_matching import compare_header_fields
 from payload_matching import compare_payload
 
-def pre_filtering_simulation(rules, n=10000):
+def pre_filtering_simulation(rules, n=10):
     # Find the optimal pre-filtering subset   
-    #pre_filtering_rules = optimal_pre_filtering_rules()
+    # pre_filtering_rules = optimal_pre_filtering_rules()
     rules_dict = {}
     for rule in rules:
-        proto = rule.pkt_header["proto"]
+        proto = rule.pkt_header_fields["proto"]
         if proto not in rules_dict:
             rules_dict[proto] = [rule]
         else:
             rules_dict[proto].append(rule)
 
-    rules_dict["icmp"] = rules_dict["icmp"]+rules_dict["ip"]
-    rules_dict["tcp"] = rules_dict["tcp"]+rules_dict["ip"]
-    rules_dict["udp"] = rules_dict["udp"]+rules_dict["ip"]
+    rules_dict["icmp"] = rules_dict["ip"]+rules_dict["icmp"]
+    rules_dict["tcp"] = rules_dict["ip"]+rules_dict["tcp"]
+    rules_dict["udp"] = rules_dict["ip"]+rules_dict["udp"]
 
     start = time.time()
     pcap = rdpcap("/home/hbeckerbrum/NFSDatasets/CICIDS2017/Friday-WorkingHours.pcap", n)
@@ -72,20 +72,23 @@ def compare_pkts(pkts, rules_dict, suspicious_pkts, ip_pkt_count_list, start):
                 proto = proto.upper()
                 if proto in pkt:
                     len_pkt_payload[proto] = len(pkt[proto].payload)
-
             http_req_in_pkt, http_res_in_pkt = HTTPRequest in pkt, HTTPResponse in pkt
             pkt_payload_buffers = get_pkt_payload_buffers(pkt, len_pkt_payload.keys(), http_req_in_pkt, http_res_in_pkt)
-            for i, rule in enumerate(get_related_rules(pkt, rules_dict)[0:1]):
-                if not compare_header_fields(pkt_header_fields, rule, rule.pkt_header["proto"], icmp_in_pkt, tcp_in_pkt, upd_in_pkt):
-                    continue
-
-                if not compare_payload(pkt, len_pkt_payload, pkt_payload_buffers, rule):
-                    continue
-                
-                #pkt.show2()
-                print("match")
+            rules_to_compare = get_related_rules(pkt, rules_dict)
+            if not rules_to_compare:
                 suspicious_pkts.append((pkt_id, rule))
-                break 
+            else:
+                print(pkt_id)
+                for i, rule in enumerate(rules_to_compare):
+                    print("Rule sid: ", rule.sids())
+                    if not compare_header_fields(pkt_header_fields, rule, rule.pkt_header_fields["proto"], icmp_in_pkt, tcp_in_pkt, upd_in_pkt):
+                        continue
+
+                    if not compare_payload(pkt, len_pkt_payload, pkt_payload_buffers, rule):
+                        continue
+                    
+                    suspicious_pkts.append((pkt_id, rule))
+                    break 
             ip_pkt_count+=1
         pkt_id+=1
     ip_pkt_count_list.append(ip_pkt_count)

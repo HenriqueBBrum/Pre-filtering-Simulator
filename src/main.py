@@ -3,7 +3,7 @@ import sys
 
 
 from snort_config_parser import SnortConfiguration
-from snort_rule_parser.rules_parser import get_rules, adjust_rules, group_header_and_payload_fields, dedup_rules
+from snort_rule_parser.rules_parser import get_rules, adjust_rules, dedup_rules
 from simulation import pre_filtering_simulation
 
 def main(config_path, rules_path):
@@ -28,11 +28,6 @@ def parse_rules(config, rules_path):
     
     print("---- Adjusting rules. Replacing variables..... ----")
     modified_rules = adjust_rules(config, fixed_bidirectional_rules) 
-
-    # Get only rules related to current services
-
-    print("---- Defining the fields used in packet header matching and payload matching..... ----")
-    group_header_and_payload_fields(modified_rules)
 
     print("---- Deduping rules based on the packet header and payload matching fields..... ----")
     deduped_rules = dedup_rules(config, modified_rules)
