@@ -189,7 +189,7 @@ tcp_flags_dict = {
 # Compares a packet's TCP flags against the TCP flags of a rule
 def __compare_tcp_flags(pkt_tcp_flags, rule_tcp_flags):
     pkt_tcp_flags = str(pkt_tcp_flags)
-    if "exclude" in rule_tcp_flags:
+    if rule_tcp_flags["exclude"]:
         expression = "["+rule_tcp_flags["exclude"]+"]*"
         pkt_tcp_flags = re.sub(expression, "", pkt_tcp_flags)
 

@@ -119,7 +119,7 @@ def dedup_rules(config, rules):
     deduped_rules = {}
     for rule in rules:
         rule_id, pkt_header_fields, payload_fields = __get_header_and_payload_fields(rule.header, rule.options)
-
+        
         if rule_id not in deduped_rules:
             deduped_rules[rule_id] = RuleToMatch(pkt_header_fields, payload_fields, priority_list=[], sid_rev_list=[])
 

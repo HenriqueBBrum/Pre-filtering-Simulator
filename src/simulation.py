@@ -7,7 +7,7 @@ from socket import getservbyport
 from header_matching import compare_header_fields
 from payload_matching import compare_payload
 
-def pre_filtering_simulation(rules, n=10):
+def pre_filtering_simulation(rules, n=10000):
     # Find the optimal pre-filtering subset   
     # pre_filtering_rules = optimal_pre_filtering_rules()
     rules_dict = {}
@@ -32,16 +32,16 @@ def pre_filtering_simulation(rules, n=10):
     start = time.time()
     num_processes = cpu_count() # Use the cout_count as the number of processes
     share = round(len(pcap)/num_processes)
-    # for i in range(num_processes):
-    #     pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]  # Send a batch of packets for each processor
-    #     process = Process(target=compare_pkts, args=(pkts_sublist, rules_dict, suspicious_pkts, ip_pkt_count_list, i*share))
-    #     process.start()
-    #     processes.append(process)
+    for i in range(num_processes):
+        pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]  # Send a batch of packets for each processor
+        process = Process(target=compare_pkts, args=(pkts_sublist, rules_dict, suspicious_pkts, ip_pkt_count_list, i*share))
+        process.start()
+        processes.append(process)
 
-    # for process in processes:
-    #     process.join()
+    for process in processes:
+        process.join()
 
-    compare_pkts(pcap, rules_dict, suspicious_pkts, ip_pkt_count_list,0)
+    # compare_pkts(pcap, rules_dict, suspicious_pkts, ip_pkt_count_list,0)
 
     print("Time to process", n, "packets against ",len(rules), "rules in seconds: ", time.time() - start)
     print(len(suspicious_pkts), sum(ip_pkt_count_list), n) # Count IP packets
@@ -78,15 +78,16 @@ def compare_pkts(pkts, rules_dict, suspicious_pkts, ip_pkt_count_list, start):
             if not rules_to_compare:
                 suspicious_pkts.append((pkt_id, rule))
             else:
-                print(pkt_id)
                 for i, rule in enumerate(rules_to_compare):
-                    print("Rule sid: ", rule.sids())
                     if not compare_header_fields(pkt_header_fields, rule, rule.pkt_header_fields["proto"], icmp_in_pkt, tcp_in_pkt, upd_in_pkt):
                         continue
 
                     if not compare_payload(pkt, len_pkt_payload, pkt_payload_buffers, rule):
                         continue
                     
+                    # pkt.show2()
+                    # print(rule.sids())
+                    # input()
                     suspicious_pkts.append((pkt_id, rule))
                     break 
             ip_pkt_count+=1

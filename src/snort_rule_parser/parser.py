@@ -29,8 +29,8 @@ class Parser(object):
         header, has_negation = self.__parse_header(rule)
         options = self.__parse_options(rule) 
 
-        if options["sid"][1][0] == "498":
-            header = {}
+        # if options["sid"][1][0] == "498":
+        #     header = {}
 
         return Rule(rule, header, options, has_negation)
     
@@ -340,7 +340,7 @@ class Parser(object):
         negate = re.search('^!', value)
         content = re.search('"([^"]*)"', value).group(0)[1:-1]
         if key == "content":
-            modifiers = re.search('[\w, ]*$', value).group(0)[1:]
+            modifiers = re.search('[\w,\- ]*$', value).group(0)[1:]
             parsed_value = [0] # IDs it is content
         else:
             modifiers = re.search('[\w ]*$', content).group(0)

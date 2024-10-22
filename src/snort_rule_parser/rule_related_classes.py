@@ -141,7 +141,9 @@ class RuleToMatch(object):
             content_pcre = []
             for match_pos, match in self.payload_fields["content_pcre"]:
                 if match[0] == 0:
-                    content_pcre.append((match[0], match[1], match[2], self.__clean_content_and_hexify(match[3], "nocase" in match[3]), match[4]))
+                    match_str = self.__clean_content_and_hexify(match[3], "nocase" in match[3])
+                    modifiers = self.__adjust_content_modifiers(match[4])
+                    content_pcre.append((match[0], match[1], match[2], match_str, modifiers))
                 else:
                     content_pcre.append((match[0], match[1], match[2], match[3], match[4]))
                     
@@ -211,6 +213,32 @@ class RuleToMatch(object):
             temp_content+=char
 
         return temp_content, escaped
+
+    def __adjust_content_modifiers(self, modifiers):
+        modifiers_dict = None
+        if modifiers:
+            modifiers_dict = {}
+            for item in modifiers.split(","):
+                modifier_name = item
+                modifier_value = True
+                if item == "fast_pattern":
+                    continue
+
+                if item != "nocase":
+                    split_modifier = item.split(" ")
+                    modifier_name = split_modifier[0]
+                    modifier_value = split_modifier[1]
+
+                if modifier_name in modifiers_dict:
+                    raise ValueError("Two identical modifiers in the same content matching: ", modifiers_dict)
+
+                modifiers_dict[modifier_name] = modifier_value
+
+            if ("offset" in modifiers_dict or "depth" in modifiers_dict) and ("within" in modifiers_dict or "distance" in modifiers_dict):
+                raise ValueError("Modifiers are not correctly configured: ", modifiers_dict)
+            
+        return modifiers_dict
+        
 
     def sids(self):
         return list(set(self.sid_rev_list))

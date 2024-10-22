@@ -26,7 +26,6 @@ def compare_payload(pkt, len_pkt_payload, pkt_payload_buffers, rule):
     if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt, pkt_payload_buffers, rule_proto, rule.payload_fields["content_pcre"]):
         return False
 
-    print(rule.sids())
     return True
 
 
@@ -35,7 +34,6 @@ def __compare_content_pcre(pkt, pkt_payload_buffers, rule_proto, rule_content_pc
     position_dict = {}
     buffer, prev_buffer_name = "", ""
     position = 0
-    print(rule_content_pcre)
     for match_type, match_buffer, should_match, match_str, match_modifiers in rule_content_pcre:
         if match_buffer in unsupported_buffers:
             continue
@@ -62,47 +60,42 @@ def __compare_content_pcre(pkt, pkt_payload_buffers, rule_proto, rule_content_pc
             
         prev_buffer_name = match_buffer if match_buffer else prev_buffer_name
         start, end, nocase = __process_content_modifiers(match_modifiers, position, len(buffer))
-        buffer = buffer if nocase else pkt_payload_buffers["original"][match_buffer]
-        print(match_buffer, start, end, buffer[2*start:2*end], nocase)
-        print(match_str)
+        buffer = buffer if nocase else pkt_payload_buffers["original"][prev_buffer_name]
         if match_type == 0:
             match_pos = buffer[2*start:2*end].find(match_str) # Match pos is the number of char (not bytes) from start
         else:
-            match_pos == -1
+            match_pos = -1 # Do the content
 
         # Did not find a match but the rule says to only accept if a match was found or Found a match but the rule says to only accept if no matches were found
         if (match_pos == -1 and should_match) or (match_pos >= 0 and not should_match):
-            print("-------------------") 
             return False
 
         position = start+int(match_pos/2)+int(len(match_str)/2) # Match_pos and str_too_match are in the hex char string, while start is in bytes. That's why they are divided
         position_dict[prev_buffer_name] = position
-    print("-------------------")
     return True
 
 
 def __process_content_modifiers(modifiers, position, len_current_buffer):
     start, end, nocase = 0, len_current_buffer, False
     if modifiers:
-        modifiers_dict = {}
-        for item in modifiers.split(","):
-            if item == "nocase":
-                nocase = True
-            else:
-                split_mod = item.split(" ")
-                modifiers_dict[split_mod[0]] = split_mod[1]
-            try:
-                if "offset" in modifiers:
-                    start = int(modifiers_dict["offset"])
-                elif "depth" in modifiers:
-                    end = start+int(modifiers_dict["depth"])
-                elif "distance" in modifiers:
-                    start = position+int(modifiers_dict["distance"])
-                elif "within" in modifiers:
-                    if start == 0:
-                        start = position
-                    end = start+int(modifiers_dict["within"])
-            except:
-                print("Variable in location of num: ", modifiers)
+        if "nocase" in modifiers:
+            nocase = True
+
+        try:
+            if "offset" in modifiers:
+                start = int(modifiers["offset"])
+            
+            if "depth" in modifiers:
+                end = start+int(modifiers["depth"])
+            
+            if "distance" in modifiers:
+                start = position+int(modifiers["distance"])
+            
+            if "within" in modifiers:
+                if start == 0:
+                    start = position
+                end = start+int(modifiers["within"])
+        except:
+            print("Variable in location of num: ", modifiers)
     return start, end, nocase
 
