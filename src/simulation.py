@@ -3,6 +3,7 @@ from multiprocessing import Manager,Process,cpu_count
 from scapy.layers.http import * 
 from scapy.utils import PcapWriter
 from socket import getservbyport
+import collections
 
 from header_matching import compare_header_fields
 from payload_matching import compare_payload
@@ -23,7 +24,7 @@ def pre_filtering_simulation(rules, n=10000):
     rules_dict["udp"] = rules_dict["ip"]+rules_dict["udp"]
 
     start = time.time()
-    pcap = rdpcap("/home/hbeckerbrum/NFSDatasets/CICIDS2017/Friday-WorkingHours.pcap", n)
+    pcap = rdpcap("/home/hbeckerbrum/NFSDatasets/CICIDS2017/Friday-WorkingHours.pcap")#, n)
     print("Time to read ", n, " packets in seconds: ", time.time() - start)
     suspicious_pkts = Manager().list()
     ip_pkt_count_list = Manager().list()
@@ -42,10 +43,11 @@ def pre_filtering_simulation(rules, n=10000):
         process.join()
 
     # compare_pkts(pcap, rules_dict, suspicious_pkts, ip_pkt_count_list,0)
+    print(collections.Counter(suspicious_pkts))
 
     print("Time to process", n, "packets against ",len(rules), "rules in seconds: ", time.time() - start)
     print(len(suspicious_pkts), sum(ip_pkt_count_list), n) # Count IP packets
-    send_pkts_to_NIDS(pcap, suspicious_pkts)
+    # send_pkts_to_NIDS(pcap, suspicious_pkts)
 
 
 # Generates the optimal pre-filtering ruleset using most header fields and part of the payload matches
@@ -72,8 +74,8 @@ def compare_pkts(pkts, rules_dict, suspicious_pkts, ip_pkt_count_list, start):
                 proto = proto.upper()
                 if proto in pkt:
                     len_pkt_payload[proto] = len(pkt[proto].payload)
-            http_req_in_pkt, http_res_in_pkt = HTTPRequest in pkt, HTTPResponse in pkt
-            pkt_payload_buffers = get_pkt_payload_buffers(pkt, len_pkt_payload.keys(), http_req_in_pkt, http_res_in_pkt)
+
+            pkt_payload_buffers = get_pkt_payload_buffers(pkt, len_pkt_payload.keys())
             rules_to_compare = get_related_rules(pkt, rules_dict)
             if not rules_to_compare:
                 suspicious_pkts.append((pkt_id, rule))
@@ -85,10 +87,7 @@ def compare_pkts(pkts, rules_dict, suspicious_pkts, ip_pkt_count_list, start):
                     if not compare_payload(pkt, len_pkt_payload, pkt_payload_buffers, rule):
                         continue
                     
-                    # pkt.show2()
-                    # print(rule.sids())
-                    # input()
-                    suspicious_pkts.append((pkt_id, rule))
+                    suspicious_pkts.append(rule.sids()[0])
                     break 
             ip_pkt_count+=1
         pkt_id+=1
@@ -117,40 +116,77 @@ def get_pkt_header_fields(pkt):
     return pkt_fields
 
 
-def get_pkt_payload_buffers(pkt, protocols_in_pkt, http_req_in_pkt, http_res_in_pkt):
+smtp_ports = {25, 465, 587, 2525, 3535}
+imap_ports = {143, 220, 585, 993}
+ftp_ports = {20, 21, 69, 152, 989, 990, 2100, 2811, 3305, 3535, 3721, 5402, 6086, 6619, 6622}
+smb_ports = {139, 445, 3020}
+
+def get_pkt_payload_buffers(pkt, protocols_in_pkt):
     payload_buffers = {"original":{}, "nocase":{}}
     for proto in protocols_in_pkt:
-        payload_buffers["original"]["pkt_data_"+proto] = payload_buffers["original"]["raw_data_"+proto] = bytes(pkt[proto].payload).hex()
+        if pkt[proto].payload:
+            payload_buffers["original"]["pkt_data_"+proto] = bytes(pkt[proto].payload).decode('utf-8', errors = 'ignore')
+            payload_buffers["original"]["raw_data_"+proto] = payload_buffers["original"]["pkt_data_"+proto]
 
     http_type = None
-    if http_req_in_pkt:
+    if HTTPRequest in pkt:
         http_type = HTTPRequest
-    elif http_res_in_pkt:
+    elif HTTPResponse in pkt:
         http_type = HTTPResponse
 
+    if TCP in pkt or UDP in pkt:
+        transport_layer = pkt.getlayer(UDP) if pkt.getlayer(UDP) else pkt.getlayer(TCP)
+        if pkt[transport_layer.name].payload:
+            sport = pkt[transport_layer.name].sport
+            dport = pkt[transport_layer.name].dport
+            
+            is_pop3 = True if sport == 110 or sport == 995 else ( True if dport == 110 or dport == 995 else False)
+            is_smtp = True if sport in smtp_ports else (True if dport in smtp_ports else False) 
+            is_imap = True if sport in imap_ports else (True if dport in imap_ports else False) 
+            is_ftp = True if sport in ftp_ports else (True if dport in ftp_ports else False) 
+            is_smb = True if sport in smb_ports else (True if dport in smb_ports else False) 
+            if is_pop3 or is_smtp or is_imap or is_ftp or is_smb:
+                payload_buffers["original"]["file_data"] = payload_buffers["original"]["pkt_data_"+transport_layer.name]
+
     if http_type != None:
-        payload_buffers["original"]["http_client_body"] = payload_buffers["original"]["http_raw_body"] = bytes(pkt[http_type].payload).hex()
+        payload_buffers["original"]["http_client_body"] = bytes(pkt[http_type].payload).decode('utf-8', errors = 'ignore')
+        payload_buffers["original"]["http_raw_body"] = payload_buffers["original"]["http_client_body"]
+        payload_buffers["original"]["file_data"] = payload_buffers["original"]["http_client_body"]
 
-        payload_buffers["original"]["http_header"] = bytes(__get_http_header(pkt[http_type], True), 'utf-8').hex()
-        payload_buffers["original"]["http_raw_header"] = bytes(__get_http_header(pkt[http_type], False)).hex()
+        payload_buffers["original"]["http_header"] = __get_http_header(pkt[http_type], True)
+        payload_buffers["original"]["http_raw_header"] = __get_http_header(pkt[http_type], False)
 
-        payload_buffers["original"]["http_cookie"] = bytes(__get_http_cookie(pkt[http_type], True), 'utf-8').hex()
-        payload_buffers["original"]["http_raw_cookie"] = bytes(__get_http_cookie(pkt[http_type], False), 'utf-8').hex()
+        payload_buffers["original"]["http_cookie"] = __get_http_cookie(pkt[http_type], True)
+        payload_buffers["original"]["http_raw_cookie"] = __get_http_cookie(pkt[http_type], False)
 
-        payload_buffers["original"]["http_param"] = bytes(pkt[http_type]).hex()
+        payload_buffers["original"]["http_param"] = bytes(pkt[http_type]).decode('utf-8', errors = 'ignore')
 
-        if http_req_in_pkt:
-            payload_buffers["original"]["http_uri"] = bytes(__normalize_http_text("http_uri", pkt[HTTPRequest].Path.decode("utf-8"), "http://"+pkt[HTTPRequest].Host.decode("utf-8")), 'utf-8').hex() 
-            payload_buffers["original"]["http_raw_uri"] = bytes("http://"+pkt[HTTPRequest].Host.decode("utf-8")+pkt[HTTPRequest].Path.decode("utf-8"), 'utf-8').hex() 
-            payload_buffers["original"]["http_method"] = pkt[HTTPRequest].Method.hex()
-        elif http_res_in_pkt:
-            payload_buffers["original"]["http_stat_code"] = pkt[HTTPResponse].Status_Code.hex()
-            payload_buffers["original"]["http_stat_msg"] = pkt[HTTPResponse].Reason_Phrase.hex()
+        if HTTPRequest in pkt:
+            payload_buffers["original"]["http_uri"] = __normalize_http_text("http_uri", pkt[HTTPRequest].Path.decode("utf-8"), "http://"+pkt[HTTPRequest].Host.decode("utf-8"))
+            payload_buffers["original"]["http_raw_uri"] = "http://"+pkt[HTTPRequest].Host.decode("utf-8")+pkt[HTTPRequest].Path.decode("utf-8")
+            payload_buffers["original"]["http_method"] = pkt[HTTPRequest].Method.decode("utf-8")
+        elif HTTPResponse in pkt:
+            payload_buffers["original"]["http_stat_code"] = pkt[HTTPResponse].Status_Code.decode("utf-8")
+            payload_buffers["original"]["http_stat_msg"] = pkt[HTTPResponse].Reason_Phrase.decode("utf-8")
 
     for key in payload_buffers["original"]:
-        payload_buffers["nocase"][key] = __adjust_buffer_case(payload_buffers["original"][key])
+        payload_buffers["nocase"][key] = payload_buffers["original"][key].lower()
 
     return payload_buffers
+
+
+def __get_http_header(http_header, normalized):
+    http_header.remove_payload()
+    return __normalize_http_text("http_header", bytes(http_header).decode('utf-8')) if normalized else bytes(http_header).decode('utf-8')
+
+def __get_http_cookie(http_header, normalized):
+    cookie = ""  
+    if HTTPRequest in http_header and http_header[HTTPRequest].Cookie:
+        cookie = http_header.Cookie.decode("utf-8")
+    elif HTTPResponse in http_header and http_header[HTTPResponse].Set_Cookie:
+        cookie = http_header.Set_Cookie.decode("utf-8")
+
+    return __normalize_http_text("http_cookie", cookie) if normalized else cookie
 
 def __normalize_http_text(header_name, raw_http_text, normalized_start=""):
     normalized_text = ""
@@ -165,7 +201,10 @@ def __normalize_http_text(header_name, raw_http_text, normalized_start=""):
         if escape_hex:
             escape_temp+=char
             if len(escape_temp) == 2:
-                normalized_text+=bytes.fromhex(escape_temp).decode('utf-8')
+                try:
+                    normalized_text+=bytes.fromhex(escape_temp).decode('utf-8')
+                except:
+                    normalized_text+="%"+escape_temp
                 escape_temp = ""
                 escape_hex = False
             continue
@@ -194,31 +233,6 @@ def __normalize_http_text(header_name, raw_http_text, normalized_start=""):
 
     return normalized_start+normalized_text
 
-def __get_http_header(http_header, normalized):
-    http_header.remove_payload()
-    return __normalize_http_text("http_header", bytes(http_header).decode('utf-8')) if normalized else http_header
-
-def __get_http_cookie(http_header, normalized):
-    cookie = ""  
-    if HTTPRequest in http_header and http_header[HTTPRequest].Cookie:
-        cookie = http_header.Cookie.decode("utf-8")
-    elif HTTPResponse in http_header and http_header[HTTPResponse].Set_Cookie:
-        cookie = http_header.Set_Cookie.decode("utf-8")
-
-    return __normalize_http_text("http_cookie", cookie) if normalized else cookie
-
-def __adjust_buffer_case(buffer):
-    hex_str_buffer_nocase = ""
-    for pos, hex_num in enumerate(buffer[::2]):
-        byte = buffer[pos*2:pos*2+2]
-        if int(byte, 16) >= 65 and int(byte, 16) <= 90:
-            byte = hex(int(byte, 16) + 32)[2:]
-
-        hex_str_buffer_nocase+=byte
-
-    return hex_str_buffer_nocase
-
-
 ip_proto = {1:"icmp", 6:"tcp", 17:"udp"}
 
 def get_related_rules(pkt, rules_dict):
@@ -229,17 +243,18 @@ def get_related_rules(pkt, rules_dict):
     service = None
     if UDP in pkt or TCP in pkt:
         try:
-            service = getservbyport(pkt[pkt_proto.upper()].dport, pkt_proto)
+            service = getservbyport(pkt[pkt_proto.upper()].sport, pkt_proto)
         except:
             try:
-                service = getservbyport(pkt[pkt_proto.upper()].sport, pkt_proto)
+                service = getservbyport(pkt[pkt_proto.upper()].dport, pkt_proto)
             except:
                 service = None
 
         if service == "http-alt":
             service == "http"
 
-        #if service == "http"
+        if service == "http" and (HTTPRequest not in pkt or HTTPResponse not in pkt):
+            service = None
         
     return rules_dict[pkt_proto]+(rules_dict[service] if service in rules_dict.keys() else [])
 

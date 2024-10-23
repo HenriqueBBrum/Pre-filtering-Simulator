@@ -43,6 +43,9 @@ tcp_flags_dict = {
     'E': 64,
     'C': 128,
 }
+
+native_pcre_modifiers = {'i', 's', 'm', 'x'}
+
 # Class that contains all the fields required to match against networking packets 
 class RuleToMatch(object):
     def __init__(self, pkt_header_fields, payload_fields, priority_list=[], sid_rev_list=[]):
@@ -125,7 +128,7 @@ class RuleToMatch(object):
 
         return (individual_ports,port_ranges,must_match)
 
-
+    
     def __adjust_payload_matching_fields(self):
         temp_payload_fields = {}
         if "dsize" in self.payload_fields:
@@ -141,11 +144,12 @@ class RuleToMatch(object):
             content_pcre = []
             for match_pos, match in self.payload_fields["content_pcre"]:
                 if match[0] == 0:
-                    match_str = self.__clean_content_and_hexify(match[3], "nocase" in match[3])
+                    match_str = self.__clean_content_and_hexify(match[3], "nocase" in match[4] if match[4] else False)
                     modifiers = self.__adjust_content_modifiers(match[4])
                     content_pcre.append((match[0], match[1], match[2], match_str, modifiers))
                 else:
-                    content_pcre.append((match[0], match[1], match[2], match[3], match[4]))
+                    adjusted_pcre_str, snort_only_modifiers = self.__adjust_pcre_to_modifiers(match[3], match[4])
+                    content_pcre.append((match[0], match[1], match[2], adjusted_pcre_str, snort_only_modifiers))
                     
             temp_payload_fields["content_pcre"] = content_pcre
 
@@ -154,7 +158,7 @@ class RuleToMatch(object):
 
 
     # Turn content to hex string. Ex: "A|4E 20 3B| Ok" - > "414e203b4f6b"
-    def __clean_content_and_hexify(self, str_to_match, nocase=False):
+    def __clean_content_and_hexify(self, str_to_match, nocase):
         clean_content = ""
         temp_content = ""
         hex_now, escaped = False, False
@@ -168,28 +172,26 @@ class RuleToMatch(object):
             else:
                 temp_content, escaped = self.__process_non_hex_section(char, temp_content, nocase, escaped)
         
-        clean_content+=temp_content.encode('utf-8').hex()
+        clean_content+=temp_content
         return clean_content
 
     # Process hex number of content. Mainly checking if it is required to consider the case
     def __process_hex(self, char, temp_content, nocase, hex_now):
         add_to_clean_content = False
         # Check if hex section has started or finished. Either way, add existing text to the final string
-        if char == '|':  
+        if char == '|' or char == ' ':  
             if hex_now:
-                if nocase and (int(temp_content, 16) >= 65 and int(temp_content, 16) <= 90): # If it is nocase and the remaining text is a letter
-                    temp_content=hex(int(temp_content, 16) + 32)[2:]
-            else:
-                temp_content = temp_content.encode('utf-8').hex() # If hex section has started now, add the plain text in temp to the final string
+                if nocase and (int(temp_content, 16) >= 65 and int(temp_content, 16) <= 90):
+                    temp_content = chr(int(temp_content, 16) + 32)[2:] # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
+                else:
+                    temp_content = chr(int(temp_content, 16))
+            elif char == '|' and not hex_now:
+                temp_content = temp_content # If hex section has started now, add the plain text in temp to the final string
 
-            hex_now = not hex_now
-            add_to_clean_content = True
-        elif char == " ": # Add hex bytes to final string and adjust case if required
-            if nocase and (int(temp_content, 16) >= 65 and int(temp_content, 16) <= 90):
-                temp_content=hex(int(temp_content, 16) + 32)[2:] # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
-            add_to_clean_content=True
+            hex_now = not hex_now if char == '|' else hex_now
+            add_to_clean_content = True  
         else:
-            temp_content+=char.lower()
+            temp_content+=char
 
         return temp_content, hex_now, add_to_clean_content
 
@@ -239,6 +241,29 @@ class RuleToMatch(object):
             
         return modifiers_dict
         
+    # Possible pcre modifiers: i,s,m,x,A,E,G,O,R
+    # Native pcre modifiers supported by Python 'i', 's', 'm', 'x' 
+    # Modifier G (Ungreedy) and D are not supported by python. Modifier O seems only required for the Snort engine
+    def __adjust_pcre_to_modifiers(self, pcre_string, modifiers):
+        if not modifiers:
+            return pcre_string, modifiers
 
+        if len(set(modifiers)) != len(modifiers):
+            raise Exception("PCRE string with duplicate modifiers, fix it. PCRE: ", pcre_string, " modifiers: ", modifiers)
+
+        prepend_modifiers, snort_only_modifiers = "", ""
+        for char in modifiers:
+            if char in native_pcre_modifiers:
+                prepend_modifiers+=char
+            elif char == 'A' and pcre_string[0] != '^':
+                pcre_string = '^' + pcre_string
+            elif char == 'R':
+                snort_only_modifiers = char
+
+        if prepend_modifiers:
+            pcre_string = "(?"+prepend_modifiers+')'+pcre_string
+        return pcre_string, snort_only_modifiers
+
+        
     def sids(self):
         return list(set(self.sid_rev_list))

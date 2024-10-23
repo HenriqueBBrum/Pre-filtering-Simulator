@@ -121,7 +121,12 @@ def dedup_rules(config, rules):
         rule_id, pkt_header_fields, payload_fields = __get_header_and_payload_fields(rule.header, rule.options)
         
         if rule_id not in deduped_rules:
-            deduped_rules[rule_id] = RuleToMatch(pkt_header_fields, payload_fields, priority_list=[], sid_rev_list=[])
+            rule_to_match = RuleToMatch(pkt_header_fields, payload_fields, priority_list=[], sid_rev_list=[])
+            if len(rule_to_match.pkt_header_fields) + len(rule_to_match.payload_fields) <= 5:
+                # print("Rule to match only has 5-tuple")
+                # print(__get_simple_option_value("sid", rule.options))
+                continue
+            deduped_rules[rule_id] = rule_to_match
 
         sid = __get_simple_option_value("sid", rule.options)
         rev = __get_simple_option_value("rev", rule.options)
