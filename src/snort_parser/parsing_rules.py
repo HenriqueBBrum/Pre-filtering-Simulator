@@ -7,15 +7,15 @@
 from os import listdir
 from os.path import isfile, join
 import copy
+import sys
 
-from .parser import Parser
-from .rule_related_classes import *
+from .rule_parser import RuleParser
+from .rule import Rule
 from .validation_dicts import Dicts
 
+sys.path.append('../')
 
-MIN_PORT = 0
-MAX_PORT = 65535
-
+from pre_filtering_simulation.rule_to_match import RuleToMatch
 
 # Returns two list of rules from one or multiple files. 
 # The first list contains the parsed rules similar as they apperead in the files but saving the values in dictionaries. 
@@ -38,14 +38,14 @@ def get_rules(rules_path, ignored_rule_files):
     return original_rules, modified_rules
 
 
-non_supported_keywords = {"dce_iface", "dce_opnum", "dce_stub_data", "file_data", "base64_data"}
+# non_supported_keywords = {"dce_iface", "dce_opnum", "dce_stub_data", "file_data", "base64_data"}
 
 # Parse each rule from a rule file
 def __parse_rules(rule_file):
     parsed_rules, modified_rules = [], []
     with open(rule_file, 'r') as file:
         lines = file.readlines()
-        parser = Parser()
+        parser = RuleParser()
         for line in lines:
             if line.startswith("#") or len(line)<=1:
                 continue
@@ -53,9 +53,6 @@ def __parse_rules(rule_file):
             parsed_rule = parser.parse_rule(line)
             if not parsed_rule.header:
                 continue
-
-            # if "content" not in parsed_rule.options.keys() or bool(parsed_rule.options.keys() & non_supported_keywords):
-            #     continue
 
             parsed_rules.append(parsed_rule)
             copied_rule = copy.deepcopy(parsed_rule)
@@ -72,10 +69,9 @@ def __parse_rules(rule_file):
                 modified_rules.append(copied_rule)
     return parsed_rules, modified_rules
 
-# Replace system variables
+# Replace system variables for the actual IPs and ports
 def adjust_rules(config, rules):
     modified_rules = []
-    count = 0
     for rule in rules:
         if len(rule.header) <= 2:
             modified_rules.append(rule)
@@ -89,10 +85,7 @@ def adjust_rules(config, rules):
         copied_header['dst_port'] = __replace_system_variables(copied_header['dst_port'],  config.ports)
 
         rule.header = copied_header
-        rule.id = count
-        
         modified_rules.append(rule)
-        count+=1
     return modified_rules
 
 # Substitute system variables for the real values in the config file
@@ -122,9 +115,7 @@ def dedup_rules(config, rules):
         
         if rule_id not in deduped_rules:
             rule_to_match = RuleToMatch(pkt_header_fields, payload_fields, priority_list=[], sid_rev_list=[])
-            if len(rule_to_match.pkt_header_fields) + len(rule_to_match.payload_fields) <= 5:
-                # print("Rule to match only has 5-tuple")
-                # print(__get_simple_option_value("sid", rule.options))
+            if len(rule_to_match.pkt_header_fields) + len(rule_to_match.payload_fields) <= 5: # Exclude rules that only have the five-tuple
                 continue
             deduped_rules[rule_id] = rule_to_match
 
@@ -141,7 +132,7 @@ def dedup_rules(config, rules):
     return list(deduped_rules.values())
 
 
- # Define the fields that are part of the packet header and the ones for the payload
+ # Define the fields that are part of the packet header and the ones for the payload that are going to be used in the pre-filtering simulation
 def __get_header_and_payload_fields(rule_header, rule_options):
     non_payload_options = Dicts.non_payload_options()
     payload_options = Dicts.payload_options()

@@ -5,7 +5,6 @@ SNORT2_EMERGING_RULES=etc/rules/snort2-emerging
 SNORT3_REGISTERED_RULES=etc/rules/snort3-registered
 
 SNORT_CONFIG=etc/configuration
-COMPILER_GOAL=etc/compiler_goal.json
 
 
 ifndef EVAL_RULES
@@ -24,13 +23,13 @@ build:
 
 #	python3 -m cProfile -o temp.dat -s time src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} ${COMPILER_GOAL}
 simulation.community: 
-	python3 src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} ${COMPILER_GOAL}
+	python3 src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} community 2>&1 | tee output/log_community.txt
 
 simulation.registered:
-	python3 src/main.py ${SNORT_CONFIG} ${SNORT3_REGISTERED_RULES} ${COMPILER_GOAL}
+	python3 src/main.py ${SNORT_CONFIG} ${SNORT3_REGISTERED_RULES} registered 2>&1 | tee output/log_registered.txt
 
 simulation.emerging: 
-	python3 src/main.py ${SNORT_CONFIG} ${SNORT2_EMERGING_RULES} ${COMPILER_GOAL}
+	python3 src/main.py ${SNORT_CONFIG} ${SNORT2_EMERGING_RULES} emerging 2>&1 | tee output/log_emerging.txt
 
 simulation.memory_eval:
 	mprof run --python --output $(EXPERIMENTS_DIR)/$(MEM_PROFILE_NAME)$(NUM_OF_FILES).dat python3 \

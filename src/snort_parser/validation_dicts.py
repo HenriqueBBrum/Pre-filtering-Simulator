@@ -1,8 +1,47 @@
-# This file contains sets and dictionaries with the names of possible options and classification configs for Snort rules.
+# This file contains sets and dictionaries with the names of possible actions, protocol, options, classification, etc. for Snort rules.
 
 from typing import Any
 
 class Dicts():
+    @staticmethod
+    def action(action: str) -> str:
+        actions = {
+            "alert",
+            "log",
+            "pass",
+            "activate",
+            "dynamic",
+            "drop",
+            "reject",
+            "sdrop",
+            "rewrite"
+        }
+
+        if action in actions:
+            return action
+        else:
+            raise ValueError("Invalid action specified", action)
+
+    # Validates protocols/services that are used by the Snort 3 Community and Registered rulesets
+    @staticmethod
+    def proto(proto: str) -> str:
+        protos = {
+            "tcp",
+            "udp",
+            "icmp",
+            "ip", 
+            "http",
+            "file",
+            "smtp",
+            "ssh",
+            "ssl"
+        }
+
+        if proto.lower() in protos:
+            return proto
+        else:
+            raise ValueError("Unsupported Protocol ", proto)
+
     @staticmethod
     def ip_variables(ip_variable: str = None):
         ip_variables_set= { "any",

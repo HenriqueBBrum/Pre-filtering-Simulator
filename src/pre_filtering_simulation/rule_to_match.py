@@ -1,32 +1,6 @@
-import attr
 import radix
 import re
 
-# Class representing a NIDS rule.
-class Rule(object):
-    def __init__(self, rule, header, options, has_negation):
-        self.id = None
-        self.rule = rule # Original rule string
-
-        self.header = header
-        self.options = options
-
-        self.has_negation = has_negation # IP or port is negated
-
-        self.data = {"header": self.header, "options": self.options}
-        self.all = self.data
-
-    def rule_to_string(self):    
-        return str(self.header)+str(self.options)
-    
-
-    def __getitem__(self, key):
-        if key == 'all':
-            return self.data
-        else:
-            return self.data[key]
-
-        
 ip_flags_dict = {
     'M': 1,
     'D': 2,
@@ -52,12 +26,13 @@ class RuleToMatch(object):
         self.pkt_header_fields = pkt_header_fields
         self.payload_fields = payload_fields
 
-        self.adjust_fields_for_pkt_matching()
-      
         self.priority_list = priority_list
         self.sid_rev_list = sid_rev_list
 
+        self.adjust_fields_for_pkt_matching()
+      
 
+    # Adjust rule fields for quick matching
     def adjust_fields_for_pkt_matching(self):
         self.pkt_header_fields['src_ip'] = self.__convert_ip_list_to_radix_tree(self.pkt_header_fields['src_ip'])
         self.pkt_header_fields['dst_ip'] = self.__convert_ip_list_to_radix_tree(self.pkt_header_fields['dst_ip'])
@@ -65,12 +40,14 @@ class RuleToMatch(object):
         self.pkt_header_fields['src_port'] = self.__turn_port_list_into_dict(self.pkt_header_fields['src_port'])
         self.pkt_header_fields['dst_port'] = self.__turn_port_list_into_dict(self.pkt_header_fields['dst_port'])
 
+        # Determine the data and comparator for the "ip_proto" keyword
         if "ip_proto" in self.pkt_header_fields:
             rule_ip_proto = self.pkt_header_fields["ip_proto"]
             comparator = re.search("^[!|>|<]", rule_ip_proto)
             comparator = comparator.group(0) if comparator != None else ""
             self.pkt_header_fields["ip_proto"] = {"data": re.search("[\d]+", rule_ip_proto).group(0), "comparator": comparator}
         
+        # Determine the data and comparator for the "ttl", "id", "seq", "ack", "window", "itype", "icode", "icmp_id", "icmp_seq" keywords
         for key in ["ttl", "id", "seq", "ack", "window", "itype", "icode", "icmp_id", "icmp_seq"]:
             if key in self.pkt_header_fields:
                 value = self.pkt_header_fields[key]
@@ -78,12 +55,14 @@ class RuleToMatch(object):
                 comparator = comparator.group(0) if comparator != None else ""
                 self.pkt_header_fields[key] = {"data": re.findall("[\d]+", value), "comparator": comparator}
 
+        # Determine the data and comparator for the "fragbits" keyword
         if "fragbits" in self.pkt_header_fields:
             fragbits = re.sub("[\+\*\!]", "", self.pkt_header_fields["fragbits"])
             fragbits_num = sum(ip_flags_dict[flag] for flag in fragbits)
             comparator = re.sub("[MDR.]", "", self.pkt_header_fields["fragbits"])
             self.pkt_header_fields["fragbits"] = {"data": fragbits_num, "comparator": comparator}
 
+        # Determine the data, comparator and flags to exclude for the (TCP) "flags" keyword
         if "flags" in self.pkt_header_fields:
             flags_to_match = self.pkt_header_fields["flags"]
             exclude = ""
@@ -101,7 +80,7 @@ class RuleToMatch(object):
         if self.payload_fields:
             self.__adjust_payload_matching_fields()
 
-
+    # Converts IP list to a radix tree for quick search
     def __convert_ip_list_to_radix_tree(self, ips):
         must_match = None
         rtree = radix.Radix()
@@ -113,7 +92,7 @@ class RuleToMatch(object):
 
         return (rtree, must_match)
 
-    # Individual ports are saved in a dict for quick comparsions, ranges in a list for linear search, and a bool to signal if all values are accetable
+    # Individual ports are saved in a dict for quick comparsions, ranges in a list for linear search, and a bool to signal if a port should've matched something
     def __turn_port_list_into_dict(self, ports):
         must_match = None
         individual_ports = {}
@@ -128,7 +107,7 @@ class RuleToMatch(object):
 
         return (individual_ports,port_ranges,must_match)
 
-    
+    # Adjust the "dsize" and "content_pcre" rule data
     def __adjust_payload_matching_fields(self):
         temp_payload_fields = {}
         if "dsize" in self.payload_fields:
@@ -145,11 +124,11 @@ class RuleToMatch(object):
             for match_pos, match in self.payload_fields["content_pcre"]:
                 if match[0] == 0:
                     match_str = self.__clean_content_and_hexify(match[3], "nocase" in match[4] if match[4] else False)
-                    modifiers = self.__adjust_content_modifiers(match[4])
+                    modifiers = self.__parse_content_modifiers(match[4])
                     content_pcre.append((match[0], match[1], match[2], match_str, modifiers))
                 else:
-                    adjusted_pcre_str, snort_only_modifiers = self.__adjust_pcre_to_modifiers(match[3], match[4])
-                    content_pcre.append((match[0], match[1], match[2], adjusted_pcre_str, snort_only_modifiers))
+                    parsed_pcre_str, snort_only_modifiers = self.__parse_pcre_modifiers(match[3], match[4])
+                    content_pcre.append((match[0], match[1], match[2], parsed_pcre_str, snort_only_modifiers))
                     
             temp_payload_fields["content_pcre"] = content_pcre
 
@@ -157,7 +136,7 @@ class RuleToMatch(object):
 
 
 
-    # Turn content to hex string. Ex: "A|4E 20 3B| Ok" - > "414e203b4f6b"
+    # Clean escaped chars in the string part of content, and convert the hex part to char. Also adjusts the case if needed 
     def __clean_content_and_hexify(self, str_to_match, nocase):
         clean_content = ""
         temp_content = ""
@@ -175,7 +154,7 @@ class RuleToMatch(object):
         clean_content+=temp_content
         return clean_content
 
-    # Process hex number of content. Mainly checking if it is required to consider the case
+    # Process hex number of the content. Mainly checking if it is required to consider the case
     def __process_hex(self, char, temp_content, nocase, hex_now):
         add_to_clean_content = False
         # Check if hex section has started or finished. Either way, add existing text to the final string
@@ -216,7 +195,8 @@ class RuleToMatch(object):
 
         return temp_content, escaped
 
-    def __adjust_content_modifiers(self, modifiers):
+    # Parse content modifiers
+    def __parse_content_modifiers(self, modifiers):
         modifiers_dict = None
         if modifiers:
             modifiers_dict = {}
@@ -241,10 +221,11 @@ class RuleToMatch(object):
             
         return modifiers_dict
         
-    # Possible pcre modifiers: i,s,m,x,A,E,G,O,R
+    ## Add pcre modifiers to the pcre string since the re module can process them
+    # Possible pcre modifiers as detailed by Snort: i,s,m,x,A,E,G,O,R
     # Native pcre modifiers supported by Python 'i', 's', 'm', 'x' 
-    # Modifier G (Ungreedy) and D are not supported by python. Modifier O seems only required for the Snort engine
-    def __adjust_pcre_to_modifiers(self, pcre_string, modifiers):
+    # Modifier G (Ungreedy) and D are not supported by python. Modifier O appear to be only required for the Snort engine
+    def __parse_pcre_modifiers(self, pcre_string, modifiers):
         if not modifiers:
             return pcre_string, modifiers
 

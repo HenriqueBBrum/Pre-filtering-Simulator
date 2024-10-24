@@ -1,15 +1,8 @@
 import re
 import ipaddress
-import collections
-import shlex
 
-from snort_rule_parser.rule_related_classes import Rule
-
-try:
-    from .validation_dicts import Dicts
-except ImportError:
-    from compiler.snort_rule_parser.validation_dicts import Dicts
-
+from .rule import Rule
+from .validation_dicts import Dicts
         
 ### 
 #   Parses a Snort/Suricata rule and returns two dictionaris:
@@ -17,8 +10,7 @@ except ImportError:
 #       THe other containing the options values
 #   If there are invalid option in the rule an Error is raised. 
 ###
-class Parser(object):
-
+class RuleParser(object):
     MIN_PORT = 0
     MAX_PORT = 65535
 
@@ -29,15 +21,8 @@ class Parser(object):
         header, has_negation = self.__parse_header(rule)
         options = self.__parse_options(rule) 
 
-        # if options["sid"][1][0] == "498":
-        #     header = {}
-
         return Rule(rule, header, options, has_negation)
-    
-    def str_rule_id(self):
-        return str(self.header)+self.options["flags"]
        
-
     ### HEADER PARSING FUNCTIONS ###
     # Parses the rule header, validates it, and returns a dictionary
     def __parse_header(self, rule):
@@ -77,9 +62,9 @@ class Parser(object):
     def __header_list_to_dict(self, header):
         header_dict = {}
         
-        header_dict["action"] = self.__action(header[0])
-        header_dict["proto"] = self.__proto(header[1])
-        if len(header) == 2:
+        header_dict["action"] = self.dicts.action(header[0])
+        header_dict["proto"] = self.dicts.proto(header[1])
+        if len(header) == 2: # Ruls like: "alert http (...)"
             header_dict["src_ip"] = self.__ip("any")
             header_dict["src_port"] = self.__port("any")
             header_dict["direction"] = self.__direction("<>")
@@ -92,50 +77,7 @@ class Parser(object):
         header_dict["direction"] = self.__direction(header[4])
         header_dict["dst_ip"] = self.__ip(header[5])
         header_dict["dst_port"] = self.__port(header[6])
-
         return header_dict
-
-    # Validates actions
-    @staticmethod
-    def __action(action: str) -> str:
-        actions = {
-            "alert",
-            "log",
-            "pass",
-            "activate",
-            "dynamic",
-            "drop",
-            "reject",
-            "sdrop",
-            "rewrite"
-        }
-
-        if action in actions:
-            return action
-        else:
-            msg = "Invalid action specified %s" % action
-            raise ValueError(msg)
-
-    # Validates protocols/services that are used by the Snort 3 Community and Registered rulesets
-    @staticmethod
-    def __proto(proto: str) -> str:
-        protos = {
-            "tcp",
-            "udp",
-            "icmp",
-            "ip", 
-            "http",
-            "file",
-            "smtp",
-            "ssh",
-            "ssl"
-        }
-
-        if proto.lower() in protos:
-            return proto
-        else:
-            msg = "Unsupported Protocol %s " % proto
-            raise ValueError(msg)
 
     # Parses one IP or a list of IPs. 
     # Each input IP turns to the following output (<value>, <bool>) 
@@ -296,7 +238,7 @@ class Parser(object):
                 
                 # Adjust "content" and "pcre" option by checking the buffer, if it has the "!" operator, cleaning the content to match and fidings the modifiers
                 if key == "content" or key == "pcre":
-                    key, parsed_value = self.__get_content_pcre(key, value,current_buffer)
+                    key, parsed_value = self.__get_content_and_pcre(key, value,current_buffer)
                 else:
                     value = value.split(",")
                     parsed_value = value[0] if len(value) == 1 else value
@@ -321,9 +263,7 @@ class Parser(object):
                              "you have a syntax error")
 
         op_list = list()
-        option = ""
-        last_char = ""
-
+        option, last_char = "", ""
         for char in options.rstrip(")"):
             if char != ";":
                 option = option + char
@@ -336,7 +276,7 @@ class Parser(object):
         return op_list
 
 
-    def __get_content_pcre(self, key, value, current_buffer):
+    def __get_content_and_pcre(self, key, value, current_buffer):
         negate = re.search('^!', value)
         content = re.search('"([^"]*)"', value).group(0)[1:-1]
         if key == "content":

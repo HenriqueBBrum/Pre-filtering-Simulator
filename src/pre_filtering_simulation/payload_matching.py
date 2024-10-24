@@ -1,44 +1,42 @@
-from urllib.parse import urlparse
 from scapy.layers.http import * 
-import binascii
-import urllib
 import re
 
-from header_matching import compare_fields
+from .header_matching import compare_field
 
-unsupported_buffers = {"json_data", "vba_data", "base64_data"}
-http_request_buffers = {"http_uri", "http_raw_uri", "http_method"}
-http_response_buffers = {"http_stat_code", "http_stat_msg", "file_data"}
-
-# Compares a rules payload fields against a packet's payload. 
+## Compares the payload of packet against the payload-related fields of a rule
 # A "False" return value means the packet does not match the rule and is not suspicious acording to the rule
-def compare_payload(pkt, len_pkt_payload, pkt_payload_buffers, rule):
+def compare_payload(pkt, len_pkt_payload, buffers, rule):
     rule_proto = rule.pkt_header_fields["proto"].upper()
     try:
         len_pkt_payload = len_pkt_payload[rule_proto]
-    except:
-        print(rule_proto)
-        print(len_pkt_payload)
-        print(pkt)
-        len_pkt_payload = 0
+    except: # No scapy layer for this protocol, SSH, SMTP, etc
+        layers = pkt.layers
+        len_pkt_payload = len(pkt[Raw]) if layers[-1] is Raw else 0
 
-    if "dsize" in rule.payload_fields and not compare_fields(len_pkt_payload, rule.payload_fields["dsize"]["data"], \
+    # Compare the packet's payload size against the rule's desired (payload) size
+    if "dsize" in rule.payload_fields and not compare_field(len_pkt_payload, rule.payload_fields["dsize"]["data"], \
                                                                                             rule.payload_fields["dsize"]["comparator"]):
         return False
 
-    # Packet has no payload but the rule has payload fields
+    # If the packet has no payload but the rule has payload fields, return that it does not match the rule
     if len_pkt_payload == 0 and ("content_pcre" in rule.payload_fields):
         return False
 
-    # Only compare packets that have payload with rules that have fields for payload comparison
-    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt, pkt_payload_buffers, rule_proto, rule.payload_fields["content_pcre"], rule.sids()):
+    # Compare packets that have payload with rules that have the "content" or "pcre" keywords
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt, buffers, rule_proto, rule.payload_fields["content_pcre"]):
         return False
 
     return True
 
 
-# Guarentees: Packet has payload and the rule has "content" fields
-def __compare_content_pcre(pkt, pkt_payload_buffers, rule_proto, rule_content_pcre, sids):
+## Compares "content" and "pcre" strings against the desired packet's buffer
+# Guarentees: Packet has payload and the rule has "content" or "pcre" fields
+
+unsupported_buffers = {"json_data", "vba_data", "base64_data"}
+http_request_buffers = {"http_uri", "http_raw_uri", "http_method"}
+http_response_buffers = {"http_stat_code", "http_stat_msg", "file_data"}
+
+def __compare_content_pcre(pkt, buffers, rule_proto, rule_content_pcre):
     position_dict = {}
     buffer, prev_buffer_name = "", ""
     position = 0
@@ -57,26 +55,26 @@ def __compare_content_pcre(pkt, pkt_payload_buffers, rule_proto, rule_content_pc
             if match_buffer == "pkt_data" or match_buffer == "raw_data":
                 match_buffer+="_"+rule_proto
                 
-            buffer = pkt_payload_buffers["nocase"][match_buffer]
+            buffer = buffers["nocase"][match_buffer]
             position = 0
             if match_buffer in position_dict:
                 position = position_dict[match_buffer]
 
         if not buffer and not match_buffer:
             match_buffer = "pkt_data_"+rule_proto
-            buffer = pkt_payload_buffers["nocase"][match_buffer]
+            buffer = buffers["nocase"][match_buffer]
             
         prev_buffer_name = match_buffer if match_buffer else prev_buffer_name
         start, end, nocase = 0, len(buffer), False
         if match_type == 0:
             start, end, nocase = __process_content_modifiers(match_modifiers, position, end)
-            buffer = buffer if nocase else pkt_payload_buffers["original"][prev_buffer_name]
+            buffer = buffer if nocase else buffers["original"][prev_buffer_name]
             match_pos = buffer[start:end].find(match_str)
         else:
             if match_modifiers and 'R' in match_modifiers:
                 start = position
 
-            match = re.search(match_str, pkt_payload_buffers["original"][prev_buffer_name][start:end])
+            match = re.search(match_str, buffers["original"][prev_buffer_name][start:end])
             if match:
                 match_pos = match.start()
                 match_str = match.group(0)
@@ -93,13 +91,12 @@ def __compare_content_pcre(pkt, pkt_payload_buffers, rule_proto, rule_content_pc
 
     return True
 
-
+# Process the modifiers of the keyword "content"
 def __process_content_modifiers(modifiers, position, len_current_buffer):
     start, end, nocase = 0, len_current_buffer, False
     if modifiers:
         if "nocase" in modifiers:
             nocase = True
-
         try:
             if "offset" in modifiers:
                 start = int(modifiers["offset"])
@@ -114,7 +111,8 @@ def __process_content_modifiers(modifiers, position, len_current_buffer):
                 if start == 0:
                     start = position
                 end = start+int(modifiers["within"])
-        except:
+        except: 
+            # The modifiers value is a variable, which is not supported by this program
             return 0, len_current_buffer, nocase
     return start, end, nocase
 

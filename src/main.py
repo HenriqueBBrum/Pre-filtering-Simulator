@@ -2,18 +2,22 @@ import time
 import sys
 
 
-from snort_config_parser import SnortConfiguration
-from snort_rule_parser.rules_parser import get_rules, adjust_rules, dedup_rules
-from simulation import pre_filtering_simulation
+from snort_parser.config_parser import SnortConfiguration
+from snort_parser.parsing_rules import get_rules, adjust_rules, dedup_rules
+from pre_filtering_simulation.simulation import pre_filtering_simulation
 
-def main(config_path, rules_path):
+def main(config_path, rules_path, ruleset_name):
     config = SnortConfiguration(snort_version=2, configuration_dir=config_path)
     print("*" * 80)
     print("*" * 80)
     print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
     modified_rules = parse_rules(config, rules_path)
+
+    print("*" * 80)
+    print("*" * 80)
+    print("*" * 26 + " SIMULATION " + "*" * 27+ "\n\n")
     start = time.time()
-    pre_filtering_simulation(modified_rules)
+    pre_filtering_simulation(modified_rules, ruleset_name)
     print("Simulation time: ", time.time() - start)
 
 
@@ -43,6 +47,6 @@ def parse_rules(config, rules_path):
 if __name__ == '__main__':
     config_path = sys.argv[1]
     rules_path = sys.argv[2]
-    compiler_goal = sys.argv[3]
+    ruleset_name = sys.argv[3]
 
-    main(config_path, rules_path)
+    main(config_path, rules_path, ruleset_name)
