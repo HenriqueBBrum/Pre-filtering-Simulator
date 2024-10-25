@@ -1,6 +1,5 @@
-import time
+from time import time
 import sys
-
 
 from snort_parser.config_parser import SnortConfiguration
 from snort_parser.parsing_rules import get_rules, adjust_rules, dedup_rules
@@ -15,10 +14,10 @@ def main(config_path, rules_path, ruleset_name):
 
     print("*" * 80)
     print("*" * 80)
-    print("*" * 26 + " SIMULATION " + "*" * 27+ "\n\n")
-    start = time.time()
+    print("*" * 26 + " SIMULATION " + "*" * 36+ "\n\n")
+    start = time()
     pre_filtering_simulation(modified_rules, ruleset_name)
-    print("Simulation time: ", time.time() - start)
+    print("Simulation time: ", time() - start)
 
 
 # Functions related to the parsing of Snort/Suricata rules from multiple files, and the subsequent deduplication, 

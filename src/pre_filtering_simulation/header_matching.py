@@ -7,29 +7,29 @@ possible_ipopts = {"RR": "rr", "EOL":"eol", "NOP":"nop", "Timestamp": "ts", "Sec
                         "LSRR": "lsrr", "LSSRE": "lsrre", "SSRR": "ssrr", "Stream Id":"satid"}
 
 # Compares the header fields of a packet against the ones for a rule
-def compare_header_fields(pkt_fields, rule, rule_proto, icmp_in_pkt, tcp_in_pkt, upd_in_pkt):
+def compare_header_fields(pkt_to_match, rule, rule_proto):
      # Compares the packet's port(s) against the rule's port(s) 
-    if (rule_proto == "tcp" or rule_proto == "udp") and (tcp_in_pkt or upd_in_pkt):
-        if not __compare_ports(pkt_fields["dst_port"], rule.pkt_header_fields["dst_port"]):
+    if (rule_proto == "tcp" or rule_proto == "udp") and (pkt_to_match.tcp_in_pkt or pkt_to_match.upd_in_pkt):
+        if not __compare_ports(pkt_to_match.header["dst_port"], rule.pkt_header_fields["dst_port"]):
             return False
 
-        if not __compare_ports(pkt_fields["src_port"], rule.pkt_header_fields["src_port"]):
+        if not __compare_ports(pkt_to_match.header["src_port"], rule.pkt_header_fields["src_port"]):
             return False
 
     # Compares the packet's IP(s) against the rule's IP(s) 
-    if not __compare_IP(pkt_fields["dst_ip"], rule.pkt_header_fields["dst_ip"]):
+    if not __compare_IP(pkt_to_match.header["dst_ip"], rule.pkt_header_fields["dst_ip"]):
         return False
 
-    if not __compare_IP(pkt_fields["src_ip"], rule.pkt_header_fields["src_ip"]):
+    if not __compare_IP(pkt_to_match.header["src_ip"], rule.pkt_header_fields["src_ip"]):
         return False
 
-    if not __matched_IP_fields(pkt_fields, rule.pkt_header_fields):
+    if not __matched_IP_fields(pkt_to_match.header, rule.pkt_header_fields):
         return False
 
-    if rule_proto == "tcp" and tcp_in_pkt and not __matched_TCP_fields(pkt_fields, rule.pkt_header_fields):
+    if rule_proto == "tcp" and pkt_to_match.tcp_in_pkt and not __matched_TCP_fields(pkt_to_match.header, rule.pkt_header_fields):
         return False
     
-    if rule_proto == "icmp" and icmp_in_pkt and not __matched_ICMP_fields(pkt_fields, rule.pkt_header_fields):
+    if rule_proto == "icmp" and pkt_to_match.icmp_in_pkt and not __matched_ICMP_fields(pkt_to_match.header, rule.pkt_header_fields):
         return False
 
     return True
