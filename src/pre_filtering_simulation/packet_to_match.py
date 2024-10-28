@@ -13,7 +13,7 @@ class PacketToMatch(object):
         self.upd_in_pkt = UDP in pkt
 
         self.http_res_in_pkt = HTTPResponse in pkt
-        self.http_req_in_kt = HTTPRequest in pkt
+        self.http_req_in_pkt = HTTPRequest in pkt
 
         self.header = self.__get_header_fields(pkt)   
         self.len_payload = {} # The payload length of each protocol. Since a TCP pkt has the IP proto and might others (e.g., HTTP) each protocol has different payload sizes
@@ -116,20 +116,20 @@ class PacketToMatch(object):
         return payload_buffers
 
     # If the HTTP field is valid return the field decoded
-    def __decode_http_field(http_field):
+    def __decode_http_field(self, http_field):
         return http_field.decode("utf-8") if http_field else ""
 
     # Returns the normalized or raw HTTP header
-    def __get_http_header(http_header, normalized):
+    def __get_http_header(self, http_header, normalized):
         http_header.remove_payload()
         return self.__normalize_http_text("http_header", bytes(http_header).decode('utf-8')) if normalized else bytes(http_header).decode('utf-8')
 
     # Returns the parsed HTTP Cookie field
     def __get_http_cookie(self, http_header, normalized):
         cookie = ""  
-        if self.http_req_in_kt and http_header[HTTPRequest].Cookie:
+        if self.http_req_in_pkt and http_header[HTTPRequest].Cookie:
             cookie = http_header.Cookie.decode("utf-8")
-        elif self.http_res_in_kt in http_header and http_header[HTTPResponse].Set_Cookie:
+        elif self.http_res_in_pkt in http_header and http_header[HTTPResponse].Set_Cookie:
             cookie = http_header.Set_Cookie.decode("utf-8")
 
         return self.__normalize_http_text("http_cookie", cookie) if normalized else cookie

@@ -1,12 +1,13 @@
 from scapy.all import IP
 from scapy.layers.http import * 
-from scapy.utils import PcapWriter, PcapReader
+from scapy.utils import PcapWriter,PcapReader,rdpcap
 from multiprocessing import Pool,Manager,cpu_count
 from socket import getservbyport
 from os import listdir, getpid
 from time import time
 import traceback
 import collections
+import sys
 
 from .header_matching import compare_header_fields
 from .payload_matching import compare_payload
@@ -32,33 +33,40 @@ def pre_filtering_simulation(rules, ruleset_name, pcap_path="/home/hbeckerbrum/N
         if "Friday" not in pcap_file:
             continue
         start = time()
-        pkt_id, ip_pkt_count = 0, 0
-        suspicious_pkts = []
-        pool = Pool(10)
-        suspicious_pkts = Manager().list()
-        for pkt in PcapReader(pcap_path + pcap_file):
-            if ip_pkt_count > 100:
-                break
+        pkt_id, ip_pkt_count, sus_count = 0, 0, 0
+        matched_rules = {}
+        print("Begin processing file: ", pcap_file)
+        sys.stdout.flush()
 
+        suspicious_pkts_output = "output/"+ruleset_name+"_"+pcap_file.split("-")[0]+"_sus_pkts.pcap"
+        pcap_writer = PcapWriter(suspicious_pkts_output, append=True, sync=True)
+        for pkt in PcapReader(pcap_path + pcap_file):
             if IP in pkt:
-                print(pkt_id)
                 packet_to_match = PacketToMatch(pkt, rules_dict.keys())
                 rules_to_compare = get_pkt_related_rules(packet_to_match, rules_dict)
-                if not rules_to_compare:
-                    suspicious_pkts.append((pkt_id, rule))
-                else:
-                    #compare_rules(packet_to_match, pkt_id, rules_to_compare, suspicious_pkts)
-                    pool.apply_async(compare_rules, (packet_to_match, pkt_id, rules_to_compare, suspicious_pkts))
+                for rule in rules_to_compare:
+                    try:
+                        if not compare_header_fields(packet_to_match, rule, rule.pkt_header_fields["proto"]):
+                            continue
 
+                        if not compare_payload(packet_to_match, rule):
+                            continue
+                    except Exception as e:
+                        print("Exception")
+                        print(traceback.format_exc())
+
+                    sus_count+=1
+                    rule_sids = rule.sids()[0]
+                    matched_rules[rule_sids] = matched_rules[rule_sids]+1 if rule_sids in matched_rules else 1 
+                    pcap_writer.write(pkt)
+                    break 
                 ip_pkt_count+=1
             pkt_id+=1
-        pool.close()
-        pool.join()
-
-        print(collections.Counter(elem[1][0] for elem in suspicious_pkts))
+        pcap_writer.close()
+        print(matched_rules)
         print("Time to process", ip_pkt_count+1, "packets against ",len(rules), "rules in seconds: ", time() - start)
-        print(len(suspicious_pkts), ip_pkt_count,  pkt_id+1, "\n") # Count IP packets
-        #send_pkts_to_NIDS(pcap, suspicious_pkts, "output/"+ruleset_name+"_"+pcap_file.split("-")[0]+"_sus_pkts.pcap")
+        print(sus_count, ip_pkt_count,  pkt_id+1, "\n") # Count IP packets
+        print("Finished with file: ", pcap_file)
 
 
 # Generates the optimal pre-filtering ruleset using most header fields and part of the payload matches
@@ -69,24 +77,6 @@ def optimal_pre_filtering_rules():
 
     return []
 
-
-# Compares a list of packets with rules
-def compare_rules(pkt_to_match, pkt_id, rules, suspicious_pkts):
-    count = 0
-    start = time()
-    for rule in rules:
-        try:
-            if not compare_header_fields(pkt_to_match, rule, rule.pkt_header_fields["proto"]):
-                continue
-
-            if not compare_payload(pkt_to_match, rule):
-                continue
-        except Exception as e:
-            print("Exception")
-            print(traceback.format_exc())
-
-        suspicious_pkts.append((pkt_id,rule.sids()))
-        break                
 
 ip_proto = {1:"icmp", 6:"tcp", 17:"udp"}
 # Returns the rules related to the protocol and services of a packet
@@ -112,13 +102,4 @@ def get_pkt_related_rules(pkt_to_match, rules_dict):
         if service == "http" and (HTTPRequest not in pkt or HTTPResponse not in pkt):
             service = None
         
-    return rules_dict[pkt_proto]+(rules_dict[service] if service in rules_dict.keys() else [])
-
-
-# Sends the remaining packets to Snort using the desired configuration
-def send_pkts_to_NIDS(pcap, suspicious_pkts, output_file):
-    suspicious_pkts_pcap = PcapWriter(output_file, append=True, sync=True)
-    for match in sorted(suspicious_pkts, key=lambda x: x[0]):
-        suspicious_pkts_pcap.write(pcap[match[0]])
-
-    # run os command to send packets to Snort and save the output somewhere
+    return rules_dict[pkt_proto]+(rules_dict[service] if service in rules_dict else [])

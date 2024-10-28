@@ -14,7 +14,7 @@ def main(config_path, rules_path, ruleset_name):
 
     print("*" * 80)
     print("*" * 80)
-    print("*" * 26 + " SIMULATION " + "*" * 36+ "\n\n")
+    print("*" * 34 + " SIMULATION " + "*" * 34+ "\n\n")
     start = time()
     pre_filtering_simulation(modified_rules, ruleset_name)
     print("Simulation time: ", time() - start)

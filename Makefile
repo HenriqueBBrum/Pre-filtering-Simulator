@@ -21,9 +21,9 @@ endif
 build:
 	mkdir -p ${EXPERIMENTS_DIR} 
 
-#	python3 -m cProfile -o temp.dat -s time src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} ${COMPILER_GOAL}
+#	python3 -m cProfile -o temp.dat -s time src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} ${COMPILER_GOAL}  2>&1 | tee output/log_community.txt
 simulation.community: 
-	python3 src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} community 2>&1 | tee output/log_community.txt
+	python3 src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} community
 
 simulation.registered:
 	python3 src/main.py ${SNORT_CONFIG} ${SNORT3_REGISTERED_RULES} registered 2>&1 | tee output/log_registered.txt
