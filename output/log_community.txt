@@ -1,0 +1,64 @@
+********************************************************************************
+********************************************************************************
+************************** SNORT RULES PARSING STAGE ***************************
+
+
+---- Getting and parsing rules..... ----
+---- Splitting bidirectional rules..... ----
+---- Adjusting rules. Replacing variables..... ----
+---- Deduping rules based on the packet header and payload matching fields..... ----
+
+Results:
+Total original rules: 3944
+Total adjusted and filtered rules: 3929
+Total deduped rules: 3911
+********************************************************************************
+********************************************************************************
+********************************** SIMULATION **********************************
+
+
+Begin processing file:  Monday-community.pcap
+{'0/0': 0, '40063/5': 20, '1394/17': 1, '19678/10': 3}
+Time to process 386060 packets against  3911 rules in seconds:  1149.5916647911072
+24 386059 386337 
+
+Finished with file:  Monday-community.pcap
+Begin processing file:  Friday-community.pcap
+{'0/0': 176, '40063/5': 4}
+Time to process 63554 packets against  3911 rules in seconds:  162.98176646232605
+180 63553 63939 
+
+Finished with file:  Friday-community.pcap
+Begin processing file:  Tuesday-community.pcap
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 45, in pre_filtering_simulation
+    if not compare_header_fields(packet_to_match, rule, rule.pkt_header_fields["proto"]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/header_matching.py", line 29, in compare_header_fields
+    if rule_proto == "tcp" and pkt_to_match.tcp_in_pkt and not __matched_TCP_fields(pkt_to_match.header, rule.pkt_header_fields):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/header_matching.py", line 90, in __matched_TCP_fields
+    if "flags" in rule_pkt_header and not __compare_tcp_flags(pkt_fields["flags"], rule_pkt_header["flags"]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/header_matching.py", line 185, in __compare_tcp_flags
+    pkt_tcp_flags_num = sum(tcp_flags_dict[flag] for flag in pkt_tcp_flags)
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/header_matching.py", line 185, in <genexpr>
+    pkt_tcp_flags_num = sum(tcp_flags_dict[flag] for flag in pkt_tcp_flags)
+KeyError: 'N'
+
+{'0/0': 1, '40063/5': 74}
+Time to process 42749 packets against  3911 rules in seconds:  119.9388780593872
+75 42748 42766 
+
+Finished with file:  Tuesday-community.pcap
+Begin processing file:  Wednesday-community.pcap
+{'0/0': 0, '40063/5': 3}
+Time to process 64141 packets against  3911 rules in seconds:  159.07630157470703
+3 64140 64168 
+
+Finished with file:  Wednesday-community.pcap
+Begin processing file:  Thursday-community.pcap
+{'0/0': 124, '40063/5': 17, '19678/10': 1}
+Time to process 38981 packets against  3911 rules in seconds:  95.70897126197815
+142 38980 40940 
+
+Finished with file:  Thursday-community.pcap
+Begin processing file:  info.txt

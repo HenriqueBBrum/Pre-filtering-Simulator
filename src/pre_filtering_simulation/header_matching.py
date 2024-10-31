@@ -32,6 +32,7 @@ def compare_header_fields(pkt_to_match, rule, rule_proto):
     if rule_proto == "icmp" and pkt_to_match.icmp_in_pkt and not __matched_ICMP_fields(pkt_to_match.header, rule.pkt_header_fields):
         return False
 
+    # Add SSL/TLS support
     return True
 
 

@@ -1,5 +1,4 @@
-import re
-
+from re import search
 from .header_matching import compare_field
 
 ## Compares the payload of packet against the payload-related fields of a rule
@@ -73,7 +72,7 @@ def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre):
             if match_modifiers and 'R' in match_modifiers:
                 start = position
 
-            match = re.search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+            match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
             if match:
                 match_pos = match.start()
                 match_str = match.group(0)

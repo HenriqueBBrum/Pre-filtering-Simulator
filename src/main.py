@@ -37,7 +37,7 @@ def parse_rules(config, rules_path):
 
     print("\nResults:")
     print("Total original rules: {}".format(len(original_rules)))
-    print("Total adjusted rules: {}".format(len(modified_rules)))
+    print("Total adjusted and filtered rules: {}".format(len(modified_rules)))
     print("Total deduped rules: {}".format(len(deduped_rules)))
 
     return deduped_rules

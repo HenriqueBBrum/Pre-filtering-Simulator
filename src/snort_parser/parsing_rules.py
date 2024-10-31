@@ -6,6 +6,7 @@
 
 from os import listdir
 from os.path import isfile, join
+from re import search
 import copy
 import sys
 
@@ -35,10 +36,11 @@ def get_rules(rules_path, ignored_rule_files):
         parsed_rules, temp_modified_rules = __parse_rules(rule_file)
         original_rules.extend(parsed_rules)
         modified_rules.extend(temp_modified_rules)
+        
     return original_rules, modified_rules
 
 
-# non_supported_keywords = {"dce_iface", "dce_opnum", "dce_stub_data", "file_data", "base64_data"}
+regex_to_find_unsupported_keywords = "; *(sip_|dce_|base64_|sd_pattern|cvs|md5|sha256|sha512|gtp_|dnp3_|cip_|iec104_|mms_|modbus_|s7commplus|rpc:)"
 
 # Parse each rule from a rule file
 def __parse_rules(rule_file):
@@ -51,10 +53,11 @@ def __parse_rules(rule_file):
                 continue
 
             parsed_rule = parser.parse_rule(line)
-            if not parsed_rule.header:
+            parsed_rules.append(parsed_rule)
+
+            if search(regex_to_find_unsupported_keywords, line):
                 continue
 
-            parsed_rules.append(parsed_rule)
             copied_rule = copy.deepcopy(parsed_rule)
             if copied_rule.header.get("direction") == "bidirectional":
                 copied_rule.header['direction'] = "unidirectional"

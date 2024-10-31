@@ -1,0 +1,5 @@
+Monday community - packets: 4394848-4781183
+Tuesday community - packets: 866083-908847
+Wednesday community - packets: 9216760-9280926
+Thursday community - packets: 5604663-5645601
+Friday community - packets: 6971090-7035027

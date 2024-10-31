@@ -23,10 +23,10 @@ build:
 
 #	python3 -m cProfile -o temp.dat -s time src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} ${COMPILER_GOAL}  2>&1 | tee output/log_community.txt
 simulation.community: 
-	python3 src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} community
+	python3 src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} community | tee output/log_community.txt
 
 simulation.registered:
-	python3 src/main.py ${SNORT_CONFIG} ${SNORT3_REGISTERED_RULES} registered 2>&1 | tee output/log_registered.txt
+	python3 src/main.py ${SNORT_CONFIG} ${SNORT3_REGISTERED_RULES} registered 2>&1
 
 simulation.emerging: 
 	python3 src/main.py ${SNORT_CONFIG} ${SNORT2_EMERGING_RULES} emerging 2>&1 | tee output/log_emerging.txt
