@@ -53,8 +53,7 @@ class RuleParser(object):
             header = rule.split('(', 1)
             return header[0]
         else:
-            msg = 'Error in syntax, check if rule'\
-                  'has been closed properly %s ' % rule
+            msg = "Error in syntax, check if rule has been closed properly %s " % rule
             raise SyntaxError(msg)
     
     # Receives a list "[<action>, <proto>, <src_ip>, <src_port>, <direction>, <dst_ip>, <dst_port>", parses and validates each field
@@ -281,11 +280,11 @@ class RuleParser(object):
         content = re.search('"([^"]*)"', value).group(0)[1:-1]
         if key == "content":
             modifiers = re.search('[\w,\- ]*$', value).group(0)[1:]
-            parsed_value = [0] # IDs it is content
+            parsed_value = [0] # content ID
         else:
             modifiers = re.search('[\w ]*$', content).group(0)
             content = content[1:-1-len(modifiers)]
-            parsed_value = [1] # IDs it is pcre
+            parsed_value = [1] # PCRE id
 
         parsed_value.append(current_buffer)
         parsed_value.append(False if negate else True)

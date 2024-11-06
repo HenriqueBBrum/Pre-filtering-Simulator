@@ -22,7 +22,7 @@ def compare_header_fields(pkt_to_match, rule, rule_proto):
 
     if not __compare_IP(pkt_to_match.header["src_ip"], rule.pkt_header_fields["src_ip"]):
         return False
-
+    
     if not __matched_IP_fields(pkt_to_match.header, rule.pkt_header_fields):
         return False
 

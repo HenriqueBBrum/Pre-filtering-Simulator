@@ -22,18 +22,18 @@ native_pcre_modifiers = {'i', 's', 'm', 'x'}
 
 # Class that contains all the fields required to match against networking packets 
 class RuleToMatch(object):
-    def __init__(self, pkt_header_fields, payload_fields, priority_list=[], sid_rev_list=[]):
+    def __init__(self, pkt_header_fields, payload_fields, pre_filtering_scenario="full"):
         self.pkt_header_fields = pkt_header_fields
         self.payload_fields = payload_fields
 
-        self.priority_list = priority_list
-        self.sid_rev_list = sid_rev_list
+        self.priority_list = []
+        self.sid_rev_list = []
 
-        self.adjust_fields_for_pkt_matching()
+        self.adjust_fields_for_pkt_matching(pre_filtering_scenario)
       
 
     # Adjust rule fields for quick matching
-    def adjust_fields_for_pkt_matching(self):
+    def adjust_fields_for_pkt_matching(self, pre_filtering_scenario):
         self.pkt_header_fields['src_ip'] = self.__convert_ip_list_to_radix_tree(self.pkt_header_fields['src_ip'])
         self.pkt_header_fields['dst_ip'] = self.__convert_ip_list_to_radix_tree(self.pkt_header_fields['dst_ip'])
 
@@ -78,7 +78,7 @@ class RuleToMatch(object):
             self.pkt_header_fields["flags"] = {"data": tcp_flags_num, "comparator": comparator, "exclude": exclude}
 
         if self.payload_fields:
-            self.__adjust_payload_matching_fields()
+            self.__adjust_payload_matching_fields(pre_filtering_scenario)
 
     # Converts IP list to a radix tree for quick search
     def __convert_ip_list_to_radix_tree(self, ips):
@@ -108,7 +108,7 @@ class RuleToMatch(object):
         return (individual_ports,port_ranges,must_match)
 
     # Adjust the "dsize" and "content_pcre" rule data
-    def __adjust_payload_matching_fields(self):
+    def __adjust_payload_matching_fields(self, pre_filtering_scenario):
         temp_payload_fields = {}
         if "dsize" in self.payload_fields:
             value = self.payload_fields["dsize"][1]
@@ -125,15 +125,25 @@ class RuleToMatch(object):
                 if match[0] == 0:
                     match_str = self.__clean_content_and_hexify(match[3], "nocase" in match[4] if match[4] else False)
                     modifiers = self.__parse_content_modifiers(match[4])
-                    content_pcre.append((match[0], match[1], match[2], match_str, modifiers))
+                    content_pcre.append((match[0], match[1], match[2], match_str, modifiers)) # type(0 = content, 1 = PCRE), buffer, negation, string, modifiers
                 else:
                     parsed_pcre_str, snort_only_modifiers = self.__parse_pcre_modifiers(match[3], match[4])
                     content_pcre.append((match[0], match[1], match[2], parsed_pcre_str, snort_only_modifiers))
                     
-            temp_payload_fields["content_pcre"] = content_pcre
+            if pre_filtering_scenario == "first":
+                temp_payload_fields["content_pcre"] = [content_pcre[0]]
+            elif pre_filtering_scenario =="longest":
+                longest, size = None, 0
+                for content in content_pcre:
+                    if len(content[3]) > size:
+                        longest = content
+                        size = len(content[3])
+
+                temp_payload_fields["content_pcre"] = [longest]
+            else:
+                temp_payload_fields["content_pcre"] = content_pcre
 
         self.payload_fields = temp_payload_fields
-
 
 
     # Clean escaped chars in the string part of content, and convert the hex part to char. Also adjusts the case if needed 

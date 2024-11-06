@@ -34,7 +34,8 @@ class Dicts():
             "file",
             "smtp",
             "ssh",
-            "ssl"
+            "ssl",
+            "dcerpc"
         }
 
         if proto.lower() in protos:

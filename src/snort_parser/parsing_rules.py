@@ -111,13 +111,13 @@ def __replace_system_variables(header_field, config_variables):
 
 
 # Deduplicate signature rules with the same fields and extract fields for quick matching with packets.
-def dedup_rules(config, rules):
+def dedup_rules(config, rules, pre_filtering_scenario):
     deduped_rules = {}
     for rule in rules:
         rule_id, pkt_header_fields, payload_fields = __get_header_and_payload_fields(rule.header, rule.options)
         
         if rule_id not in deduped_rules:
-            rule_to_match = RuleToMatch(pkt_header_fields, payload_fields, priority_list=[], sid_rev_list=[])
+            rule_to_match = RuleToMatch(pkt_header_fields, payload_fields, pre_filtering_scenario)
             if len(rule_to_match.pkt_header_fields) + len(rule_to_match.payload_fields) <= 5: # Exclude rules that only have the five-tuple
                 continue
             deduped_rules[rule_id] = rule_to_match
