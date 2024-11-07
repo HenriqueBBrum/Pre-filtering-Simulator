@@ -1,0 +1,48 @@
+********************************************************************************
+********************************************************************************
+************************** SNORT RULES PARSING STAGE ***************************
+
+
+---- Getting and parsing rules..... ----
+---- Splitting bidirectional rules..... ----
+---- Adjusting rules. Replacing variables..... ----
+---- Deduping rules based on the packet header and payload matching fields..... ----
+
+Results:
+Total original rules: 45957
+Total adjusted and filtered rules: 46580
+Total deduped rules: 45193
+
+Header size:  274.216579 MB
+Payload size:  21.489728 MB
+Total size:  295.706307 MB
+********************************************************************************
+********************************************************************************
+********************************** SIMULATION **********************************
+
+
+Starting file processing:  /home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/Friday_end.pcap
+Time to read  200000  packets in seconds:  36.59287357330322
+Counter({'18487/9': 9787, '5998/8': 1803, '36025/5': 1735, '399/9': 214, 'unsupported': 114, '36814/5': 32, '25827/4': 17, '5999/8': 5, '12147/7': 5, '7751/4': 1})
+Time to process 196950 packets against  45193 rules in seconds:  311.7119345664978
+Suspicious packets: 13713 ,  IP packets: 196950 , Packets: 200000 
+
+Finished with file:  Friday_end.pcap
+**************************************************
+Starting file processing:  /home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/Friday_start.pcap
+Time to read  200000  packets in seconds:  37.55207586288452
+Counter({'18487/9': 3148, '36025/5': 597, '5998/8': 518, 'unsupported': 376, '5999/8': 60, '2462/10': 38, '25827/4': 11, '36814/5': 6, '7751/4': 2, '5822/6': 2})
+Time to process 195577 packets against  45193 rules in seconds:  333.5499818325043
+Suspicious packets: 4758 ,  IP packets: 195577 , Packets: 200000 
+
+Finished with file:  Friday_start.pcap
+**************************************************
+Starting file processing:  /home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/Friday_mid.pcap
+Time to read  200000  packets in seconds:  50.684253215789795
+Counter({'18487/9': 8204, '5998/8': 2345, '36025/5': 1817, 'unsupported': 329, '5999/8': 244, '36814/5': 192, '25827/4': 23, '6285/4': 1, '1693/8': 1, '1690/7': 1})
+Time to process 196795 packets against  45193 rules in seconds:  302.664883852005
+Suspicious packets: 13157 ,  IP packets: 196795 , Packets: 200000 
+
+Finished with file:  Friday_mid.pcap
+**************************************************
+Simulation time:  1078.3895268440247

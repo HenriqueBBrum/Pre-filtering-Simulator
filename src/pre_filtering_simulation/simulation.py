@@ -17,13 +17,13 @@ from .payload_matching import compare_payload
 from .packet_to_match import PacketToMatch
 
 # Main simulation function where packets are compared against the pre-filtering rules
-def pre_filtering_simulation(rules, ruleset_name, pcap_path="/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/"):
+def pre_filtering_simulation(rules, ruleset_name, pre_filtering_scenario, pcaps_path="/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/"):
     pre_filtering_rules = get_pre_filtering_rules(rules)
    
-    for pcap_file in listdir(pcap_path):
+    for pcap_file in listdir(pcaps_path):
         start = time()
-        pcap = rdpcap(pcap_path+pcap_file)
-        print("Starting file processing: ", pcap_path+pcap_file)
+        pcap = rdpcap(pcaps_path+pcap_file)
+        print("Starting file processing: ", pcaps_path+pcap_file)
         print("Time to read ", len(pcap), " packets in seconds: ", time() - start)
 
         suspicious_pkts = Manager().list()
@@ -49,7 +49,7 @@ def pre_filtering_simulation(rules, ruleset_name, pcap_path="/home/hbeckerbrum/O
         print("Finished with file: ", pcap_file)
         print("*"*50)
 
-        suspicious_pkts_output = "suspicious_packets/"+ruleset_name+"/"+pcap_file
+        suspicious_pkts_output = "suspicious_packets/"+pre_filtering_scenario+"/"+ruleset_name+"/"+pcap_file
         suspicious_pkts_pcap = PcapWriter(suspicious_pkts_output, append=False, sync=True)
         for match in sorted(suspicious_pkts, key=lambda x: x[0]):
             suspicious_pkts_pcap.write(pcap[match[0]-1])

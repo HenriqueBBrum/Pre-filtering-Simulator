@@ -16,13 +16,13 @@ def main(config_path, rules_path, ruleset_name, pre_filtering_scenario):
     print("*" * 80)
     print("*" * 34 + " SIMULATION " + "*" * 34+ "\n\n")
     start = time()
-    pre_filtering_simulation(modified_rules, ruleset_name)
+    pre_filtering_simulation(modified_rules, ruleset_name, pre_filtering_scenario)
     print("Simulation time: ", time() - start)
 
 
 # Functions related to the parsing of Snort/Suricata rules from multiple files, and the subsequent deduplication, 
 # replacement of system variables, port groupping and fixing negated headers 
-def parse_rules(config, rules_path):
+def parse_rules(config, rules_path, pre_filtering_scenario):
     ignored_rule_files = {}
 
     print("---- Getting and parsing rules..... ----")
@@ -33,19 +33,59 @@ def parse_rules(config, rules_path):
     modified_rules = adjust_rules(config, fixed_bidirectional_rules) 
 
     print("---- Deduping rules based on the packet header and payload matching fields..... ----")
-    deduped_rules = dedup_rules(config, modified_rules, "full")
+    deduped_rules = dedup_rules(config, modified_rules, pre_filtering_scenario)
 
     print("\nResults:")
     print("Total original rules: {}".format(len(original_rules)))
     print("Total adjusted and filtered rules: {}".format(len(modified_rules)))
     print("Total deduped rules: {}".format(len(deduped_rules)))
 
-    # total_size = 0
-    # for rule in deduped_rules:
-    #     rule_size
+    get_rules_size(deduped_rules)
 
     return deduped_rules
 
+
+def get_rules_size(rules):
+    total_header_size = 0
+    total_payload_size = 0
+    for rule in rules:
+        for key, header_field_value in rule.pkt_header_fields.items():
+            if key == "proto" or key == "ipopts":
+                total_header_size+=sys.getsizeof(header_field_value)
+            elif key == "src_ip" or key == "dst_ip":
+                for ip in header_field_value[0].prefixes():
+                    total_header_size+=sys.getsizeof(ip)
+            elif key == "src_port" or key == "dst_port":
+                for port in header_field_value[0]:
+                    total_header_size+=sys.getsizeof(port)
+
+                for port_range in header_field_value[1]:
+                    total_header_size+=sys.getsizeof(port_range[0])
+                    total_header_size+=sys.getsizeof(port_range[-1])
+            else:
+                total_header_size+=sys.getsizeof(header_field_value["data"])+sys.getsizeof(header_field_value["comparator"])
+                if key == "flags":
+                    total_header_size+=sys.getsizeof(header_field_value["exclude"])
+
+        for key, payload_value in rule.payload_fields.items():
+            if key == "dsize":
+                total_payload_size+=sys.getsizeof(payload_value["data"])+sys.getsizeof(payload_value["comparator"])
+            else:
+                for content_pcre in payload_value:
+                    if content_pcre:
+                        total_payload_size+=sys.getsizeof(content_pcre[1]) # Buffer name
+                        total_payload_size+=sys.getsizeof(content_pcre[3]) # Content or pcre string
+                        if content_pcre[4]:
+                            if type(content_pcre[4]) is str:
+                                total_payload_size+=sys.getsizeof(content_pcre[4])
+                            else:
+                                for modifier in content_pcre[4]:
+                                    total_payload_size+=sys.getsizeof(modifier)
+
+    print("\nHeader size: ", total_header_size/1000000,"MB")
+    print("Payload size: ", total_payload_size/1000000,"MB")
+    print("Total size: ", (total_header_size+total_payload_size)/1000000,"MB")
+    
 
 if __name__ == '__main__':
     config_path = sys.argv[1]

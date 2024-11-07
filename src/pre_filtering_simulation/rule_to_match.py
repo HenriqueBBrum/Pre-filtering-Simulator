@@ -129,19 +129,10 @@ class RuleToMatch(object):
                 else:
                     parsed_pcre_str, snort_only_modifiers = self.__parse_pcre_modifiers(match[3], match[4])
                     content_pcre.append((match[0], match[1], match[2], parsed_pcre_str, snort_only_modifiers))
-                    
-            if pre_filtering_scenario == "first":
-                temp_payload_fields["content_pcre"] = [content_pcre[0]]
-            elif pre_filtering_scenario =="longest":
-                longest, size = None, 0
-                for content in content_pcre:
-                    if len(content[3]) > size:
-                        longest = content
-                        size = len(content[3])
-
-                temp_payload_fields["content_pcre"] = [longest]
-            else:
-                temp_payload_fields["content_pcre"] = content_pcre
+            
+            temp_payload_fields["content_pcre"] = self.__apply_pre_filtering_scenario(content_pcre, pre_filtering_scenario)
+            if not temp_payload_fields["content_pcre"]:
+                print(content_pcre)
 
         self.payload_fields = temp_payload_fields
 
@@ -161,6 +152,8 @@ class RuleToMatch(object):
             else:
                 temp_content, escaped = self.__process_non_hex_section(char, temp_content, nocase, escaped)
         
+        if escaped:
+            temp_content+="/"
         clean_content+=temp_content
         return clean_content
 
@@ -171,7 +164,7 @@ class RuleToMatch(object):
         if char == '|' or char == ' ':  
             if hex_now:
                 if nocase and (int(temp_content, 16) >= 65 and int(temp_content, 16) <= 90):
-                    temp_content = chr(int(temp_content, 16) + 32)[2:] # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
+                    temp_content = chr(int(temp_content, 16) + 32) # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
                 else:
                     temp_content = chr(int(temp_content, 16))
             elif char == '|' and not hex_now:
@@ -256,5 +249,26 @@ class RuleToMatch(object):
         return pcre_string, snort_only_modifiers
 
         
+    def __apply_pre_filtering_scenario(self, content_pcre, pre_filtering_scenario):
+        final_content_pcre = []
+        if pre_filtering_scenario == "first":
+            final_content_pcre = [content_pcre[0]]
+        elif pre_filtering_scenario =="longest":
+            longest, size = None, 0
+            for content in content_pcre:
+                if len(content[3]) > size:
+                    longest = content
+                    size = len(content[3])
+
+            final_content_pcre = [longest]
+        elif pre_filtering_scenario =="first_last":
+            final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[-1]]
+        elif pre_filtering_scenario =="first_second":
+            final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[1]]
+        else:
+            final_content_pcre = content_pcre
+
+        return final_content_pcre
+
     def sids(self):
         return list(set(self.sid_rev_list))

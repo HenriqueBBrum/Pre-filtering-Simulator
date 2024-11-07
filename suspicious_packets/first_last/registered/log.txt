@@ -1,0 +1,33 @@
+********************************************************************************
+********************************************************************************
+************************** SNORT RULES PARSING STAGE ***************************
+
+
+---- Getting and parsing rules..... ----
+---- Splitting bidirectional rules..... ----
+---- Adjusting rules. Replacing variables..... ----
+---- Deduping rules based on the packet header and payload matching fields..... ----
+
+Results:
+Total original rules: 45957
+Total adjusted and filtered rules: 46580
+Total deduped rules: 45193
+
+Header size:  274.216579 MB
+Payload size:  13.898862 MB
+Total size:  288.115441 MB
+********************************************************************************
+********************************************************************************
+********************************** SIMULATION **********************************
+
+
+Starting file processing:  /home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/Friday_end.pcap
+Time to read  200000  packets in seconds:  36.391517639160156
+Counter({'45828/1': 50781, '18487/9': 9787, '36025/5': 3507, '16167/12': 2984, '5998/8': 1803, '16706/9': 1347, '32706/2': 683, '399/9': 214, '31559/3': 178, 'unsupported': 114, '36814/5': 32, '46784/1': 30, '41701/3': 24, '24446/10': 18, '25827/4': 17, '51333/1': 9, '5999/8': 5, '12147/7': 5, '16688/8': 1, '32639/4': 1})
+Time to process 196950 packets against  45193 rules in seconds:  267.13117265701294
+Suspicious packets: 71540 ,  IP packets: 196950 , Packets: 200000 
+
+Finished with file:  Friday_end.pcap
+**************************************************
+Starting file processing:  /home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/Friday_start.pcap
+Time to read  200000  packets in seconds:  37.276771545410156

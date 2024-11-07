@@ -237,7 +237,9 @@ class RuleParser(object):
                 
                 # Adjust "content" and "pcre" option by checking the buffer, if it has the "!" operator, cleaning the content to match and fidings the modifiers
                 if key == "content" or key == "pcre":
-                    key, parsed_value = self.__get_content_and_pcre(key, value,current_buffer)
+                    key, parsed_value = self.__get_content_and_pcre(key, value, current_buffer)
+                    if parsed_value == '':
+                        print(value)
                 else:
                     value = value.split(",")
                     parsed_value = value[0] if len(value) == 1 else value
