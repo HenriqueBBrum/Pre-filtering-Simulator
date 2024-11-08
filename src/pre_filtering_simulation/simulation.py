@@ -17,7 +17,7 @@ from .payload_matching import compare_payload
 from .packet_to_match import PacketToMatch
 
 # Main simulation function where packets are compared against the pre-filtering rules
-def pre_filtering_simulation(rules, ruleset_name, pre_filtering_scenario, pcaps_path="/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/"):
+def pre_filtering_simulation(rules, ruleset_name, pre_filtering_scenario, pcaps_path):
     pre_filtering_rules = get_pre_filtering_rules(rules)
    
     for pcap_file in listdir(pcaps_path):
@@ -49,10 +49,10 @@ def pre_filtering_simulation(rules, ruleset_name, pre_filtering_scenario, pcaps_
         print("Finished with file: ", pcap_file)
         print("*"*50)
 
-        suspicious_pkts_output = "suspicious_packets/"+pre_filtering_scenario+"/"+ruleset_name+"/"+pcap_file
-        suspicious_pkts_pcap = PcapWriter(suspicious_pkts_output, append=False, sync=True)
-        for match in sorted(suspicious_pkts, key=lambda x: x[0]):
-            suspicious_pkts_pcap.write(pcap[match[0]-1])
+        suspicious_pkts_output = "suspicious_packets/"+pre_filtering_scenario+"/"+ruleset_name+"/"+pcap_file.split(".")[0]+".txt"
+        with open(suspicious_pkts_output, 'w') as file:
+            for match in sorted(suspicious_pkts, key=lambda x: x[0]):
+                file.write(f"{match[0]-1}\n")
 
 # Generates the optimal pre-filtering ruleset using most header fields and part of the payload matches
 def get_pre_filtering_rules(rules):
@@ -85,8 +85,8 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, start
                             if not compare_header_fields(pkt_to_match, rule, rule.pkt_header_fields["proto"]):
                                 continue
 
-                            if not compare_payload(pkt_to_match, rule):
-                                continue
+                            # if not compare_payload(pkt_to_match, rule):
+                            #     continue
 
                             suspicious_pkts.append((pkt_count+1, rule.sids()[0]))
                         except Exception as e:

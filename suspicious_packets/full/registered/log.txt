@@ -21,28 +21,124 @@ Total size:  295.706307 MB
 ********************************** SIMULATION **********************************
 
 
-Starting file processing:  /home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/Friday_end.pcap
-Time to read  200000  packets in seconds:  36.59287357330322
+Starting file processing:  selected_pcaps/pcaps/Wednesday_end.pcap
+Time to read  200000  packets in seconds:  35.27828884124756
+Counter({'18487/9': 6779, '5998/8': 2238, '36025/5': 2028, '5999/8': 76, '25827/4': 66, 'unsupported': 30, '2462/10': 13, '36814/5': 2})
+Time to process 196029 packets against  45193 rules in seconds:  309.5386698246002
+Suspicious packets: 11232 ,  IP packets: 196029 , Packets: 200000 
+
+Finished with file:  Wednesday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Monday_mid.pcap
+Time to read  200000  packets in seconds:  36.167314767837524
+Counter({'18487/9': 4292, '5998/8': 673, '36025/5': 587, '5999/8': 52, 'unsupported': 24, '25827/4': 17, '12147/7': 2, '57172/1': 1, '5822/6': 1})
+Time to process 199196 packets against  45193 rules in seconds:  331.38168692588806
+Suspicious packets: 5649 ,  IP packets: 199196 , Packets: 200000 
+
+Finished with file:  Monday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Wednesday_mid.pcap
+Time to read  200000  packets in seconds:  41.87221574783325
+Counter({'36814/5': 12310, '18487/9': 2813, '5998/8': 356, '36025/5': 316, '5999/8': 31, 'unsupported': 22, '12147/7': 5, '25827/4': 5})
+Time to process 199257 packets against  45193 rules in seconds:  310.3908269405365
+Suspicious packets: 15858 ,  IP packets: 199257 , Packets: 200000 
+
+Finished with file:  Wednesday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Thursday_end.pcap
+Time to read  200000  packets in seconds:  48.42473387718201
+Counter({'18487/9': 8172, '5998/8': 2224, '36025/5': 1785, '5999/8': 148, '25827/4': 56, 'unsupported': 30, '2462/10': 14, '36814/5': 9, '50871/1': 2})
+Time to process 197136 packets against  45193 rules in seconds:  308.99470114707947
+Suspicious packets: 12440 ,  IP packets: 197136 , Packets: 200000 
+
+Finished with file:  Thursday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Thursday_mid.pcap
+Time to read  200000  packets in seconds:  42.800904750823975
+Counter({'18487/9': 7754, '5998/8': 1715, '36025/5': 1521, '5999/8': 512, '25827/4': 31, '12147/7': 10, '25826/4': 6, '36814/5': 2, '396/12': 1})
+Time to process 197733 packets against  45193 rules in seconds:  316.5784680843353
+Suspicious packets: 11552 ,  IP packets: 197733 , Packets: 200000 
+
+Finished with file:  Thursday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Friday_end.pcap
+Time to read  200000  packets in seconds:  45.12559986114502
 Counter({'18487/9': 9787, '5998/8': 1803, '36025/5': 1735, '399/9': 214, 'unsupported': 114, '36814/5': 32, '25827/4': 17, '5999/8': 5, '12147/7': 5, '7751/4': 1})
-Time to process 196950 packets against  45193 rules in seconds:  311.7119345664978
+Time to process 196950 packets against  45193 rules in seconds:  305.76542472839355
 Suspicious packets: 13713 ,  IP packets: 196950 , Packets: 200000 
 
 Finished with file:  Friday_end.pcap
 **************************************************
-Starting file processing:  /home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/Friday_start.pcap
-Time to read  200000  packets in seconds:  37.55207586288452
+Starting file processing:  selected_pcaps/pcaps/Monday_start.pcap
+Time to read  200000  packets in seconds:  45.72764611244202
+Counter({'18487/9': 4581, '36025/5': 749, '5998/8': 663, 'unsupported': 196, '5999/8': 64, '2462/10': 26, '25827/4': 8, '36814/5': 7, '7751/4': 6, '29456/3': 3, '31767/2': 3, '7606/4': 1})
+Time to process 194223 packets against  45193 rules in seconds:  315.28922295570374
+Suspicious packets: 6307 ,  IP packets: 194223 , Packets: 200000 
+
+Finished with file:  Monday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Tuesday_start.pcap
+Time to read  200000  packets in seconds:  50.799471855163574
+Counter({'18487/9': 4221, '36025/5': 747, '5998/8': 680, 'unsupported': 394, '2462/10': 31, '5999/8': 25, '36814/5': 21, '25827/4': 13, '7751/4': 4, '1394/17': 3, '25826/4': 1})
+Time to process 194663 packets against  45193 rules in seconds:  321.78859400749207
+Suspicious packets: 6140 ,  IP packets: 194663 , Packets: 200000 
+
+Finished with file:  Tuesday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Friday_start.pcap
+Time to read  200000  packets in seconds:  46.1517059803009
 Counter({'18487/9': 3148, '36025/5': 597, '5998/8': 518, 'unsupported': 376, '5999/8': 60, '2462/10': 38, '25827/4': 11, '36814/5': 6, '7751/4': 2, '5822/6': 2})
-Time to process 195577 packets against  45193 rules in seconds:  333.5499818325043
+Time to process 195577 packets against  45193 rules in seconds:  326.01752281188965
 Suspicious packets: 4758 ,  IP packets: 195577 , Packets: 200000 
 
 Finished with file:  Friday_start.pcap
 **************************************************
-Starting file processing:  /home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/selected_pcaps/pcaps/Friday_mid.pcap
-Time to read  200000  packets in seconds:  50.684253215789795
+Starting file processing:  selected_pcaps/pcaps/Tuesday_mid.pcap
+Time to read  200000  packets in seconds:  47.72129487991333
+Counter({'18487/9': 8979, '5998/8': 1284, '36025/5': 1044, '5999/8': 103, '25827/4': 32, 'unsupported': 24, '36814/5': 7})
+Time to process 198438 packets against  45193 rules in seconds:  316.00289607048035
+Suspicious packets: 11473 ,  IP packets: 198438 , Packets: 200000 
+
+Finished with file:  Tuesday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Thursday_start.pcap
+Time to read  200000  packets in seconds:  46.861613750457764
+Counter({'18487/9': 3922, '36025/5': 555, '5998/8': 522, 'unsupported': 338, '5999/8': 70, '2462/10': 25, '36814/5': 4, '25827/4': 2, '5822/6': 2})
+Time to process 195990 packets against  45193 rules in seconds:  324.08154034614563
+Suspicious packets: 5440 ,  IP packets: 195990 , Packets: 200000 
+
+Finished with file:  Thursday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Friday_mid.pcap
+Time to read  200000  packets in seconds:  41.99566960334778
 Counter({'18487/9': 8204, '5998/8': 2345, '36025/5': 1817, 'unsupported': 329, '5999/8': 244, '36814/5': 192, '25827/4': 23, '6285/4': 1, '1693/8': 1, '1690/7': 1})
-Time to process 196795 packets against  45193 rules in seconds:  302.664883852005
+Time to process 196795 packets against  45193 rules in seconds:  303.45430397987366
 Suspicious packets: 13157 ,  IP packets: 196795 , Packets: 200000 
 
 Finished with file:  Friday_mid.pcap
 **************************************************
-Simulation time:  1078.3895268440247
+Starting file processing:  selected_pcaps/pcaps/Monday_end.pcap
+Time to read  200000  packets in seconds:  49.56899881362915
+Counter({'18487/9': 7561, '5998/8': 1613, '36025/5': 1570, '25827/4': 49, 'unsupported': 24, '36814/5': 10, '25826/4': 3, '5999/8': 2, '12147/7': 2, '2462/10': 2, '7751/4': 1})
+Time to process 198124 packets against  45193 rules in seconds:  313.6842656135559
+Suspicious packets: 10837 ,  IP packets: 198124 , Packets: 200000 
+
+Finished with file:  Monday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Tuesday_end.pcap
+Time to read  200000  packets in seconds:  45.25158143043518
+Counter({'18487/9': 6620, '5998/8': 2183, '36025/5': 1935, 'unsupported': 72, '25827/4': 27, '19678/10': 18, '399/9': 16, '5999/8': 10, '36814/5': 8, '7606/4': 2})
+Time to process 197666 packets against  45193 rules in seconds:  301.55372309684753
+Suspicious packets: 10891 ,  IP packets: 197666 , Packets: 200000 
+
+Finished with file:  Tuesday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Wednesday_start.pcap
+Time to read  200000  packets in seconds:  42.56492519378662
+Counter({'18487/9': 916, 'unsupported': 92, '36025/5': 69, '5998/8': 27, '5999/8': 19, '2462/10': 5, '36814/5': 5, '7751/4': 2, '1394/17': 1})
+Time to process 198891 packets against  45193 rules in seconds:  344.5781853199005
+Suspicious packets: 1136 ,  IP packets: 198891 , Packets: 200000 
+
+Finished with file:  Wednesday_start.pcap
+**************************************************
+Simulation time:  5425.77800321579

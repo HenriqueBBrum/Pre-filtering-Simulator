@@ -1,0 +1,144 @@
+********************************************************************************
+********************************************************************************
+************************** SNORT RULES PARSING STAGE ***************************
+
+
+---- Getting and parsing rules..... ----
+---- Splitting bidirectional rules..... ----
+---- Adjusting rules. Replacing variables..... ----
+---- Deduping rules based on the packet header and payload matching fields..... ----
+
+Results:
+Total original rules: 45957
+Total adjusted and filtered rules: 46580
+Total deduped rules: 45193
+
+Header size:  274.216579 MB
+Payload size:  13.783657 MB
+Total size:  288.000236 MB
+********************************************************************************
+********************************************************************************
+********************************** SIMULATION **********************************
+
+
+Starting file processing:  selected_pcaps/pcaps/Wednesday_end.pcap
+Time to read  200000  packets in seconds:  35.28978967666626
+Counter({'18487/9': 6779, '38620/2': 4357, '13248/5': 3111, '5998/8': 2238, '36025/5': 1993, '39163/2': 998, '26479/6': 629, '16167/12': 268, '51333/1': 119, '5999/8': 76, '25827/4': 66, '32640/3': 57, '39159/2': 54, '46981/1': 43, 'unsupported': 30, '2462/10': 13, '33594/4': 8, '41701/3': 8, '44719/2': 3, '31371/7': 3, '21154/6': 3, '36814/5': 2})
+Time to process 196029 packets against  45193 rules in seconds:  305.7422595024109
+Suspicious packets: 20858 ,  IP packets: 196029 , Packets: 200000 
+
+Finished with file:  Wednesday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Monday_mid.pcap
+Time to read  200000  packets in seconds:  36.405200719833374
+Counter({'38620/2': 6739, '18487/9': 4292, '13248/5': 1318, '26479/6': 1254, '5998/8': 673, '36025/5': 580, '16167/12': 544, '39163/2': 486, '5999/8': 52, '46981/1': 30, '51333/1': 24, 'unsupported': 24, '39159/2': 20, '31371/7': 18, '25827/4': 17, '41701/3': 6, '32640/3': 5, '44719/2': 3, '33594/4': 3, '21154/6': 1, '31559/3': 1, '57172/1': 1, '5822/6': 1})
+Time to process 199196 packets against  45193 rules in seconds:  328.8793728351593
+Suspicious packets: 16092 ,  IP packets: 199196 , Packets: 200000 
+
+Finished with file:  Monday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Wednesday_mid.pcap
+Time to read  200000  packets in seconds:  41.93467450141907
+Counter({'36814/5': 12310, '13248/5': 10742, '18487/9': 2813, '38620/2': 931, '5998/8': 356, '36025/5': 302, '39163/2': 197, '26479/6': 168, '16167/12': 84, '46981/1': 35, '5999/8': 31, 'unsupported': 22, '39159/2': 9, '31559/3': 8, '26553/4': 6, '25827/4': 5, '12147/7': 4, '21154/6': 4, '44719/2': 3, '33594/4': 2, '41701/3': 2, '32640/3': 1, '51333/1': 1})
+Time to process 199257 packets against  45193 rules in seconds:  303.83748149871826
+Suspicious packets: 28036 ,  IP packets: 199257 , Packets: 200000 
+
+Finished with file:  Wednesday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Thursday_end.pcap
+Time to read  200000  packets in seconds:  48.41033434867859
+Counter({'18487/9': 8172, '13248/5': 3855, '38620/2': 3515, '5998/8': 2224, '36025/5': 1736, '39163/2': 820, '26479/6': 539, '16167/12': 274, '51333/1': 226, '39159/2': 154, '5999/8': 148, '32640/3': 97, '25827/4': 56, '46981/1': 44, 'unsupported': 30, '2462/10': 14, '31371/7': 11, '31559/3': 11, '36814/5': 9, '41701/3': 8, '21154/6': 4, '33594/4': 3, '44719/2': 2, '50871/1': 2})
+Time to process 197136 packets against  45193 rules in seconds:  305.6967782974243
+Suspicious packets: 21954 ,  IP packets: 197136 , Packets: 200000 
+
+Finished with file:  Thursday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Thursday_mid.pcap
+Time to read  200000  packets in seconds:  42.856810331344604
+Counter({'18487/9': 7754, '38620/2': 4645, '13248/5': 2259, '5998/8': 1715, '36025/5': 1466, '26479/6': 821, '39163/2': 779, '5999/8': 509, '16167/12': 438, '51333/1': 116, '39159/2': 67, '33594/4': 43, '25827/4': 31, '46981/1': 23, '32640/3': 11, '12147/7': 8, '25826/4': 6, '44719/2': 4, '21154/6': 2, '36814/5': 2, '53264/2': 1, '31559/3': 1, '2611/12': 1, '396/12': 1})
+Time to process 197733 packets against  45193 rules in seconds:  318.7528123855591
+Suspicious packets: 20703 ,  IP packets: 197733 , Packets: 200000 
+
+Finished with file:  Thursday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Friday_end.pcap
+Time to read  200000  packets in seconds:  45.45221734046936
+Counter({'18487/9': 9787, '38620/2': 4307, '13248/5': 2347, '5998/8': 1803, '36025/5': 1669, '39163/2': 860, '26479/6': 655, '16167/12': 367, '399/9': 214, 'unsupported': 114, '46981/1': 84, '36814/5': 32, '41701/3': 30, '31371/7': 28, '25827/4': 17, '32640/3': 17, '51333/1': 17, '31559/3': 11, '33594/4': 6, '5999/8': 5, '12147/7': 3, '38552/2': 2, '39159/2': 2, '21154/6': 1, '7751/4': 1, '49724/1': 1, '44719/2': 1})
+Time to process 196950 packets against  45193 rules in seconds:  306.692177772522
+Suspicious packets: 22381 ,  IP packets: 196950 , Packets: 200000 
+
+Finished with file:  Friday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Monday_start.pcap
+Time to read  200000  packets in seconds:  50.80404591560364
+Counter({'18487/9': 4581, '38620/2': 3856, '13248/5': 1547, '26479/6': 895, '36025/5': 747, '5998/8': 663, '39163/2': 465, '16167/12': 403, 'unsupported': 196, '41701/3': 82, '5999/8': 64, '2462/10': 26, '25827/4': 8, '36814/5': 7, '44719/2': 7, '7751/4': 6, '39159/2': 4, '31371/7': 4, '29456/3': 3, '31767/2': 3, '51333/1': 2, '46981/1': 2, '21154/6': 1, '32640/3': 1, '7606/4': 1})
+Time to process 194223 packets against  45193 rules in seconds:  309.5878973007202
+Suspicious packets: 13574 ,  IP packets: 194223 , Packets: 200000 
+
+Finished with file:  Monday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Tuesday_start.pcap
+Time to read  200000  packets in seconds:  42.18673634529114
+Counter({'18487/9': 4221, '38620/2': 4187, '13248/5': 1761, '26479/6': 812, '36025/5': 728, '5998/8': 680, '39163/2': 543, '16167/12': 459, 'unsupported': 394, '41701/3': 130, '2462/10': 31, '46981/1': 29, '31371/7': 28, '5999/8': 25, '36814/5': 21, '25827/4': 13, '51333/1': 13, '39159/2': 10, '7751/4': 4, '44719/2': 4, '32640/3': 4, '1394/17': 3, '25826/4': 1, '53264/2': 1, '33594/4': 1})
+Time to process 194663 packets against  45193 rules in seconds:  314.0713188648224
+Suspicious packets: 14103 ,  IP packets: 194663 , Packets: 200000 
+
+Finished with file:  Tuesday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Friday_start.pcap
+Time to read  200000  packets in seconds:  49.641093730926514
+Counter({'38620/2': 4632, '18487/9': 3148, '13248/5': 1821, '26479/6': 1070, '36025/5': 594, '16167/12': 578, '5998/8': 518, '39163/2': 491, 'unsupported': 376, '41701/3': 118, '5999/8': 59, '2462/10': 38, '32640/3': 38, '51333/1': 16, '25827/4': 11, '31371/7': 8, '39159/2': 8, '21171/5': 8, '36814/5': 6, '46981/1': 3, '33594/4': 3, '44719/2': 3, '7751/4': 2, '5822/6': 2, '32641/2': 1})
+Time to process 195577 packets against  45193 rules in seconds:  318.47619009017944
+Suspicious packets: 13552 ,  IP packets: 195577 , Packets: 200000 
+
+Finished with file:  Friday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Tuesday_mid.pcap
+Time to read  200000  packets in seconds:  47.71044564247131
+Counter({'18487/9': 8979, '38620/2': 3457, '13248/5': 1879, '5998/8': 1284, '36025/5': 1010, '26479/6': 614, '39163/2': 569, '16167/12': 304, '5999/8': 103, '51333/1': 96, '39159/2': 78, '46981/1': 46, '32640/3': 42, '25827/4': 32, '33594/4': 32, '31371/7': 24, 'unsupported': 24, '31559/3': 23, '36814/5': 7, '41701/3': 6, '21154/6': 5, '38552/2': 1, '44719/2': 1})
+Time to process 198438 packets against  45193 rules in seconds:  313.08933544158936
+Suspicious packets: 18616 ,  IP packets: 198438 , Packets: 200000 
+
+Finished with file:  Tuesday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Thursday_start.pcap
+Time to read  200000  packets in seconds:  46.12334704399109
+Counter({'18487/9': 3922, '38620/2': 3833, '13248/5': 1297, '26479/6': 1047, '36025/5': 548, '5998/8': 522, '16167/12': 487, '39163/2': 435, 'unsupported': 338, '41701/3': 112, '5999/8': 69, '32640/3': 65, '2462/10': 25, '31371/7': 19, '46981/1': 16, '39159/2': 13, '51333/1': 9, '44719/2': 6, '33594/4': 5, '36814/5': 4, '25827/4': 2, '5822/6': 2, '1882/20': 1, '21154/6': 1, '31559/3': 1})
+Time to process 195990 packets against  45193 rules in seconds:  322.197466135025
+Suspicious packets: 12779 ,  IP packets: 195990 , Packets: 200000 
+
+Finished with file:  Thursday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Friday_mid.pcap
+Time to read  200000  packets in seconds:  46.66077208518982
+Counter({'18487/9': 8204, '38620/2': 3975, '13248/5': 2904, '5998/8': 2345, '36025/5': 1764, '39163/2': 799, '26479/6': 643, 'unsupported': 329, '16167/12': 274, '5999/8': 242, '36814/5': 192, '51333/1': 167, '39159/2': 133, '32640/3': 79, '46981/1': 54, '41701/3': 42, '25827/4': 23, '31371/7': 18, '21154/6': 5, '33594/4': 5, '31559/3': 5, '44719/2': 3, '38552/2': 3, '6285/4': 1, '1693/8': 1, '49724/1': 1, '1690/7': 1})
+Time to process 196795 packets against  45193 rules in seconds:  300.9124822616577
+Suspicious packets: 22212 ,  IP packets: 196795 , Packets: 200000 
+
+Finished with file:  Friday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Monday_end.pcap
+Time to read  200000  packets in seconds:  45.85952854156494
+Counter({'18487/9': 7561, '38620/2': 4193, '13248/5': 2560, '5998/8': 1613, '36025/5': 1536, '39163/2': 771, '26479/6': 722, '16167/12': 374, '32640/3': 117, '46981/1': 51, '25827/4': 49, '51333/1': 44, 'unsupported': 24, '39159/2': 14, '33594/4': 13, '36814/5': 10, '31371/7': 10, '21154/6': 4, '25826/4': 3, '44719/2': 3, '5999/8': 2, '41701/3': 2, '2462/10': 2, '7751/4': 1, '38552/2': 1})
+Time to process 198124 packets against  45193 rules in seconds:  315.3131773471832
+Suspicious packets: 19680 ,  IP packets: 198124 , Packets: 200000 
+
+Finished with file:  Monday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Tuesday_end.pcap
+Time to read  200000  packets in seconds:  44.93868899345398
+Counter({'18487/9': 6620, '38620/2': 4375, '13248/5': 2718, '5998/8': 2183, '36025/5': 1893, '39163/2': 992, '26479/6': 602, '16167/12': 309, 'unsupported': 72, '46981/1': 61, '39159/2': 50, '51333/1': 45, '25827/4': 27, '41701/3': 20, '402/16': 18, '399/9': 16, '31559/3': 12, '5999/8': 10, '36814/5': 8, '33594/4': 5, '32640/3': 4, '31371/7': 3, '38552/2': 3, '44719/2': 3, '7606/4': 2})
+Time to process 197666 packets against  45193 rules in seconds:  300.1660301685333
+Suspicious packets: 20051 ,  IP packets: 197666 , Packets: 200000 
+
+Finished with file:  Tuesday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Wednesday_start.pcap
+Time to read  200000  packets in seconds:  46.769291639328
+Counter({'38620/2': 5300, '26479/6': 1469, '18487/9': 916, '16167/12': 672, '13248/5': 461, '39163/2': 360, 'unsupported': 92, '36025/5': 69, '5998/8': 27, '41701/3': 24, '5999/8': 19, '44719/2': 9, '39159/2': 6, '2462/10': 5, '36814/5': 5, '7751/4': 2, '1394/17': 1})
+Time to process 198891 packets against  45193 rules in seconds:  329.3402087688446
+Suspicious packets: 9437 ,  IP packets: 198891 , Packets: 200000 
+
+Finished with file:  Wednesday_start.pcap
+**************************************************
+Simulation time:  5376.968034505844

@@ -1,5 +1,6 @@
 from time import time
 import sys
+import csv
 
 from snort_parser.config_parser import SnortConfiguration
 from snort_parser.parsing_rules import get_rules, adjust_rules, dedup_rules
@@ -7,6 +8,7 @@ from pre_filtering_simulation.simulation import pre_filtering_simulation
 
 def main(config_path, rules_path, ruleset_name, pre_filtering_scenario):
     config = SnortConfiguration(snort_version=2, configuration_dir=config_path)
+
     print("*" * 80)
     print("*" * 80)
     print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
@@ -15,8 +17,10 @@ def main(config_path, rules_path, ruleset_name, pre_filtering_scenario):
     print("*" * 80)
     print("*" * 80)
     print("*" * 34 + " SIMULATION " + "*" * 34+ "\n\n")
+    pcaps_path="selected_pcaps/pcaps/"
+
     start = time()
-    pre_filtering_simulation(modified_rules, ruleset_name, pre_filtering_scenario)
+    pre_filtering_simulation(modified_rules, ruleset_name, pre_filtering_scenario, pcaps_path)
     print("Simulation time: ", time() - start)
 
 
