@@ -23,7 +23,7 @@ def pre_filtering_simulation(rules, pcaps_path, pre_filtering_scenario, ruleset_
     for pcap_file in listdir(pcaps_path):
         start = time()
         pcap = rdpcap(pcaps_path+pcap_file)
-        print("Starting file processing: ", pcaps_path+pcap_file)
+        print("Starting "+pcaps_path+pcap_file+" processing: ")
         print("Time to read ", len(pcap), " packets in seconds: ", time() - start)
 
         suspicious_pkts = Manager().list()
@@ -49,7 +49,7 @@ def pre_filtering_simulation(rules, pcaps_path, pre_filtering_scenario, ruleset_
         print("Finished with file: ", pcap_file)
         print("*"*50)
 
-        suspicious_pkts_output = "suspicious_packets/"+pre_filtering_scenario+"/"+ruleset_name+"/"+pcap_file.split(".")[0]+".txt"
+        suspicious_pkts_output = "suspicious_pkts/"+pre_filtering_scenario+"/"+ruleset_name+"/"+pcap_file.split(".")[0]+".txt"
         with open(suspicious_pkts_output, 'w') as file:
             for match in sorted(suspicious_pkts, key=lambda x: x[0]):
                 file.write(f"{match[0]}\n")
@@ -84,12 +84,9 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, start
                     try:
                         if not compare_header_fields(pkt_to_match, rule, rule.pkt_header_fields["proto"]):
                             continue
-
-                        # if "content_pcre" not in rule.payload_fields:
-                        #     continue
-
-                        # if not compare_payload(pkt_to_match, rule):
-                        #     continue
+                        
+                        if not compare_payload(pkt_to_match, rule):
+                            continue
 
                         suspicious_pkts.append((pkt_count, rule.sids()[0]))
                     except Exception as e:

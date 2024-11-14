@@ -47,7 +47,7 @@ def parse_rules(config, rules_path, pre_filtering_scenario):
 
     return deduped_rules
 
-
+# Calculate the amount of bytes required by python to store the rules
 def get_rules_size(rules):
     total_header_size = 0
     total_payload_size = 0

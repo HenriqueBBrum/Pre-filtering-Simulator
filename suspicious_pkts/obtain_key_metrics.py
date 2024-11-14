@@ -1,18 +1,24 @@
-from scapy.all import PcapReader, PcapWriter
 import os
 import re
-import subprocess
+import sys
 import json
+import subprocess
+from scapy.all import PcapReader, PcapWriter
 
+original_pcaps_folder = "../selected_pcaps/"
+simulation_results_folder = "./"
 
+rules_path = "../etc/rules/snortrules-snapshot-3000/"
+config_path = "../etc/configuration/snort.lua"
 
-
-def main(original_pcaps_folder, simulation_results_folder):
+def main(scenario_to_analyze):
     information = {}
-    for scenario_folder in os.listdir(simulation_results_folder):
-        if "full" not in scenario_folder:
-            continue
-        # Get the amount of rules and memory used 
+    if scenario_to_analyze:
+        list_of_scenarios = [scenario_to_analyze]
+    else:
+        list_of_scenarios = os.listdir(simulation_results_folder)
+
+    for scenario_folder in list_of_scenarios:
         if not os.path.isdir(scenario_folder):
             continue
 
@@ -25,30 +31,30 @@ def main(original_pcaps_folder, simulation_results_folder):
             os.makedirs(alerts_output_folder)
 
         information[scenario_folder] = {}
-        print(scenario_results_folder)
+        information[scenario_folder] = get_resource_usage_info(scenario_results_folder+"log.txt")
         for file in os.listdir(scenario_results_folder):
-            print(file)
             if file == "log.txt":
-                information[scenario_folder]["resources_used"] = get_resource_usage_info(scenario_results_folder+file)
-            else:
-                suspicious_pkts_pcap = generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_results_folder, file)
-                suspicious_pkts_alertfile = snort_with_suspicious_pcap(suspicious_pkts_pcap, scenario_results_folder, file)
+                continue
+           
+            suspicious_pkts_pcap = generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_results_folder, file)
+            suspicious_pkts_alert_file = snort_with_suspicious_pcap(suspicious_pkts_pcap, scenario_results_folder, alerts_output_folder, file)
 
-                original_pcap_alerts = parse_alerts(original_pcaps_folder+"/alerts_registered/"+file)
-                reduced_pcap_alerts = parse_alerts(suspicious_pkts_alertfile)
-                print("----------------------------------------")
-                print(len(original_pcap_alerts), len(reduced_pcap_alerts))
+            original_pcap_alerts = parse_alerts(original_pcaps_folder+"/alerts_registered/"+file)
+            reduced_pcap_alerts = parse_alerts(suspicious_pkts_alert_file)
 
-                c = confusion_matrix(original_pcap_alerts, reduced_pcap_alerts)
-                os.remove(suspicious_pkts_pcap)
-                os.remove(reduced_pcap_alerts)
+            file_name = file.split(".")[0]
+            information[scenario_folder][file_name]["alerts_baseline"] = len(original_pcap_alerts)
+            information[scenario_folder][file_name]["alerts_experiment"] =  len(reduced_pcap_alerts)
+            information[scenario_folder][file_name]["TP"] = len(original_pcap_alerts & reduced_pcap_alerts)
+            information[scenario_folder][file_name]["FN"] = len(original_pcap_alerts - reduced_pcap_alerts)
+            information[scenario_folder][file_name]["FP"] = len(reduced_pcap_alerts - original_pcap_alerts)
 
-        save_info_to_file(alerts_output_folder, information)
+            os.remove(suspicious_pkts_pcap)
 
-        break
+        with open(alerts_output_folder + "analysis.txt", 'w') as f:
+            json.dump(information[scenario_folder] , f, ensure_ascii=False, indent=4)
 
-
-
+# Reads the log file from a simulation folder and saves the main info in a dict
 def get_resource_usage_info(log_file):
     resource_info = {}
     with open(log_file, 'r') as log:
@@ -77,7 +83,7 @@ def get_resource_usage_info(log_file):
 
     return resource_info
  
-# Based on a list of packets ids (packets position in the original PCAP) generate a pcap for the suspicious packets
+# Based on the list of suspicious packets IDs (packets position in the original PCAP) generate a pcap
 def generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_folder, file):
     suspicious_pkts_list = []
     with open(scenario_folder+file, 'r') as suspicious_pkts:
@@ -103,15 +109,17 @@ def generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_folder, file):
     
     return suspicious_pkts_output_pcap
 
-def snort_with_suspicious_pcap(suspicious_pkts_pcap, alerts_output_folder, file):
-    rules_path = "../etc/rules/snortrules-snapshot-3000/"
-    config_path = "../etc/configuration/snort.lua"
-    subprocess.run(["snort", "-c", config_path, "--rule-path",rules_path, "-r",suspicious_pkts_pcap, "-l",alerts_output_folder, "-A","alert_json",  "--lua","alert_json = {file = true}"])
-    new_filepath = alerts_output_folder+file.split(".")[0]
+# Run snort with the new suspicious pkts pcap
+def snort_with_suspicious_pcap(suspicious_pkts_pcap, scenario_results_folder, alerts_output_folder, file):
+    subprocess.run(["snort", "-c", config_path, "--rule-path",rules_path, "-r",suspicious_pkts_pcap, "-l",alerts_output_folder, \
+                    "-A","alert_json",  "--lua","alert_json = {file = true}"], stdout=subprocess.DEVNULL)
+    new_filepath = alerts_output_folder+file
+   
     os.rename(alerts_output_folder+"alert_json.txt", new_filepath)
     return new_filepath
 
-
+# Parses an alert file and keeps only one entry for each packet (based on the 'pkt_num' entry in the alert). 
+# Saves the 'pkt_len', 'dir', 'src_ap'and 'dst_ap' fields as an identifier to compare with other alert files
 def parse_alerts(alerts_filepath):
     alerted_pkts = {}
     with open(alerts_filepath, 'r') as file:
@@ -122,21 +130,12 @@ def parse_alerts(alerts_filepath):
                
     return set(alerted_pkts.values())
 
-def confusion_matrix(baseline_data, experiment_data):
-    TP = len(baseline_data & experiment_data)
-    FN = len(baseline_data - experiment_data)
-    FP = len(experiment_data - baseline_data)
-    print("Correct alerts: ", TP)
-    print("Alerts only on baseline alerts: ", FN)
-    print("Alerts only on suspicious experiment alerts: ", FP)
-
-    return [TP, FP, FN] 
 
 
-def save_info_to_file(alerts_output_folder, information):
-    information_file = alerts_output_folder + "analysis.txt"
 
 if __name__ == '__main__':
-    original_pcaps_folder = "../selected_pcaps/"
-    simulation_results_folder = "./"
-    main(original_pcaps_folder, simulation_results_folder)
+    scenario_to_analyze = None
+    if len(sys.argv) > 1:
+        scenario_to_analyze = sys.argv[1]
+
+    main(scenario_to_analyze)

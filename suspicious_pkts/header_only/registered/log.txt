@@ -127,3 +127,18 @@ Finished with file:  Monday_end.pcap
 **************************************************
 Starting file processing:  selected_pcaps/pcaps/Tuesday_end.pcap
 Time to read  200000  packets in seconds:  45.56571006774902
+Counter({'24305/3': 90834, '1882/20': 75519, '30038/2': 11731, '45908/2': 11551, '16688/8': 3996, '56150/1': 1166, '19601/6': 897, '41380/2': 804, '32864/3': 543, '41744/4': 418, '17662/13': 85, 'unsupported': 72, '35831/4': 44})
+Time to process 197666 packets against  45192 rules in seconds:  15.62804627418518
+Suspicious packets: 197660 ,  IP packets: 197666 , Packets: 200000 
+
+Finished with file:  Tuesday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Wednesday_start.pcap
+Time to read  200000  packets in seconds:  42.48049449920654
+Counter({'24305/3': 107634, '1882/20': 85387, '16688/8': 1355, '30038/2': 816, '32864/3': 806, '45908/2': 804, '41380/2': 610, '56150/1': 399, '41744/4': 378, '17662/13': 332, '35831/4': 124, '19601/6': 95, 'unsupported': 92, '12457/5': 44, '2462/10': 5})
+Time to process 198891 packets against  45192 rules in seconds:  15.665291547775269
+Suspicious packets: 198881 ,  IP packets: 198891 , Packets: 200000 
+
+Finished with file:  Wednesday_start.pcap
+**************************************************
+Simulation time:  975.458845615387
