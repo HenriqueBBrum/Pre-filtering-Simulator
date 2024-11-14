@@ -17,7 +17,7 @@ from .payload_matching import compare_payload
 from .packet_to_match import PacketToMatch
 
 # Main simulation function where packets are compared against the pre-filtering rules
-def pre_filtering_simulation(rules, ruleset_name, pre_filtering_scenario, pcaps_path):
+def pre_filtering_simulation(rules, pcaps_path, pre_filtering_scenario, ruleset_name):
     pre_filtering_rules = get_pre_filtering_rules(rules)
    
     for pcap_file in listdir(pcaps_path):
@@ -52,7 +52,7 @@ def pre_filtering_simulation(rules, ruleset_name, pre_filtering_scenario, pcaps_
         suspicious_pkts_output = "suspicious_packets/"+pre_filtering_scenario+"/"+ruleset_name+"/"+pcap_file.split(".")[0]+".txt"
         with open(suspicious_pkts_output, 'w') as file:
             for match in sorted(suspicious_pkts, key=lambda x: x[0]):
-                file.write(f"{match[0]-1}\n")
+                file.write(f"{match[0]}\n")
 
 # Generates the optimal pre-filtering ruleset using most header fields and part of the payload matches
 def get_pre_filtering_rules(rules):
@@ -74,28 +74,31 @@ def get_pre_filtering_rules(rules):
 def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, start):
     pkt_count, ip_pkt_count = start, 0
     for pkt in pkts:
-            if IP in pkt:
-                if unsupported_protocol(pkt):
-                    suspicious_pkts.append((pkt_count+1, "unsupported"))
-                else:
-                    pkt_to_match = PacketToMatch(pkt, rules.keys())
-                    rules_to_compare = get_pkt_related_rules(pkt_to_match, rules)
-                    for rule in rules_to_compare:
-                        try:
-                            if not compare_header_fields(pkt_to_match, rule, rule.pkt_header_fields["proto"]):
-                                continue
+        if IP in pkt:
+            if unsupported_protocol(pkt):
+                suspicious_pkts.append((pkt_count, "unsupported"))
+            else:
+                pkt_to_match = PacketToMatch(pkt, rules.keys())
+                rules_to_compare = get_pkt_related_rules(pkt_to_match, rules)
+                for rule in rules_to_compare:
+                    try:
+                        if not compare_header_fields(pkt_to_match, rule, rule.pkt_header_fields["proto"]):
+                            continue
 
-                            # if not compare_payload(pkt_to_match, rule):
-                            #     continue
+                        # if "content_pcre" not in rule.payload_fields:
+                        #     continue
 
-                            suspicious_pkts.append((pkt_count+1, rule.sids()[0]))
-                        except Exception as e:
-                            print("Exception")
-                            print(traceback.format_exc())
-                            suspicious_pkts.append((pkt_count+1, "error"))
-                        break
-                ip_pkt_count+=1
-            pkt_count+=1
+                        # if not compare_payload(pkt_to_match, rule):
+                        #     continue
+
+                        suspicious_pkts.append((pkt_count, rule.sids()[0]))
+                    except Exception as e:
+                        print("Exception")
+                        print(traceback.format_exc())
+                        suspicious_pkts.append((pkt_count, "error"))
+                    break
+            ip_pkt_count+=1
+        pkt_count+=1
     ip_pkt_count_list.append(ip_pkt_count)
 
 

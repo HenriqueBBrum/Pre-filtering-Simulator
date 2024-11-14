@@ -1,0 +1,144 @@
+********************************************************************************
+********************************************************************************
+************************** SNORT RULES PARSING STAGE ***************************
+
+
+---- Getting and parsing rules..... ----
+---- Splitting bidirectional rules..... ----
+---- Adjusting rules. Replacing variables..... ----
+---- Deduping rules based on the packet header and payload matching fields..... ----
+
+Results:
+Total original rules: 45957
+Total adjusted and filtered rules: 46580
+Total deduped rules: 45193
+
+Header size:  155.878929 MB
+Payload size:  21.489728 MB
+Total size:  177.368657 MB
+********************************************************************************
+********************************************************************************
+********************************** SIMULATION **********************************
+
+
+Starting file processing:  selected_pcaps/pcaps/Wednesday_end.pcap
+Time to read  200000  packets in seconds:  34.949143171310425
+Counter({'498/11': 195906, '17662/13': 80, 'unsupported': 30, '2462/10': 13})
+Time to process 196029 packets against  45193 rules in seconds:  13.81188702583313
+Suspicious packets: 196029 ,  IP packets: 196029 , Packets: 200000 
+
+Finished with file:  Wednesday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Monday_mid.pcap
+Time to read  200000  packets in seconds:  35.95480823516846
+Counter({'498/11': 199000, '17662/13': 172, 'unsupported': 24})
+Time to process 199196 packets against  45193 rules in seconds:  14.763992547988892
+Suspicious packets: 199196 ,  IP packets: 199196 , Packets: 200000 
+
+Finished with file:  Monday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Wednesday_mid.pcap
+Time to read  200000  packets in seconds:  41.81429481506348
+Counter({'498/11': 199187, '17662/13': 48, 'unsupported': 22})
+Time to process 199257 packets against  45193 rules in seconds:  15.270106315612793
+Suspicious packets: 199257 ,  IP packets: 199257 , Packets: 200000 
+
+Finished with file:  Wednesday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Thursday_end.pcap
+Time to read  200000  packets in seconds:  48.200289726257324
+Counter({'498/11': 197030, '17662/13': 62, 'unsupported': 30, '2462/10': 14})
+Time to process 197136 packets against  45193 rules in seconds:  13.850442886352539
+Suspicious packets: 197136 ,  IP packets: 197136 , Packets: 200000 
+
+Finished with file:  Thursday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Thursday_mid.pcap
+Time to read  200000  packets in seconds:  42.814881801605225
+Counter({'498/11': 197579, '17662/13': 154})
+Time to process 197733 packets against  45193 rules in seconds:  14.136851072311401
+Suspicious packets: 197733 ,  IP packets: 197733 , Packets: 200000 
+
+Finished with file:  Thursday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Friday_end.pcap
+Time to read  200000  packets in seconds:  44.94284391403198
+Counter({'498/11': 196751, 'unsupported': 114, '17662/13': 85})
+Time to process 196950 packets against  45193 rules in seconds:  13.803920030593872
+Suspicious packets: 196950 ,  IP packets: 196950 , Packets: 200000 
+
+Finished with file:  Friday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Monday_start.pcap
+Time to read  200000  packets in seconds:  45.5506956577301
+Counter({'498/11': 192671, '17662/13': 1330, 'unsupported': 196, '2462/10': 26})
+Time to process 194223 packets against  45193 rules in seconds:  13.743561029434204
+Suspicious packets: 194223 ,  IP packets: 194223 , Packets: 200000 
+
+Finished with file:  Monday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Tuesday_start.pcap
+Time to read  200000  packets in seconds:  50.272199392318726
+Counter({'498/11': 193326, '17662/13': 912, 'unsupported': 394, '2462/10': 31})
+Time to process 194663 packets against  45193 rules in seconds:  13.791157245635986
+Suspicious packets: 194663 ,  IP packets: 194663 , Packets: 200000 
+
+Finished with file:  Tuesday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Friday_start.pcap
+Time to read  200000  packets in seconds:  45.77267003059387
+Counter({'498/11': 194460, '17662/13': 703, 'unsupported': 376, '2462/10': 38})
+Time to process 195577 packets against  45193 rules in seconds:  14.082446813583374
+Suspicious packets: 195577 ,  IP packets: 195577 , Packets: 200000 
+
+Finished with file:  Friday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Tuesday_mid.pcap
+Time to read  200000  packets in seconds:  47.60531949996948
+Counter({'498/11': 198042, '17662/13': 372, 'unsupported': 24})
+Time to process 198438 packets against  45193 rules in seconds:  13.950872421264648
+Suspicious packets: 198438 ,  IP packets: 198438 , Packets: 200000 
+
+Finished with file:  Tuesday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Thursday_start.pcap
+Time to read  200000  packets in seconds:  46.17179489135742
+Counter({'498/11': 194860, '17662/13': 767, 'unsupported': 338, '2462/10': 25})
+Time to process 195990 packets against  45193 rules in seconds:  14.095378637313843
+Suspicious packets: 195990 ,  IP packets: 195990 , Packets: 200000 
+
+Finished with file:  Thursday_start.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Friday_mid.pcap
+Time to read  200000  packets in seconds:  41.700159549713135
+Counter({'498/11': 196268, 'unsupported': 329, '17662/13': 198})
+Time to process 196795 packets against  45193 rules in seconds:  13.626686811447144
+Suspicious packets: 196795 ,  IP packets: 196795 , Packets: 200000 
+
+Finished with file:  Friday_mid.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Monday_end.pcap
+Time to read  200000  packets in seconds:  49.65264582633972
+Counter({'498/11': 198055, '17662/13': 43, 'unsupported': 24, '2462/10': 2})
+Time to process 198124 packets against  45193 rules in seconds:  13.629705905914307
+Suspicious packets: 198124 ,  IP packets: 198124 , Packets: 200000 
+
+Finished with file:  Monday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Tuesday_end.pcap
+Time to read  200000  packets in seconds:  45.15314507484436
+Counter({'498/11': 197509, '17662/13': 85, 'unsupported': 72})
+Time to process 197666 packets against  45193 rules in seconds:  13.990531206130981
+Suspicious packets: 197666 ,  IP packets: 197666 , Packets: 200000 
+
+Finished with file:  Tuesday_end.pcap
+**************************************************
+Starting file processing:  selected_pcaps/pcaps/Wednesday_start.pcap
+Time to read  200000  packets in seconds:  42.37371206283569
+Counter({'498/11': 198462, '17662/13': 332, 'unsupported': 92, '2462/10': 5})
+Time to process 198891 packets against  45193 rules in seconds:  15.187244176864624
+Suspicious packets: 198891 ,  IP packets: 198891 , Packets: 200000 
+
+Finished with file:  Wednesday_start.pcap
+**************************************************
+Simulation time:  944.126829624176

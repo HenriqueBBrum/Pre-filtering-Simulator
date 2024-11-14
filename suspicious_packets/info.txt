@@ -1,5 +1,0 @@
-Folder containing the experiments' results
-
-- 'full_pre_filtering' uses all supported packet header fields, and content and PCRE matching
-- 'longest_content' uses all supported packet header fields, and the longest content or PCRE entry
-- 'first_content' uses all supported packet header fields, and the first content or PCRE entry

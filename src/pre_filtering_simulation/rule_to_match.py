@@ -101,7 +101,7 @@ class RuleToMatch(object):
             if isinstance(port[0], range):
                 port_ranges.append(port)
             else:
-                individual_ports[port[0]] = port[1]
+                individual_ports[int(port[0])] = port[1]
 
             must_match = port[1] if must_match == None else must_match | port[1]
 
@@ -123,7 +123,7 @@ class RuleToMatch(object):
             content_pcre = []
             for match_pos, match in self.payload_fields["content_pcre"]:
                 if match[0] == 0:
-                    match_str = self.__clean_content_and_hexify(match[3], "nocase" in match[4] if match[4] else False)
+                    match_str = self.__clean_content(match[3], "nocase" in match[4] if match[4] else False)
                     modifiers = self.__parse_content_modifiers(match[4])
                     content_pcre.append((match[0], match[1], match[2], match_str, modifiers)) # type(0 = content, 1 = PCRE), buffer, negation, string, modifiers
                 else:
@@ -138,7 +138,7 @@ class RuleToMatch(object):
 
 
     # Clean escaped chars in the string part of content, and convert the hex part to char. Also adjusts the case if needed 
-    def __clean_content_and_hexify(self, str_to_match, nocase):
+    def __clean_content(self, str_to_match, nocase):
         clean_content = ""
         temp_content = ""
         hex_now, escaped = False, False

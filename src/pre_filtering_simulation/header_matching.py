@@ -12,10 +12,10 @@ def compare_header_fields(pkt_to_match, rule, rule_proto):
     if (rule_proto == "tcp" or rule_proto == "udp") and (pkt_to_match.tcp_in_pkt or pkt_to_match.upd_in_pkt):
         if not __compare_ports(pkt_to_match.header["dst_port"], rule.pkt_header_fields["dst_port"]):
             return False
-
+        
         if not __compare_ports(pkt_to_match.header["src_port"], rule.pkt_header_fields["src_port"]):
             return False
-
+        
     # Compares the packet's IP(s) against the rule's IP(s) 
     if not __compare_IP(pkt_to_match.header["dst_ip"], rule.pkt_header_fields["dst_ip"]):
         return False

@@ -54,9 +54,10 @@ class PacketToMatch(object):
     def __get_payload_buffers(self, pkt, protocols_in_pkt):
         payload_buffers = {"original":{}, "nocase":{}}
         # Get pkt_data and raw_data buffer for each protocol
+        
         for proto in protocols_in_pkt:
             if pkt[proto].payload:
-                payload_buffers["original"]["pkt_data_"+proto] = bytes(pkt[proto].payload).decode('utf-8', errors = 'ignore')
+                payload_buffers["original"]["pkt_data_"+proto] = bytes(pkt[proto].payload).decode('utf-8', errors = 'replace')
                 payload_buffers["original"]["raw_data_"+proto] = payload_buffers["original"]["pkt_data_"+proto]
 
         # Get the file_data buffer for the existing service in the pkt

@@ -19,9 +19,9 @@ def compare_payload(pkt_to_match, rule):
     # If the packet has no payload but the rule has payload fields, return that it does not match the rule
     if len_pkt_payload == 0 and ("content_pcre" in rule.payload_fields):
         return False
-
+    
     # # Compare packets that have payload with rules that have the "content" or "pcre" keywords
-    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"]):
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
         return False
 
     return True
@@ -34,11 +34,13 @@ unsupported_buffers = {"json_data", "vba_data", "base64_data"}
 http_request_buffers = {"http_uri", "http_raw_uri", "http_method"}
 http_response_buffers = {"http_stat_code", "http_stat_msg", "file_data"}
 
-def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre):
+def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre, rule_sids):
     position_dict = {}
     buffer, prev_buffer_name = "", ""
     position = 0
     for match_type, match_buffer, should_match, match_str, match_modifiers in rule_content_pcre:
+       
+                
         if match_buffer in unsupported_buffers:
             continue
 
@@ -52,7 +54,7 @@ def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre):
         if match_buffer:
             if match_buffer == "pkt_data" or match_buffer == "raw_data":
                 match_buffer+="_"+rule_proto
-                
+
             buffer = pkt_to_match.payload_buffers["nocase"][match_buffer]
             position = 0
             if match_buffer in position_dict:
@@ -86,7 +88,6 @@ def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre):
         if match_pos != -1:
             position = start+int(match_pos)+int(len(match_str)) # Match_pos and str_too_match are in the hex char string, while start is in bytes. That's why they are divided
             position_dict[prev_buffer_name] = position
-
     return True
 
 # Process the modifiers of the keyword "content"

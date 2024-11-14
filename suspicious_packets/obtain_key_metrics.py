@@ -1,41 +1,52 @@
-from os import listdir,path,remove
 from scapy.all import PcapReader, PcapWriter
+import os
 import re
 import subprocess
-
-original_pcaps_folder = "../selected_pcaps/"
-results_folder = "./"
+import json
 
 
-def main():
+
+
+def main(original_pcaps_folder, simulation_results_folder):
     information = {}
-    for folder in listdir(results_folder):
-        if "full" not in folder:
+    for scenario_folder in os.listdir(simulation_results_folder):
+        if "full" not in scenario_folder:
             continue
         # Get the amount of rules and memory used 
-        if not path.isdir(folder):
+        if not os.path.isdir(scenario_folder):
             continue
 
-        scenario_folder = results_folder + folder + "/registered/"
-        information[folder] = {}
-        print(scenario_folder)
-        for file in listdir(scenario_folder):
+        scenario_results_folder = simulation_results_folder + scenario_folder + "/registered/"
+        if not os.path.exists(scenario_results_folder):
+            os.makedirs(scenario_results_folder)
+
+        alerts_output_folder = simulation_results_folder + scenario_folder + "/alerts/"
+        if not os.path.exists(alerts_output_folder):
+            os.makedirs(alerts_output_folder)
+
+        information[scenario_folder] = {}
+        print(scenario_results_folder)
+        for file in os.listdir(scenario_results_folder):
             print(file)
             if file == "log.txt":
-                information[folder]["resources_used"] = get_resource_usage_info(scenario_folder+file)
-                print(information[folder])
+                information[scenario_folder]["resources_used"] = get_resource_usage_info(scenario_results_folder+file)
             else:
-                suspicious_pkts_pcap = generate_suspicous_pkts_pcap(original_pcaps_folder, scenario_folder, file)
-                alerts_file = snort_with_suspicious_pcap(suspicious_pkts_pcap, scenario_folder)
-                #confusion_matrix = get_alerts_confusion_matrix(original_pcaps_folder, alerts_file)
-                input()
-                remove(suspicious_pkts_pcap)
-                remove(alerts_file)
-                #print(confusion_matrix)
-            # Run snort and get the alerts from the suspicious packets
-            # Compare the alerts to the baseline and check the number of false positives and false negatives
+                suspicious_pkts_pcap = generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_results_folder, file)
+                suspicious_pkts_alertfile = snort_with_suspicious_pcap(suspicious_pkts_pcap, scenario_results_folder, file)
+
+                original_pcap_alerts = parse_alerts(original_pcaps_folder+"/alerts_registered/"+file)
+                reduced_pcap_alerts = parse_alerts(suspicious_pkts_alertfile)
+                print("----------------------------------------")
+                print(len(original_pcap_alerts), len(reduced_pcap_alerts))
+
+                c = confusion_matrix(original_pcap_alerts, reduced_pcap_alerts)
+                os.remove(suspicious_pkts_pcap)
+                os.remove(reduced_pcap_alerts)
+
+        save_info_to_file(alerts_output_folder, information)
+
         break
-    # Save data to an easy to read an plot file
+
 
 
 def get_resource_usage_info(log_file):
@@ -67,9 +78,9 @@ def get_resource_usage_info(log_file):
     return resource_info
  
 # Based on a list of packets ids (packets position in the original PCAP) generate a pcap for the suspicious packets
-def generate_suspicous_pkts_pcap(original_pcaps_folder, scenario_folder, file):
+def generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_folder, file):
     suspicious_pkts_list = []
-    with open(scenario_folder+file) as suspicious_pkts:
+    with open(scenario_folder+file, 'r') as suspicious_pkts:
         suspicious_pkts_list = [int(line[:-1]) if line[-1] == "\n" else int(line) for line in suspicious_pkts.readlines()]
 
     suspicious_pkts_output_pcap = scenario_folder+file.split(".")[0]+".pcap"
@@ -92,16 +103,40 @@ def generate_suspicous_pkts_pcap(original_pcaps_folder, scenario_folder, file):
     
     return suspicious_pkts_output_pcap
 
-def snort_with_suspicious_pcap(suspicious_pkts_pcap, scenario_folder):
+def snort_with_suspicious_pcap(suspicious_pkts_pcap, alerts_output_folder, file):
     rules_path = "../etc/rules/snortrules-snapshot-3000/"
     config_path = "../etc/configuration/snort.lua"
-    subprocess.run(["snort", "-c", config_path, "--rule-path",rules_path, "-r",suspicious_pkts_pcap, "-l",scenario_folder, "-A","alert_json",  "--lua","alert_json = {file = true}"])
-    return scenario_folder+"alerts_json.txt"
+    subprocess.run(["snort", "-c", config_path, "--rule-path",rules_path, "-r",suspicious_pkts_pcap, "-l",alerts_output_folder, "-A","alert_json",  "--lua","alert_json = {file = true}"])
+    new_filepath = alerts_output_folder+file.split(".")[0]
+    os.rename(alerts_output_folder+"alert_json.txt", new_filepath)
+    return new_filepath
 
-def get_alerts_confusion_matrix(original_pcaps_folder, experiments_alerts):
 
-    pass
+def parse_alerts(alerts_filepath):
+    alerted_pkts = {}
+    with open(alerts_filepath, 'r') as file:
+        for line in file.readlines():
+           parsed_line = json.loads(line)
+           if parsed_line["pkt_num"] not in alerted_pkts:
+               alerted_pkts[parsed_line["pkt_num"]] = str(parsed_line["pkt_len"]) + parsed_line["dir"] + parsed_line["src_ap"] + parsed_line["dst_ap"]
+               
+    return set(alerted_pkts.values())
 
+def confusion_matrix(baseline_data, experiment_data):
+    TP = len(baseline_data & experiment_data)
+    FN = len(baseline_data - experiment_data)
+    FP = len(experiment_data - baseline_data)
+    print("Correct alerts: ", TP)
+    print("Alerts only on baseline alerts: ", FN)
+    print("Alerts only on suspicious experiment alerts: ", FP)
+
+    return [TP, FP, FN] 
+
+
+def save_info_to_file(alerts_output_folder, information):
+    information_file = alerts_output_folder + "analysis.txt"
 
 if __name__ == '__main__':
-    main()
+    original_pcaps_folder = "../selected_pcaps/"
+    simulation_results_folder = "./"
+    main(original_pcaps_folder, simulation_results_folder)
