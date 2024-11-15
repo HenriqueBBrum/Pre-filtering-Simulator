@@ -39,8 +39,7 @@ def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre, rule_sid
     buffer, prev_buffer_name = "", ""
     position = 0
     for match_type, match_buffer, should_match, match_str, match_modifiers in rule_content_pcre:
-       
-                
+        # Check some conditions regarding the buffers and the packet type     
         if match_buffer in unsupported_buffers:
             continue
 
@@ -50,7 +49,8 @@ def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre, rule_sid
             return False 
         elif match_buffer in http_request_buffers and not pkt_to_match.http_req_in_pkt:
             return False 
-
+        
+        # Decide on the buffer to match. By default the buffer is "pkt_data"
         if match_buffer:
             if match_buffer == "pkt_data" or match_buffer == "raw_data":
                 match_buffer+="_"+rule_proto
@@ -65,6 +65,8 @@ def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre, rule_sid
             buffer = pkt_to_match.payload_buffers["nocase"][match_buffer]
             
         prev_buffer_name = match_buffer if match_buffer else prev_buffer_name
+
+        # Match the "match_str" with the buffer according to the position defined in the modifiers and some other options
         start, end, nocase = 0, len(buffer), False
         if match_type == 0:
             start, end, nocase = __process_content_modifiers(match_modifiers, position, end)
@@ -77,16 +79,17 @@ def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre, rule_sid
             match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
             if match:
                 match_pos = match.start()
-                match_str = match.group(0)
+                match_str = match.group(0) # Differently from the content keyword, in PCRE the matched string is not the PCRE string
             else:
                 match_pos = -1 
 
         # Did not find a match but the rule says to only accept if a match was found or Found a match but the rule says to only accept if no matches were found
         if (match_pos == -1 and should_match) or (match_pos >= 0 and not should_match):
             return False
-
+        
+        # The packet had the desired match or the packet did not have the undesired match
         if match_pos != -1:
-            position = start+int(match_pos)+int(len(match_str)) # Match_pos and str_too_match are in the hex char string, while start is in bytes. That's why they are divided
+            position = start+int(match_pos)+int(len(match_str))
             position_dict[prev_buffer_name] = position
     return True
 

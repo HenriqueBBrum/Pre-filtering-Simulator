@@ -1,5 +1,6 @@
 import radix
 import re
+import traceback
 
 ip_flags_dict = {
     'M': 1,
@@ -129,11 +130,9 @@ class RuleToMatch(object):
                 else:
                     parsed_pcre_str, snort_only_modifiers = self.__parse_pcre_modifiers(match[3], match[4])
                     content_pcre.append((match[0], match[1], match[2], parsed_pcre_str, snort_only_modifiers))
-            
-            temp_payload_fields["content_pcre"] = self.__apply_pre_filtering_scenario(content_pcre, pre_filtering_scenario)
-            if not temp_payload_fields["content_pcre"]:
-                print(content_pcre)
 
+            temp_payload_fields["content_pcre"] = self.__apply_pre_filtering_scenario(content_pcre, pre_filtering_scenario)
+        
         self.payload_fields = temp_payload_fields
 
 

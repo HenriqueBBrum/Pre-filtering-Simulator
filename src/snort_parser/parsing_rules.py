@@ -53,11 +53,7 @@ def __parse_rules(rule_file):
                 continue
 
             parsed_rule = parser.parse_rule(line)
-            if parsed_rule.options['sid'][1] == "498":
-                continue
-
             parsed_rules.append(parsed_rule)
-
 
             if search(regex_to_find_unsupported_keywords, line):
                 continue

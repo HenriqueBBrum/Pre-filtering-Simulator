@@ -92,6 +92,11 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, start
                     except Exception as e:
                         print("Exception")
                         print(traceback.format_exc())
+                        print("\n\n")
+                        print(rule.sids()[0])
+                        print(rule.payload_fields)
+                        print("\n")
+                        print(pkt)
                         suspicious_pkts.append((pkt_count, "error"))
                     break
             ip_pkt_count+=1

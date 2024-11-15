@@ -238,8 +238,6 @@ class RuleParser(object):
                 # Adjust "content" and "pcre" option by checking the buffer, if it has the "!" operator, cleaning the content to match and fidings the modifiers
                 if key == "content" or key == "pcre":
                     key, parsed_value = self.__get_content_and_pcre(key, value, current_buffer)
-                    if parsed_value == '':
-                        print(value)
                 else:
                     value = value.split(",")
                     parsed_value = value[0] if len(value) == 1 else value
@@ -279,13 +277,16 @@ class RuleParser(object):
 
     def __get_content_and_pcre(self, key, value, current_buffer):
         negate = re.search('^!', value)
-        content = re.search('"([^"]*)"', value).group(0)[1:-1]
         if key == "content":
-            modifiers = re.search('[\w,\- ]*$', value).group(0)[1:]
+            re_search = re.search('[\w ,-]*$', value)
+            modifiers = re_search.group(0)[1:] # Remove the first ','
+            content = value[:re_search.span()[0]]
             parsed_value = [0] # content ID
         else:
-            modifiers = re.search('[\w ]*$', content).group(0)
-            content = content[1:-1-len(modifiers)]
+            value = value[1:-1] # Remove '"'
+            re_search = re.search('[\w ]*$', value)
+            modifiers = re_search.group(0) 
+            content = value[1:re_search.span()[0]-1] # Don't return the '/' chars and grab  only the PCRE string
             parsed_value = [1] # PCRE id
 
         parsed_value.append(current_buffer)

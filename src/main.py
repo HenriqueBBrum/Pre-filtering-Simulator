@@ -17,7 +17,6 @@ def main(config_path, rules_path, ruleset_name, pre_filtering_scenario):
     print("*" * 80)
     print("*" * 80)
     print("*" * 34 + " SIMULATION " + "*" * 34+ "\n\n")
-
     start = time()
     pre_filtering_simulation(modified_rules, "selected_pcaps/pcaps/", pre_filtering_scenario, ruleset_name)
     print("Simulation time: ", time() - start)

@@ -8,7 +8,7 @@ from scapy.all import PcapReader, PcapWriter
 original_pcaps_folder = "../selected_pcaps/"
 simulation_results_folder = "./"
 
-rules_path = "../etc/rules/snortrules-snapshot-3000/"
+rules_path = "../etc/rules/snort3-registered/"
 config_path = "../etc/configuration/snort.lua"
 
 def main(scenario_to_analyze):
@@ -33,6 +33,8 @@ def main(scenario_to_analyze):
         information[scenario_folder] = {}
         information[scenario_folder] = get_resource_usage_info(scenario_results_folder+"log.txt")
         for file in os.listdir(scenario_results_folder):
+            # if file != "Thursday_mid.txt":
+            #     continue
             if file == "log.txt":
                 continue
            
@@ -48,6 +50,9 @@ def main(scenario_to_analyze):
             information[scenario_folder][file_name]["TP"] = len(original_pcap_alerts & reduced_pcap_alerts)
             information[scenario_folder][file_name]["FN"] = len(original_pcap_alerts - reduced_pcap_alerts)
             information[scenario_folder][file_name]["FP"] = len(reduced_pcap_alerts - original_pcap_alerts)
+            # print(original_pcap_alerts - reduced_pcap_alerts)
+            # print("\n\n")
+            # print(reduced_pcap_alerts - original_pcap_alerts)
 
             os.remove(suspicious_pkts_pcap)
 
@@ -126,7 +131,7 @@ def parse_alerts(alerts_filepath):
         for line in file.readlines():
            parsed_line = json.loads(line)
            if parsed_line["pkt_num"] not in alerted_pkts:
-               alerted_pkts[parsed_line["pkt_num"]] = str(parsed_line["pkt_len"]) + parsed_line["dir"] + parsed_line["src_ap"] + parsed_line["dst_ap"]
+               alerted_pkts[parsed_line["pkt_num"]] = ";".join([parsed_line["proto"], str(parsed_line["pkt_len"]), parsed_line["dir"], parsed_line["src_ap"], parsed_line["dst_ap"]])
                
     return set(alerted_pkts.values())
 
