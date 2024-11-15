@@ -1,0 +1,85 @@
+{
+    "amount_rules": 45193,
+    "header_size": 155.878929,
+    "payload_size": 21.71202,
+    "Wednesday_end": {
+        "amount_packets": 196029,
+        "time_to_process": 609.663183927536,
+        "suspicious_packets": 202
+    },
+    "Monday_mid": {
+        "amount_packets": 199196,
+        "time_to_process": 629.9489803314209,
+        "suspicious_packets": 202
+    },
+    "Wednesday_mid": {
+        "amount_packets": 199257,
+        "time_to_process": 558.2620885372162,
+        "suspicious_packets": 12507
+    },
+    "Thursday_end": {
+        "amount_packets": 197136,
+        "time_to_process": 577.1150064468384,
+        "suspicious_packets": 293
+    },
+    "Thursday_mid": {
+        "amount_packets": 197733,
+        "time_to_process": 616.2691357135773,
+        "suspicious_packets": 192,
+        "alerts_baseline": 96,
+        "alerts_experiment": 1,
+        "TP": 1,
+        "FN": 95,
+        "FP": 0
+    },
+    "Friday_end": {
+        "amount_packets": 196950,
+        "time_to_process": 593.5211305618286,
+        "suspicious_packets": 676
+    },
+    "Monday_start": {
+        "amount_packets": 194223,
+        "time_to_process": 598.3261504173279,
+        "suspicious_packets": 339
+    },
+    "Tuesday_start": {
+        "amount_packets": 194663,
+        "time_to_process": 591.3726539611816,
+        "suspicious_packets": 495
+    },
+    "Friday_start": {
+        "amount_packets": 195577,
+        "time_to_process": 607.9432084560394,
+        "suspicious_packets": 493
+    },
+    "Tuesday_mid": {
+        "amount_packets": 198438,
+        "time_to_process": 595.0036284923553,
+        "suspicious_packets": 270
+    },
+    "Thursday_start": {
+        "amount_packets": 195990,
+        "time_to_process": 620.522449016571,
+        "suspicious_packets": 477
+    },
+    "Friday_mid": {
+        "amount_packets": 196795,
+        "time_to_process": 590.5749108791351,
+        "suspicious_packets": 577
+    },
+    "Monday_end": {
+        "amount_packets": 198124,
+        "time_to_process": 609.8829469680786,
+        "suspicious_packets": 584
+    },
+    "Tuesday_end": {
+        "amount_packets": 197666,
+        "time_to_process": 586.5415155887604,
+        "suspicious_packets": 284
+    },
+    "Wednesday_start": {
+        "amount_packets": 198891,
+        "time_to_process": 639.4850337505341,
+        "suspicious_packets": 124
+    }
+}

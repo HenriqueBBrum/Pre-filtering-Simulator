@@ -275,18 +275,22 @@ class RuleParser(object):
         return op_list
 
 
+    # Check the negation sign 
     def __get_content_and_pcre(self, key, value, current_buffer):
         negate = re.search('^!', value)
+        if negate:
+            value = value[1:]
+
         if key == "content":
             re_search = re.search('[\w ,-]*$', value)
             modifiers = re_search.group(0)[1:] # Remove the first ','
-            content = value[:re_search.span()[0]]
+            content = value[:re_search.span()[0]][1:-1]
             parsed_value = [0] # content ID
         else:
             value = value[1:-1] # Remove '"'
             re_search = re.search('[\w ]*$', value)
             modifiers = re_search.group(0) 
-            content = value[1:re_search.span()[0]-1] # Don't return the '/' chars and grab  only the PCRE string
+            content = value[1:re_search.span()[0]-1] # Don't return the '/' chars and grab only the PCRE string
             parsed_value = [1] # PCRE id
 
         parsed_value.append(current_buffer)

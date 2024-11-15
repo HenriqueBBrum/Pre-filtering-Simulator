@@ -38,6 +38,7 @@ def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre, rule_sid
     position_dict = {}
     buffer, prev_buffer_name = "", ""
     position = 0
+
     for match_type, match_buffer, should_match, match_str, match_modifiers in rule_content_pcre:
         # Check some conditions regarding the buffers and the packet type     
         if match_buffer in unsupported_buffers:

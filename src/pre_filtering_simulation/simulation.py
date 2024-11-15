@@ -84,18 +84,14 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, start
                     try:
                         if not compare_header_fields(pkt_to_match, rule, rule.pkt_header_fields["proto"]):
                             continue
-                        
+                            
                         if not compare_payload(pkt_to_match, rule):
                             continue
-
+                            
                         suspicious_pkts.append((pkt_count, rule.sids()[0]))
                     except Exception as e:
                         print("Exception")
                         print(traceback.format_exc())
-                        print("\n\n")
-                        print(rule.sids()[0])
-                        print(rule.payload_fields)
-                        print("\n")
                         print(pkt)
                         suspicious_pkts.append((pkt_count, "error"))
                     break

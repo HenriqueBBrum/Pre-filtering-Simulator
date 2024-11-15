@@ -33,9 +33,7 @@ def main(scenario_to_analyze):
         information[scenario_folder] = {}
         information[scenario_folder] = get_resource_usage_info(scenario_results_folder+"log.txt")
         for file in os.listdir(scenario_results_folder):
-            # if file != "Thursday_mid.txt":
-            #     continue
-            if file == "log.txt":
+            if file != "Thursday_mid.txt":
                 continue
            
             suspicious_pkts_pcap = generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_results_folder, file)
@@ -75,7 +73,7 @@ def get_resource_usage_info(log_file):
                 if "Payload size" in line:
                     resource_info["payload_size"] = float(re.search("\d+\.?\d*", line).group(0)) # in MB
 
-            if "Starting file processing:" in line:
+            if "Starting" in line:
                 current_pcap_name = re.search("\/pcaps\/(.*)\.", line).group(1)
                 resource_info[current_pcap_name] = {}
 
@@ -131,7 +129,7 @@ def parse_alerts(alerts_filepath):
         for line in file.readlines():
            parsed_line = json.loads(line)
            if parsed_line["pkt_num"] not in alerted_pkts:
-               alerted_pkts[parsed_line["pkt_num"]] = ";".join([parsed_line["proto"], str(parsed_line["pkt_len"]), parsed_line["dir"], parsed_line["src_ap"], parsed_line["dst_ap"]])
+               alerted_pkts[parsed_line["pkt_num"]] = ";".join([parsed_line["proto"], parsed_line["dir"], parsed_line["src_ap"], parsed_line["dst_ap"]])
                
     return set(alerted_pkts.values())
 

@@ -21,7 +21,7 @@ from pre_filtering_simulation.rule_to_match import RuleToMatch
 # Returns two list of rules from one or multiple files. 
 # The first list contains the parsed rules similar as they apperead in the files but saving the values in dictionaries. 
 # The second list contains adjusted bidirectional rules, with port groupping and with the IP and port variables exchanged with the real values.
-def get_rules(rules_path, ignored_rule_files):
+def get_rules(rules_path, ignored_rule_files={}):
     files = []
     if isfile(rules_path):
         files =  [rules_path]

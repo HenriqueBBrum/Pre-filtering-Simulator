@@ -1,0 +1,25 @@
+********************************************************************************
+********************************************************************************
+************************** SNORT RULES PARSING STAGE ***************************
+
+
+---- Getting and parsing rules..... ----
+---- Splitting bidirectional rules..... ----
+---- Adjusting rules. Replacing variables..... ----
+---- Deduping rules based on the packet header and payload matching fields..... ----
+
+Results:
+Total original rules: 45957
+Total adjusted and filtered rules: 46580
+Total deduped rules: 45193
+
+Header size:  155.878929 MB
+Payload size:  21.492791 MB
+Total size:  177.37172 MB
+********************************************************************************
+********************************************************************************
+********************************** SIMULATION **********************************
+
+
+Starting selected_pcaps/pcaps/Wednesday_end.pcap processing: 
+Time to read  200000  packets in seconds:  35.532060623168945

@@ -25,11 +25,9 @@ def main(config_path, rules_path, ruleset_name, pre_filtering_scenario):
 # Functions related to the parsing of Snort/Suricata rules from multiple files, and the subsequent deduplication, 
 # replacement of system variables, port groupping and fixing negated headers 
 def parse_rules(config, rules_path, pre_filtering_scenario):
-    ignored_rule_files = {}
-
     print("---- Getting and parsing rules..... ----")
     print("---- Splitting bidirectional rules..... ----")
-    original_rules, fixed_bidirectional_rules = get_rules(rules_path, ignored_rule_files) # Get all rules from multiple files or just one
+    original_rules, fixed_bidirectional_rules = get_rules(rules_path) # Get all rules from multiple files or just one
     
     print("---- Adjusting rules. Replacing variables..... ----")
     modified_rules = adjust_rules(config, fixed_bidirectional_rules) 
