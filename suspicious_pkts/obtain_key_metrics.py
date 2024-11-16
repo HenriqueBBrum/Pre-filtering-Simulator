@@ -8,8 +8,7 @@ from scapy.all import PcapReader, PcapWriter
 original_pcaps_folder = "../selected_pcaps/"
 simulation_results_folder = "./"
 
-rules_path = "../etc/rules/snort3-registered-no-established/"
-# rules_path = "../etc/rules/snort3-registered/"
+rules_path = "../etc/rules/snort3-registered/"
 config_path = "../etc/configuration/snort.lua"
 
 def main(scenario_to_analyze):
@@ -27,7 +26,7 @@ def main(scenario_to_analyze):
         if not os.path.exists(scenario_results_folder):
             os.makedirs(scenario_results_folder)
 
-        alerts_output_folder = simulation_results_folder + scenario_folder + "/alerts_registered_no_established/" #"/alerts_registered/"
+        alerts_output_folder = simulation_results_folder + scenario_folder + "/alerts_registered/"
         if not os.path.exists(alerts_output_folder):
             os.makedirs(alerts_output_folder)
 
@@ -40,11 +39,10 @@ def main(scenario_to_analyze):
             suspicious_pkts_pcap = generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_results_folder, file)
             suspicious_pkts_alert_file = snort_with_suspicious_pcap(suspicious_pkts_pcap, alerts_output_folder, file)
 
-            original_pcap_alerts = parse_alerts(original_pcaps_folder+"/alerts_registered_no_established/"+file) # alerts_registered
+            original_pcap_alerts = parse_alerts(original_pcaps_folder+"/alerts_registered/"+file)
             reduced_pcap_alerts = parse_alerts(suspicious_pkts_alert_file)
 
             file_name = file.split(".")[0]
-            print(information)
             information[scenario_folder][file_name]["alerts_baseline"] = len(original_pcap_alerts)
             information[scenario_folder][file_name]["alerts_experiment"] =  len(reduced_pcap_alerts)
             information[scenario_folder][file_name]["TP"] = len(original_pcap_alerts & reduced_pcap_alerts)
@@ -117,6 +115,7 @@ def generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_folder, file):
 
 # Run snort with the new suspicious pkts pcap
 def snort_with_suspicious_pcap(suspicious_pkts_pcap, alerts_output_folder, file):
+    print(rules_path)
     subprocess.run(["snort", "-c", config_path, "--rule-path",rules_path, "-r",suspicious_pkts_pcap, "-l",alerts_output_folder, \
                     "-A","alert_json",  "--lua","alert_json = {file = true}"], stdout=subprocess.DEVNULL)
     new_filepath = alerts_output_folder+file
