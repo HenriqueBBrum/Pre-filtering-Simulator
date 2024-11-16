@@ -264,7 +264,7 @@ class RuleParser(object):
         op_list = list()
         option, last_char = "", ""
         for char in options.rstrip(")"):
-            if char != ";":
+            if char != ";" or (char == ";" and last_char == "\\"):
                 option = option + char
 
             if char == ";" and last_char != "\\":
@@ -275,7 +275,6 @@ class RuleParser(object):
         return op_list
 
 
-    # Check the negation sign 
     def __get_content_and_pcre(self, key, value, current_buffer):
         negate = re.search('^!', value)
         if negate:

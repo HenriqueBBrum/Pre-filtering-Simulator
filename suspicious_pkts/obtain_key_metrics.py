@@ -8,7 +8,8 @@ from scapy.all import PcapReader, PcapWriter
 original_pcaps_folder = "../selected_pcaps/"
 simulation_results_folder = "./"
 
-rules_path = "../etc/rules/snort3-registered/"
+rules_path = "../etc/rules/snort3-registered-no-established/"
+# rules_path = "../etc/rules/snort3-registered/"
 config_path = "../etc/configuration/snort.lua"
 
 def main(scenario_to_analyze):
@@ -22,27 +23,28 @@ def main(scenario_to_analyze):
         if not os.path.isdir(scenario_folder):
             continue
 
-        scenario_results_folder = simulation_results_folder + scenario_folder + "/registered/"
+        scenario_results_folder = simulation_results_folder + scenario_folder + "/registered/" 
         if not os.path.exists(scenario_results_folder):
             os.makedirs(scenario_results_folder)
 
-        alerts_output_folder = simulation_results_folder + scenario_folder + "/alerts/"
+        alerts_output_folder = simulation_results_folder + scenario_folder + "/alerts_registered_no_established/" #"/alerts_registered/"
         if not os.path.exists(alerts_output_folder):
             os.makedirs(alerts_output_folder)
 
         information[scenario_folder] = {}
         information[scenario_folder] = get_resource_usage_info(scenario_results_folder+"log.txt")
         for file in os.listdir(scenario_results_folder):
-            if file != "Thursday_mid.txt":
+            if "log" in file:
                 continue
-           
+
             suspicious_pkts_pcap = generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_results_folder, file)
             suspicious_pkts_alert_file = snort_with_suspicious_pcap(suspicious_pkts_pcap, scenario_results_folder, alerts_output_folder, file)
 
-            original_pcap_alerts = parse_alerts(original_pcaps_folder+"/alerts_registered/"+file)
+            original_pcap_alerts = parse_alerts(original_pcaps_folder+"/alerts_registered_no_established/"+file) # alerts_registered
             reduced_pcap_alerts = parse_alerts(suspicious_pkts_alert_file)
 
             file_name = file.split(".")[0]
+            print(information)
             information[scenario_folder][file_name]["alerts_baseline"] = len(original_pcap_alerts)
             information[scenario_folder][file_name]["alerts_experiment"] =  len(reduced_pcap_alerts)
             information[scenario_folder][file_name]["TP"] = len(original_pcap_alerts & reduced_pcap_alerts)
@@ -88,6 +90,7 @@ def get_resource_usage_info(log_file):
  
 # Based on the list of suspicious packets IDs (packets position in the original PCAP) generate a pcap
 def generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_folder, file):
+    print(scenario_folder, file)
     suspicious_pkts_list = []
     with open(scenario_folder+file, 'r') as suspicious_pkts:
         suspicious_pkts_list = [int(line[:-1]) if line[-1] == "\n" else int(line) for line in suspicious_pkts.readlines()]

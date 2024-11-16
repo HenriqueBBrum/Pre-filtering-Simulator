@@ -22,7 +22,3 @@ simulation.community:
 
 simulation.registered:
 	python3 src/main.py ${SNORT_CONFIG} ${SNORT3_REGISTERED_RULES} registered ${SCENARIO}  2>&1 | tee suspicious_pkts/${SCENARIO}/registered/log.txt
-
-
-simulation.registered_no_established:
-	python3 src/main.py ${SNORT_CONFIG} ${SNORT3_REGISTERED_NO_ESTABLISHED_RULES} registered_no_established ${SCENARIO} 2>&1 | tee suspicious_pkts/${SCENARIO}/registered_no_established/log.txt
