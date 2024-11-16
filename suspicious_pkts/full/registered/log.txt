@@ -14,12 +14,1296 @@ Total adjusted and filtered rules: 46580
 Total deduped rules: 45193
 
 Header size:  155.878929 MB
-Payload size:  21.492791 MB
-Total size:  177.37172 MB
+Payload size:  21.492876 MB
+Total size:  177.371805 MB
 ********************************************************************************
 ********************************************************************************
 ********************************** SIMULATION **********************************
 
 
 Starting selected_pcaps/pcaps/Wednesday_end.pcap processing: 
-Time to read  200000  packets in seconds:  35.532060623168945
+Time to read  200000  packets in seconds:  35.65863561630249
+Counter({'18487/9': 6778, '27938/3': 3846, '24490/4': 2803, '32758/4': 2701, '32760/4': 2312, '31179/5': 2271, '52524/2': 1166, '31213/2': 820, '36661/5': 629, '38602/3': 372, '31212/2': 368, '31177/5': 213, '5999/8': 76, '25827/4': 66, '24706/8': 60, '44416/3': 54, '32205/5': 51, '20734/16': 46, 'unsupported': 30, '23839/20': 24, '24489/4': 13, '2462/10': 13, '37968/1': 13, '23346/10': 13, '36025/5': 13, '21021/6': 13, '29514/8': 12, '19621/13': 7, '30789/6': 6, '31178/5': 5, '32759/4': 5, '43496/2': 4, '6504/14': 4, '17494/10': 3, '19253/12': 3, '18640/8': 3, '33561/2': 3, '23861/11': 3, '31027/6': 2, '15168/14': 2, '16739/16': 1, '15866/17': 1, '17378/16': 1})
+Time to process 196029 packets against  45193 rules in seconds:  588.8558261394501
+Suspicious packets: 24829 ,  IP packets: 196029 , Packets: 200000 
+
+Finished with file:  Wednesday_end.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Monday_mid.pcap processing: 
+Time to read  200000  packets in seconds:  36.502005100250244
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Counter({'18487/9': 4292, '27938/3': 1294, '31212/2': 995, '32758/4': 976, '38602/3': 952, '24490/4': 803, '32760/4': 787, '31179/5': 786, '52524/2': 571, '31213/2': 238, '36661/5': 210, '24706/8': 121, '31177/5': 78, '5999/8': 52, '37968/1': 28, '44416/3': 24, 'unsupported': 24, '43496/2': 19, '25827/4': 17, '33561/2': 15, '19621/13': 15, '24489/4': 11, '18640/8': 9, '32205/5': 9, '23839/20': 8, '21021/6': 7, '20734/16': 5, 'error': 5, '29514/8': 4, '23346/10': 4, '36025/5': 4, '19253/12': 2, '30789/6': 2, '2671/18': 1, '17494/10': 1, '41631/3': 1, '23861/11': 1, '21587/10': 1, '16739/16': 1, '51269/1': 1, '31027/6': 1, '12147/7': 1})
+Time to process 199196 packets against  45193 rules in seconds:  618.4066715240479
+Suspicious packets: 12376 ,  IP packets: 199196 , Packets: 200000 
+
+Finished with file:  Monday_mid.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Wednesday_mid.pcap processing: 
+Time to read  200000  packets in seconds:  42.65716218948364
+Counter({'50447/1': 12613, '36814/5': 12310, '18487/9': 2812, '27938/3': 1047, '31212/2': 791, '38602/3': 544, '32758/4': 469, '24490/4': 429, '52524/2': 419, '32760/4': 413, '31179/5': 402, '31213/2': 165, '19621/13': 158, '36661/5': 119, '23346/10': 91, '24706/8': 48, '5999/8': 31, '31177/5': 25, 'unsupported': 22, '44416/3': 21, '37968/1': 20, '36025/5': 11, '32205/5': 9, '23839/20': 8, '33561/2': 6, '25827/4': 5, '31401/4': 4, '38381/4': 4, '29514/8': 4, '34082/3': 3, '12147/7': 2, '31028/7': 2, '17494/10': 2, '1545/15': 2, '21587/10': 1, '31027/6': 1, '21775/5': 1, '33669/2': 1, '2671/18': 1, '19253/12': 1, '18640/8': 1})
+Time to process 199257 packets against  45193 rules in seconds:  522.7039530277252
+Suspicious packets: 33018 ,  IP packets: 199257 , Packets: 200000 
+
+Finished with file:  Wednesday_mid.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Thursday_end.pcap processing: 
+Time to read  200000  packets in seconds:  49.04188299179077
+/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py:80: FutureWarning: Possible nested set at position 7
+  match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py:80: FutureWarning: Possible nested set at position 20
+  match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Counter({'18487/9': 8162, '27938/3': 4531, '32758/4': 2708, '24490/4': 2365, '32760/4': 1887, '31179/5': 1841, '52524/2': 1290, '31212/2': 985, '38602/3': 748, '31213/2': 637, '36661/5': 543, '31177/5': 366, '5999/8': 148, '19621/13': 88, '1545/15': 76, '24706/8': 71, '44416/3': 68, '21775/5': 62, '25827/4': 56, '23346/10': 52, '37968/1': 43, '32205/5': 39, 'unsupported': 30, '24489/4': 25, '36025/5': 21, '23839/20': 20, '43496/2': 15, '20734/16': 15, '2462/10': 14, '36814/5': 13, '29514/8': 10, '23861/11': 10, '6504/14': 7, '30789/6': 7, '34082/3': 5, '28069/4': 5, '16739/16': 4, '18640/8': 4, '17494/10': 4, 'error': 3, '19253/12': 3, '28190/4': 2, '15362/12': 2, '32759/4': 2, '31027/6': 2, '58241/1': 2, '50871/1': 2, '51269/1': 2, '50447/1': 1, '28511/3': 1, '28509/5': 1, '19300/6': 1, '21112/15': 1, '17378/16': 1, '31028/7': 1, '14020/16': 1, '11266/3': 1, '32817/8': 1, '33561/2': 1, '44169/4': 1, '33669/2': 1})
+Time to process 197136 packets against  45193 rules in seconds:  552.3298497200012
+Suspicious packets: 27008 ,  IP packets: 197136 , Packets: 200000 
+
+Finished with file:  Thursday_end.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Thursday_mid.pcap processing: 
+Time to read  200000  packets in seconds:  43.39226222038269
+Counter({'18487/9': 7749, '27938/3': 2860, '24490/4': 2049, '32758/4': 1970, '32760/4': 1532, '31179/5': 1497, '52524/2': 817, '31212/2': 704, '31213/2': 565, '36661/5': 516, '5999/8': 512, '38602/3': 474, '31177/5': 207, '44416/3': 101, '32205/5': 56, '23346/10': 56, '19621/13': 50, '33561/2': 40, '24706/8': 35, '25827/4': 31, '45669/2': 25, '24489/4': 24, '23839/20': 24, '36025/5': 12, '29514/8': 12, '18640/8': 11, '15167/13': 10, '5998/8': 10, '43496/2': 8, '32759/4': 7, '34082/3': 7, '23861/11': 7, '31178/5': 6, '20734/16': 6, '25826/4': 6, '1545/15': 5, '30789/6': 3, '16739/16': 3, '45670/3': 3, '21021/6': 3, '21775/5': 2, '15362/12': 2, '17494/10': 2, '33669/2': 2, '31028/7': 2, '12147/7': 1, '19253/12': 1, '58241/1': 1, '31027/6': 1, '36814/5': 1, '396/12': 1, '51269/1': 1})
+Time to process 197733 packets against  45193 rules in seconds:  592.506087064743
+Suspicious packets: 22030 ,  IP packets: 197733 , Packets: 200000 
+
+Finished with file:  Thursday_mid.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Friday_end.pcap processing: 
+Time to read  200000  packets in seconds:  45.57063341140747
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Counter({'18487/9': 9754, '27938/3': 4074, '24490/4': 2345, '31212/2': 2075, '32760/4': 2063, '32758/4': 2035, '31179/5': 2026, '38602/3': 1399, '52524/2': 1090, '31213/2': 691, '36661/5': 639, '19621/13': 219, '399/9': 214, '24706/8': 192, '44416/3': 123, 'unsupported': 114, '23346/10': 62, '36814/5': 61, '24489/4': 60, '32205/5': 44, '44169/4': 42, '20734/16': 30, '23839/20': 28, '1545/15': 25, '31177/5': 22, '36025/5': 18, '25827/4': 17, '37968/1': 16, '29514/8': 14, '19253/12': 11, '30789/6': 10, '33561/2': 10, 'error': 9, '34082/3': 8, '43496/2': 8, '21775/5': 6, '13920/17': 6, '18640/8': 6, '5999/8': 5, '21770/5': 4, '32817/8': 4, '2671/18': 4, '28190/4': 4, '45757/1': 3, '16739/16': 3, '33669/2': 2, '23861/11': 2, '31027/6': 2, '17494/10': 1, '58241/1': 1, '19300/6': 1, '12147/7': 1, '7751/4': 1, '33033/6': 1, '42015/3': 1, '23100/9': 1, '14020/16': 1, '27278/4': 1, '28511/3': 1})
+Time to process 196950 packets against  45193 rules in seconds:  561.9187664985657
+Suspicious packets: 29610 ,  IP packets: 196950 , Packets: 200000 
+
+Finished with file:  Friday_end.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Monday_start.pcap processing: 
+Time to read  200000  packets in seconds:  46.02848029136658
+Counter({'18487/9': 4577, '27938/3': 2023, '24490/4': 980, '32760/4': 882, '31179/5': 776, '52524/2': 704, '32758/4': 688, '31212/2': 512, '31213/2': 316, '36661/5': 289, '38602/3': 259, 'unsupported': 196, '1545/15': 93, '44416/3': 81, '19621/13': 77, '5999/8': 64, '24706/8': 53, '51269/1': 45, '23839/20': 28, '2462/10': 26, '33561/2': 23, '6504/14': 16, '29514/8': 14, '21775/5': 12, '23346/10': 11, '20734/16': 10, '25827/4': 8, '36025/5': 8, '30789/6': 8, '31177/5': 7, '36814/5': 6, '7751/4': 6, '23861/11': 4, '17378/16': 4, '32205/5': 4, '31027/6': 3, '29456/3': 3, '31767/2': 3, '18640/8': 3, '58241/1': 2, '33669/2': 2, '19253/12': 2, '14020/16': 2, '43496/2': 2, '29465/8': 1, '34082/3': 1, '17148/13': 1, '16425/24': 1, '16739/16': 1, '17494/10': 1, '24489/4': 1, '37968/1': 1, '46055/3': 1, '31028/7': 1})
+Time to process 194223 packets against  45193 rules in seconds:  585.7336785793304
+Suspicious packets: 12842 ,  IP packets: 194223 , Packets: 200000 
+
+Finished with file:  Monday_start.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Tuesday_start.pcap processing: 
+Time to read  200000  packets in seconds:  51.66770648956299
+Counter({'18487/9': 4212, '27938/3': 1445, '24490/4': 1022, '32760/4': 962, '31179/5': 835, '32758/4': 777, '52524/2': 642, 'unsupported': 394, '31213/2': 387, '31212/2': 356, '36661/5': 355, '38602/3': 248, '51269/1': 46, '32205/5': 40, '24706/8': 35, '23324/5': 32, '2462/10': 31, '31177/5': 27, '5999/8': 25, '1545/15': 23, '24489/4': 21, '23839/20': 20, '6504/14': 17, '19621/13': 15, '36814/5': 14, '25827/4': 13, '29514/8': 10, '18640/8': 10, '21775/5': 9, '20734/16': 8, '23346/10': 7, '33561/2': 7, '44416/3': 5, '40811/4': 4, '7751/4': 4, '36025/5': 4, '14020/16': 3, '17148/13': 3, '17378/16': 3, '1394/17': 3, '25826/4': 1, '29465/8': 1, '16425/24': 1, '34082/3': 1, '44169/4': 1, '31027/6': 1, '58241/1': 1, '19253/12': 1, '20572/12': 1, '21587/10': 1, '21112/15': 1, '31178/5': 1, '32759/4': 1, '2671/18': 1, '12082/6': 1})
+Time to process 194663 packets against  45193 rules in seconds:  577.7769477367401
+Suspicious packets: 12089 ,  IP packets: 194663 , Packets: 200000 
+
+Finished with file:  Tuesday_start.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Friday_start.pcap processing: 
+Time to read  200000  packets in seconds:  46.66891384124756
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Counter({'18487/9': 3144, '27938/3': 1522, '24490/4': 798, '32760/4': 696, '31179/5': 598, '32758/4': 570, '52524/2': 503, 'unsupported': 376, '31213/2': 297, '31212/2': 295, '36661/5': 285, '38602/3': 151, '5999/8': 60, '51269/1': 41, '2462/10': 38, '31177/5': 32, '24706/8': 28, '6504/14': 28, '33561/2': 19, '23839/20': 16, '44416/3': 15, '19621/13': 15, '23346/10': 11, '25827/4': 11, '24489/4': 11, '20734/16': 11, '23861/11': 10, '18640/8': 8, '29514/8': 8, '43496/2': 8, '36814/5': 6, '1545/15': 5, '36025/5': 4, '21775/5': 4, '19253/12': 3, '17378/16': 3, '6390/9': 3, '16425/24': 2, '32205/5': 2, '2671/18': 2, '20572/12': 2, '30789/6': 2, '7751/4': 2, '5822/6': 2, '21112/15': 1, '34082/3': 1, '32817/8': 1, '20842/14': 1, '17148/13': 1, '16739/16': 1, '29465/8': 1, 'error': 1})
+Time to process 195577 packets against  45193 rules in seconds:  598.4346034526825
+Suspicious packets: 9655 ,  IP packets: 195577 , Packets: 200000 
+
+Finished with file:  Friday_start.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Tuesday_mid.pcap processing: 
+Time to read  200000  packets in seconds:  48.341498136520386
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Counter({'18487/9': 8957, '27938/3': 3064, '31212/2': 2002, '32672/2': 1880, '13360/9': 1880, '32758/4': 1592, '38602/3': 1584, '24490/4': 1440, '52524/2': 1397, '32760/4': 1283, '31179/5': 1251, '31213/2': 441, '36661/5': 353, '31177/5': 161, '19621/13': 139, '44416/3': 131, '24706/8': 124, '5999/8': 103, '23346/10': 62, '25827/4': 32, '33561/2': 31, '28039/7': 30, 'unsupported': 24, '37968/1': 23, '20734/16': 22, '32205/5': 19, '23861/11': 19, '16739/16': 17, '43496/2': 16, '23839/20': 16, '24489/4': 14, '17494/10': 13, '6504/14': 12, '36814/5': 10, '15168/14': 10, '29514/8': 8, '34082/3': 8, '18640/8': 7, '31028/7': 6, '36025/5': 5, '17378/16': 5, '51269/1': 4, '21021/6': 4, '31027/6': 4, '1545/15': 4, '2671/18': 3, '30789/6': 3, '14020/16': 3, '19253/12': 3, 'error': 2, '21775/5': 2, '28509/5': 1, '41631/3': 1, '21587/10': 1, '38124/4': 1, '24379/14': 1, '32759/4': 1, '15362/12': 1, '21112/15': 1, '20584/8': 1, '33033/6': 1})
+Time to process 198438 packets against  45193 rules in seconds:  575.0561144351959
+Suspicious packets: 28233 ,  IP packets: 198438 , Packets: 200000 
+
+Finished with file:  Tuesday_mid.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Thursday_start.pcap processing: 
+Time to read  200000  packets in seconds:  41.99286198616028
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Counter({'18487/9': 3916, '27938/3': 1540, '31212/2': 698, '32760/4': 667, '24490/4': 645, '31179/5': 589, '32758/4': 587, '52524/2': 556, '38602/3': 344, 'unsupported': 338, '36661/5': 320, '31213/2': 276, '5999/8': 70, '24706/8': 63, '51269/1': 59, '23346/10': 52, '44416/3': 43, '31177/5': 34, '19621/13': 32, '2462/10': 25, '33561/2': 23, '6504/14': 20, '20734/16': 13, '18640/8': 10, '23839/20': 8, '32205/5': 8, '37968/1': 6, '34082/3': 5, '31027/6': 5, '24489/4': 5, '36814/5': 5, '29514/8': 4, '17378/16': 4, '19253/12': 3, '23861/11': 3, '20842/14': 3, '6390/9': 3, '1545/15': 3, '31028/7': 2, '16425/24': 2, '25827/4': 2, '20572/12': 2, '16739/16': 2, '5822/6': 2, '21775/5': 1, '38816/2': 1, '46055/3': 1, '21587/10': 1, '17148/13': 1, 'error': 1, '2671/18': 1, '14020/16': 1})
+Time to process 195990 packets against  45193 rules in seconds:  599.0140066146851
+Suspicious packets: 11005 ,  IP packets: 195990 , Packets: 200000 
+
+Finished with file:  Thursday_start.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Friday_mid.pcap processing: 
+Time to read  200000  packets in seconds:  50.851654052734375
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Counter({'18487/9': 8015, '27938/3': 4878, '32758/4': 2731, '24490/4': 2488, '32760/4': 1907, '31179/5': 1868, '52524/2': 1379, '31212/2': 1062, '38602/3': 810, '36661/5': 715, '31213/2': 672, '31177/5': 374, '36814/5': 351, 'unsupported': 329, '5999/8': 244, '24706/8': 97, '19621/13': 90, '33561/2': 66, '44416/3': 53, '37968/1': 51, '32205/5': 45, '23346/10': 27, '1545/15': 26, '23839/20': 24, '25827/4': 23, '36025/5': 17, '17494/10': 14, '29514/8': 12, '20734/16': 11, '23861/11': 11, '3665/12': 11, '30789/6': 10, '12197/13': 10, 'error': 7, '24489/4': 6, '18640/8': 5, '21587/10': 4, '19253/12': 4, '43496/2': 3, '16739/16': 3, '21775/5': 3, '15362/12': 3, '2671/18': 2, '34082/3': 2, '33669/2': 1, '6285/4': 1, '32759/4': 1, '5998/8': 1, '31406/3': 1, '21112/15': 1, '58241/1': 1, '1693/8': 1, '62574/1': 1, '17378/16': 1, '32817/8': 1, '21021/6': 1, '1690/7': 1, '14020/16': 1, '51269/1': 1})
+Time to process 196795 packets against  45193 rules in seconds:  559.1307635307312
+Suspicious packets: 28478 ,  IP packets: 196795 , Packets: 200000 
+
+Finished with file:  Friday_mid.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Monday_end.pcap processing: 
+Time to read  200000  packets in seconds:  46.42227816581726
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Counter({'18487/9': 7558, '27938/3': 3929, '24490/4': 2090, '32758/4': 1953, '32760/4': 1835, '31179/5': 1824, '52524/2': 1238, '31212/2': 1101, '38602/3': 749, '31213/2': 502, '36661/5': 454, '23346/10': 170, '44416/3': 94, '31177/5': 56, '25827/4': 49, '24706/8': 43, '1545/15': 32, '19621/13': 30, '20734/16': 29, '50997/1': 29, '32205/5': 28, 'unsupported': 24, '24489/4': 20, '23839/20': 16, '36025/5': 15, 'error': 11, '36814/5': 10, '18640/8': 9, '29514/8': 8, '23861/11': 8, '19253/12': 7, '31027/6': 7, '37968/1': 5, '34082/3': 5, '58241/1': 4, '31178/5': 3, '32759/4': 3, '25826/4': 3, '30789/6': 2, '5999/8': 2, '51269/1': 2, '21112/15': 2, '17494/10': 2, '2462/10': 2, '43496/2': 2, '31028/7': 2, '19300/6': 1, '33561/2': 1, '22087/9': 1, '16739/16': 1, '28509/5': 1, '38816/2': 1, '2671/18': 1, '7751/4': 1, '27278/4': 1})
+Time to process 198124 packets against  45193 rules in seconds:  575.3207459449768
+Suspicious packets: 23976 ,  IP packets: 198124 , Packets: 200000 
+
+Finished with file:  Monday_end.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Tuesday_end.pcap processing: 
+Time to read  200000  packets in seconds:  45.548356771469116
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Exception
+Traceback (most recent call last):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/simulation.py", line 88, in compare_pkts_to_rules
+    if not compare_payload(pkt_to_match, rule):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 24, in compare_payload
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+  File "/home/hbeckerbrum/Optmized-pre-filtering-for-NIDS/src/pre_filtering_simulation/payload_matching.py", line 80, in __compare_content_pcre
+    match = search(match_str, pkt_to_match.payload_buffers["original"][prev_buffer_name][start:end])
+  File "/usr/lib/python3.10/re.py", line 200, in search
+    return _compile(pattern, flags).search(string)
+  File "/usr/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.10/sre_compile.py", line 788, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.10/sre_parse.py", line 955, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 841, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.10/sre_parse.py", line 444, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.10/sre_parse.py", line 783, in _parse
+    raise source.error(msg, len(condname) + 1) from None
+re.error: bad character in group name '?=\\2' at position 61
+
+Ether / IP / TCP / HTTP / 200 OK
+Counter({'18487/9': 6596, '27938/3': 3529, '32758/4': 2969, '24490/4': 2863, '32760/4': 2123, '31179/5': 2095, '52524/2': 1195, '31212/2': 642, '31213/2': 636, '36661/5': 558, '38602/3': 501, '31177/5': 313, '24706/8': 82, 'unsupported': 72, '44416/3': 66, '23839/20': 32, '32205/5': 32, '23346/10': 31, '25827/4': 27, '19621/13': 22, '402/16': 18, '29514/8': 16, '399/9': 16, '36025/5': 15, '24489/4': 12, '36814/5': 11, '5999/8': 10, '28190/4': 8, '20734/16': 7, '23861/11': 7, '2671/18': 6, '37968/1': 6, '38369/4': 5, '33561/2': 4, '16739/16': 4, 'error': 4, '31027/6': 3, '34082/3': 3, '23152/8': 3, '19253/12': 2, '18640/8': 2, '7606/4': 2, '38816/2': 2, '247/8': 2, '15866/17': 1, '21587/10': 1, '44169/4': 1, '28509/5': 1, '30789/6': 1, '248/8': 1, '33033/6': 1, '43496/2': 1})
+Time to process 197666 packets against  45193 rules in seconds:  547.4888796806335
+Suspicious packets: 24560 ,  IP packets: 197666 , Packets: 200000 
+
+Finished with file:  Tuesday_end.pcap
+**************************************************
+Starting selected_pcaps/pcaps/Wednesday_start.pcap processing: 
+Time to read  200000  packets in seconds:  42.52773118019104
+Counter({'18487/9': 914, '27938/3': 205, '31212/2': 115, '32760/4': 112, 'unsupported': 92, '24490/4': 90, '31179/5': 67, '52524/2': 62, '51269/1': 62, '36661/5': 27, '32758/4': 23, '31213/2': 21, '5999/8': 19, '38602/3': 17, '6504/14': 14, '18640/8': 12, '33561/2': 7, '19621/13': 7, '2462/10': 5, '24706/8': 5, '33669/2': 4, '23346/10': 4, '23839/20': 4, '21775/5': 3, '20572/12': 2, '7751/4': 2, '29514/8': 2, '31177/5': 2, '19253/12': 1, '40811/4': 1, '36025/5': 1, '46055/3': 1, '1394/17': 1, '38816/2': 1, '38381/4': 1, '16425/24': 1, '36814/5': 1, '20842/14': 1, '34082/3': 1})
+Time to process 198891 packets against  45193 rules in seconds:  626.3488738536835
+Suspicious packets: 1910 ,  IP packets: 198891 , Packets: 200000 
+
+Finished with file:  Wednesday_start.pcap
+**************************************************
+Simulation time:  9367.934140443802

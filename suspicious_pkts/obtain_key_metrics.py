@@ -38,7 +38,7 @@ def main(scenario_to_analyze):
                 continue
 
             suspicious_pkts_pcap = generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_results_folder, file)
-            suspicious_pkts_alert_file = snort_with_suspicious_pcap(suspicious_pkts_pcap, scenario_results_folder, alerts_output_folder, file)
+            suspicious_pkts_alert_file = snort_with_suspicious_pcap(suspicious_pkts_pcap, alerts_output_folder, file)
 
             original_pcap_alerts = parse_alerts(original_pcaps_folder+"/alerts_registered_no_established/"+file) # alerts_registered
             reduced_pcap_alerts = parse_alerts(suspicious_pkts_alert_file)
@@ -116,7 +116,7 @@ def generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_folder, file):
     return suspicious_pkts_output_pcap
 
 # Run snort with the new suspicious pkts pcap
-def snort_with_suspicious_pcap(suspicious_pkts_pcap, scenario_results_folder, alerts_output_folder, file):
+def snort_with_suspicious_pcap(suspicious_pkts_pcap, alerts_output_folder, file):
     subprocess.run(["snort", "-c", config_path, "--rule-path",rules_path, "-r",suspicious_pkts_pcap, "-l",alerts_output_folder, \
                     "-A","alert_json",  "--lua","alert_json = {file = true}"], stdout=subprocess.DEVNULL)
     new_filepath = alerts_output_folder+file
