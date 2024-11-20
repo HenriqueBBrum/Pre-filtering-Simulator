@@ -4,7 +4,7 @@ SNORT3_REGISTERED_NO_ESTABLISHED_RULES=etc/rules/snort3-registered-no-establishe
 SNORT_CONFIG=etc/configuration
 
 
-OUTPUT_FOLDER=suspicious_packets/
+OUTPUT_FOLDER=suspicious_pkts/
 
 
 ifndef EVAL_RULES
@@ -13,12 +13,11 @@ endif
 
 ifndef SCENARIO
 SCENARIO=full
-endif
+endif	
 
-
-#	python3 -m cProfile -o temp.dat -s time src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} ${COMPILER_GOAL} 2>&1 | tee suspicious_pkts/${SCENARIO}/registered/log.txt
+#	python3 -m cProfile -o temp.dat -s time src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} ${COMPILER_GOAL}  2>&1 | tee suspicious_pkts/${SCENARIO}/registered/log.txt
 simulation.community: 
 	python3 src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} community ${SCENARIO} 2>&1 |  tee suspicious_pkts/${SCENARIO}/community/log.txt
 
 simulation.registered:
-	python3 src/main.py ${SNORT_CONFIG} ${SNORT3_REGISTERED_RULES} registered ${SCENARIO}  2>&1 | tee suspicious_pkts/${SCENARIO}/registered/log.txt
+	python3 src/main.py ${SNORT_CONFIG} ${SNORT3_REGISTERED_RULES} registered ${SCENARIO} 2>&1 | tee suspicious_pkts/${SCENARIO}/registered/log.txt
