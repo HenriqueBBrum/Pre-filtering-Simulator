@@ -276,12 +276,11 @@ rate_filter =
 -- you can enable with defaults from the command line with -L <log_type>
 --log_codecs = { }
 --log_hext = { }
---log_pcap = { }
+--log_pcap = {}
 
 -- additional logs
---packet_capture = { }
---file_log = { }
-
+--packet_capture = {}
+--file_log = {}
 ---------------------------------------------------------------------------
 -- 8. configure tweaks
 ---------------------------------------------------------------------------

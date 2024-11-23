@@ -21,9 +21,6 @@ def pre_filtering_simulation(rules, pcaps_path, pre_filtering_scenario, ruleset_
     pre_filtering_rules = get_pre_filtering_rules(rules)
    
     for pcap_file in os.listdir(pcaps_path):
-        if "Wednesday_mid" not in pcap_file:
-            continue
-
         start = time()
         print("Reading PCAP "+pcaps_path+pcap_file)
         pcap = rdpcap(pcaps_path+pcap_file)
@@ -34,20 +31,20 @@ def pre_filtering_simulation(rules, pcaps_path, pre_filtering_scenario, ruleset_
         ip_pkt_count_list = Manager().list()
         tcp_tracker = Manager().dict()
         processes = []
-        num_processes = cpu_count() # Use the cout_count as the number of processes
+        num_processes = cpu_count() # Use the cpu_count as the number of processes
         share = round(len(pcap)/num_processes)
 
         start = time()
-        for i in range(num_processes):
-            pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]  # Send a batch of packets for each processor
-            process = Process(target=compare_pkts_to_rules, args=(pkts_sublist, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, i*share))
-            process.start()
-            processes.append(process)
+        # for i in range(num_processes):
+        #     pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]  # Send a batch of packets for each processor
+        #     process = Process(target=compare_pkts_to_rules, args=(pkts_sublist, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, i*share))
+        #     process.start()
+        #     processes.append(process)
 
-        for process in processes:
-            process.join()
+        # for process in processes:
+        #     process.join()
 
-        #compare_pkts_to_rules(pcap, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, 0)
+        compare_pkts_to_rules(pcap, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, 0)
 
         print(Counter(elem[1] for elem in suspicious_pkts))
 
@@ -83,11 +80,12 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, tcp_t
             if unsupported_protocol(pkt):
                 suspicious_pkts.append((pkt_count, "unsupported"))
                 matched = True
-            elif TCP in pkt and str(pkt[TCP].flags) == "A":
+            elif TCP in pkt: 
                 flow = pkt[IP].dst+str(pkt[TCP].dport)+pkt[IP].src+str(pkt[TCP].sport) #Invert order to match flow
-                if flow in tcp_tracker and pkt[TCP].seq == tcp_tracker[flow]["ack"]:
+                if str(pkt[TCP].flags) == "A" and flow in tcp_tracker and pkt[TCP].seq == tcp_tracker[flow]["ack"]:
                     suspicious_pkts.append((pkt_count, "tcp_ack"))
-                    matched = True
+                    matched = True 
+                    tcp_tracker.pop(flow)
                
             if not matched: 
                 pkt_to_match = PacketToMatch(pkt, rules.keys())
@@ -101,9 +99,10 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, tcp_t
                             continue
                         
                         suspicious_pkts.append((pkt_count, rule.sids()[0]))
-                        if TCP in pkt: # Check if I can limit to packets with payload
+                        if TCP in pkt: # Check if I can limit to packets with payload                    
                             flow = pkt[IP].src+str(pkt[TCP].sport)+pkt[IP].dst+str(pkt[TCP].dport)
                             tcp_tracker[flow] = {"seq": pkt[TCP].seq, "ack": pkt[TCP].ack, "pkt_count": pkt_count}
+                            
                     except Exception as e:
                         print("Exception")
                         print(traceback.format_exc())
@@ -183,28 +182,3 @@ def save_suspicious_pkts(pre_filtering_scenario, ruleset_name, pcap_name, suspic
     with open(suspicious_pkts_output, 'w') as file:
         for match in sorted(suspicious_pkts, key=lambda x: x[0]):
             file.write(f"{match[0]}\n")
-
-
-
-# if str(pkt[TCP].flags) == "S":
-#     flow = pkt[IP].src+str(pkt[TCP].sport)+pkt[IP].dst+str(pkt[TCP].dport)
-#     tcp_tracker[flow] = {"seq": pkt[TCP].seq,"ack": 0}
-#     suspicious_pkts.append((pkt_count, "tcp_syn"))
-#     pkt.show2()
-# elif str(pkt[TCP].flags) == "SA":
-#     flow = pkt[IP].dst+str(pkt[TCP].dport)+pkt[IP].src+str(pkt[TCP].sport) # Inverts to find syn match
-#     if flow in tcp_tracker and pkt[TCP].ack == tcp_tracker[flow]["seq"]+1:
-#         tcp_tracker[flow] = {"seq": pkt[TCP].seq, "ack":pkt[TCP].ack} # Update current seq and ack
-#         suspicious_pkts.append((pkt_count, "tcp_syn-ack"))
-#         pkt.show2()
-# elif str(pkt[TCP].flags) == "A":
-#     flow = pkt[IP].src+str(pkt[TCP].sport)+pkt[IP].dst+str(pkt[TCP].dport)
-#     if flow in tcp_tracker and pkt[TCP].seq == tcp_tracker[flow]["ack"] and pkt[TCP].ack == tcp_tracker[flow]["seq"]+1: 
-#         tcp_tracker[flow] = {"seq": pkt[TCP].seq,"ack": pkt[TCP].seq}
-#         suspicious_pkts.append((pkt_count, "tcp_ack"))
-#         pkt.show2()
- # elif str(pkt[TCP].flags) == "FA":
-                #     flow = pkt[IP].dst+str(pkt[TCP].dport)+pkt[IP].src+str(pkt[TCP].sport)
-                #     if flow in tcp_tracker:
-                #         suspicious_pkts.append((pkt_count, "tcp_ack"))
-                #         matched = True

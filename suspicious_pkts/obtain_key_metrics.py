@@ -48,16 +48,16 @@ def main(scenario_to_analyze):
             information[scenario_folder][file_name]["TP"] = len(set(original_pcap_alerts.keys()) & set(reduced_pcap_alerts.keys()))
             information[scenario_folder][file_name]["FN"] = len(set(original_pcap_alerts.keys()) - set(reduced_pcap_alerts.keys()))
             information[scenario_folder][file_name]["FP"] = len(set(reduced_pcap_alerts.keys()) - set(original_pcap_alerts.keys()))
-            # counter = {}
-            # for key in set(original_pcap_alerts.keys()) - set(reduced_pcap_alerts.keys()):
-            #     print(key, original_pcap_alerts[key])
-            #     if original_pcap_alerts[key][0] in counter:
-            #         counter[original_pcap_alerts[key][0]]+=1
-            #     else:
-            #         counter[original_pcap_alerts[key][0]]=1
+            counter = {}
+            for key in set(original_pcap_alerts.keys()) - set(reduced_pcap_alerts.keys()):
+                print(key, original_pcap_alerts[key])
+                if original_pcap_alerts[key][0] in counter:
+                    counter[original_pcap_alerts[key][0]]+=1
+                else:
+                    counter[original_pcap_alerts[key][0]]=1
 
-            # print("\n\n")
-            # print(counter)
+            print("\n\n")
+            print(counter)
 
             # counter = {}
             # for key in set(reduced_pcap_alerts.keys()) - set(original_pcap_alerts.keys()):
@@ -70,7 +70,7 @@ def main(scenario_to_analyze):
             # print("\n\n")
             # print(counter)
 
-            #os.remove(suspicious_pkts_pcap)
+            os.remove(suspicious_pkts_pcap)
 
         with open(alerts_output_folder + "analysis.txt", 'w') as f:
             json.dump(information[scenario_folder] , f, ensure_ascii=False, indent=4)
