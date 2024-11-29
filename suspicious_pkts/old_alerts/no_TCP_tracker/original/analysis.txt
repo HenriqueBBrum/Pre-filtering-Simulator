@@ -1,0 +1,155 @@
+{
+    "amount_rules": 45193,
+    "header_size": 155.878929,
+    "payload_size": 21.492876,
+    "Wednesday_end": {
+        "amount_packets": 196029,
+        "time_to_process": 590.6733005046844,
+        "suspicious_packets": 24829,
+        "alerts_baseline": 291,
+        "alerts_experiment": 263,
+        "TP": 252,
+        "FN": 39,
+        "FP": 11
+    },
+    "Monday_mid": {
+        "amount_packets": 199196,
+        "time_to_process": 630.7115163803101,
+        "suspicious_packets": 12376,
+        "alerts_baseline": 288,
+        "alerts_experiment": 265,
+        "TP": 262,
+        "FN": 26,
+        "FP": 3
+    },
+    "Wednesday_mid": {
+        "amount_packets": 199257,
+        "time_to_process": 532.4554436206818,
+        "suspicious_packets": 33018,
+        "alerts_baseline": 25992,
+        "alerts_experiment": 11144,
+        "TP": 11144,
+        "FN": 14848,
+        "FP": 0
+    },
+    "Thursday_end": {
+        "amount_packets": 197136,
+        "time_to_process": 558.6069176197052,
+        "suspicious_packets": 27008,
+        "alerts_baseline": 748,
+        "alerts_experiment": 752,
+        "TP": 696,
+        "FN": 52,
+        "FP": 56
+    },
+    "Thursday_mid": {
+        "amount_packets": 197733,
+        "time_to_process": 596.2124161720276,
+        "suspicious_packets": 22030,
+        "alerts_baseline": 197,
+        "alerts_experiment": 227,
+        "TP": 166,
+        "FN": 31,
+        "FP": 61
+    },
+    "Friday_end": {
+        "amount_packets": 196950,
+        "time_to_process": 566.1392095088959,
+        "suspicious_packets": 29610,
+        "alerts_baseline": 665,
+        "alerts_experiment": 658,
+        "TP": 580,
+        "FN": 85,
+        "FP": 78
+    },
+    "Monday_start": {
+        "amount_packets": 194223,
+        "time_to_process": 583.4226593971252,
+        "suspicious_packets": 12842,
+        "alerts_baseline": 50,
+        "alerts_experiment": 24,
+        "TP": 24,
+        "FN": 26,
+        "FP": 0
+    },
+    "Tuesday_start": {
+        "amount_packets": 194663,
+        "time_to_process": 585.679692029953,
+        "suspicious_packets": 12089,
+        "alerts_baseline": 55,
+        "alerts_experiment": 67,
+        "TP": 44,
+        "FN": 11,
+        "FP": 23
+    },
+    "Friday_start": {
+        "amount_packets": 195577,
+        "time_to_process": 603.7087714672089,
+        "suspicious_packets": 9655,
+        "alerts_baseline": 273,
+        "alerts_experiment": 261,
+        "TP": 261,
+        "FN": 12,
+        "FP": 0
+    },
+    "Tuesday_mid": {
+        "amount_packets": 198438,
+        "time_to_process": 583.1342418193817,
+        "suspicious_packets": 28233,
+        "alerts_baseline": 4027,
+        "alerts_experiment": 4079,
+        "TP": 3962,
+        "FN": 65,
+        "FP": 117
+    },
+    "Thursday_start": {
+        "amount_packets": 195990,
+        "time_to_process": 611.1226544380188,
+        "suspicious_packets": 11005,
+        "alerts_baseline": 74,
+        "alerts_experiment": 50,
+        "TP": 45,
+        "FN": 29,
+        "FP": 5
+    },
+    "Friday_mid": {
+        "amount_packets": 196795,
+        "time_to_process": 561.4253234863281,
+        "suspicious_packets": 28478,
+        "alerts_baseline": 694,
+        "alerts_experiment": 584,
+        "TP": 576,
+        "FN": 118,
+        "FP": 8
+    },
+    "Monday_end": {
+        "amount_packets": 198124,
+        "time_to_process": 585.4838750362396,
+        "suspicious_packets": 23976,
+        "alerts_baseline": 373,
+        "alerts_experiment": 334,
+        "TP": 328,
+        "FN": 45,
+        "FP": 6
+    },
+    "Tuesday_end": {
+        "amount_packets": 197666,
+        "time_to_process": 558.9654760360718,
+        "suspicious_packets": 24560,
+        "alerts_baseline": 131,
+        "alerts_experiment": 98,
+        "TP": 98,
+        "FN": 33,
+        "FP": 0
+    },
+    "Wednesday_start": {
+        "amount_packets": 198891,
+        "time_to_process": 635.0989856719971,
+        "suspicious_packets": 1910,
+        "alerts_baseline": 2,
+        "alerts_experiment": 0,
+        "TP": 0,
+        "FN": 2,
+        "FP": 0
+    }
+}

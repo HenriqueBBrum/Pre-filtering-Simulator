@@ -29,6 +29,7 @@ def pre_filtering_simulation(rules, pcaps_path, pre_filtering_scenario, ruleset_
         print("Starting "+pcaps_path+pcap_file+" processing: ")
         suspicious_pkts = Manager().list()
         ip_pkt_count_list = Manager().list()
+        pkt_processing_time = Manager().list() 
         tcp_tracker = Manager().dict()
         processes = []
         num_processes = cpu_count() # Use the cpu_count as the number of processes
@@ -37,7 +38,7 @@ def pre_filtering_simulation(rules, pcaps_path, pre_filtering_scenario, ruleset_
         start = time()
         # for i in range(num_processes):
         #     pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]  # Send a batch of packets for each processor
-        #     process = Process(target=compare_pkts_to_rules, args=(pkts_sublist, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, i*share))
+        #     process = Process(target=compare_pkts_to_rules, args=(pkts_sublist, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, pkt_processing_time, tcp_tracker, i*share))
         #     process.start()
         #     processes.append(process)
 
@@ -45,6 +46,13 @@ def pre_filtering_simulation(rules, pcaps_path, pre_filtering_scenario, ruleset_
         #     process.join()
 
         compare_pkts_to_rules(pcap, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, 0)
+        exit()
+        sum_time_r, sum_count_r = 0,0
+        for time_info in pkt_processing_time:
+            sum_time_r+=time_info[0]
+            sum_count_r+=time_info[1]
+          
+        print("Avg time rule comparison: ", sum_time_r/sum_count_r, "Amount of comparison:", sum_count_r)
 
         print(Counter(elem[1] for elem in suspicious_pkts))
 
@@ -76,16 +84,21 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, tcp_t
     pkt_count, ip_pkt_count = start, 0
     for pkt in pkts:
         if IP in pkt:
+            pkt_to_match = PacketToMatch(pkt, rules.keys())
+            print(pkt_to_match.payload_buffers)
+            input()
+            continue
             matched = False
             if unsupported_protocol(pkt):
                 suspicious_pkts.append((pkt_count, "unsupported"))
                 matched = True
             elif TCP in pkt: 
                 flow = pkt[IP].dst+str(pkt[TCP].dport)+pkt[IP].src+str(pkt[TCP].sport) #Invert order to match flow
-                if str(pkt[TCP].flags) == "A" and flow in tcp_tracker and pkt[TCP].seq == tcp_tracker[flow]["ack"]:
-                    suspicious_pkts.append((pkt_count, "tcp_ack"))
-                    matched = True 
-                    tcp_tracker.pop(flow)
+                if str(pkt[TCP].flags) == "A" and flow in tcp_tracker:
+                    if pkt[TCP].seq == tcp_tracker[flow]["ack"]:
+                        suspicious_pkts.append((pkt_count, "tcp_ack"))
+                        matched = True 
+                        tcp_tracker.pop(flow)
                
             if not matched: 
                 pkt_to_match = PacketToMatch(pkt, rules.keys())
@@ -99,14 +112,11 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, tcp_t
                             continue
                         
                         suspicious_pkts.append((pkt_count, rule.sids()[0]))
-                        if TCP in pkt: # Check if I can limit to packets with payload                    
+                        if TCP in pkt:                  
                             flow = pkt[IP].src+str(pkt[TCP].sport)+pkt[IP].dst+str(pkt[TCP].dport)
-                            tcp_tracker[flow] = {"seq": pkt[TCP].seq, "ack": pkt[TCP].ack, "pkt_count": pkt_count}
-                            
+                            tcp_tracker[flow] = {"seq": pkt[TCP].seq, "ack": pkt[TCP].ack, "pkt_count": pkt_count}        
                     except Exception as e:
-                        print("Exception")
-                        print(traceback.format_exc())
-                        print(pkt)
+                        print("Exception: ", traceback.format_exc())
                         suspicious_pkts.append((pkt_count, "error"))
                     break
             ip_pkt_count+=1

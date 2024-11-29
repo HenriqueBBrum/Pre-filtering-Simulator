@@ -37,9 +37,13 @@ def main(scenario_to_analyze):
             if "log" in file or "txt" not in file:
                 continue
 
+            if "Tuesday_mid" not in file:
+                continue
+
             suspicious_pkts_pcap = generate_suspicious_pkts_pcap(original_pcaps_folder, scenario_results_folder, file)
+            continue
             suspicious_pkts_alert_file = snort_with_suspicious_pcap(suspicious_pkts_pcap, alerts_output_folder, file)
-            original_pcap_alerts = parse_alerts(original_pcaps_folder+"/alerts_registered/"+file)
+            original_pcap_alerts = parse_alerts(original_pcaps_folder+"/alerts_registered_no_track/"+file)
             reduced_pcap_alerts = parse_alerts(suspicious_pkts_alert_file)
 
             file_name = file.split(".")[0]
@@ -50,30 +54,20 @@ def main(scenario_to_analyze):
             information[scenario_folder][file_name]["FP"] = len(set(reduced_pcap_alerts.keys()) - set(original_pcap_alerts.keys()))
             counter = {}
             for key in set(original_pcap_alerts.keys()) - set(reduced_pcap_alerts.keys()):
-                print(key, original_pcap_alerts[key])
-                if original_pcap_alerts[key][0] in counter:
-                    counter[original_pcap_alerts[key][0]]+=1
+                timestamp_sid = key.split("_")
+                print(timestamp_sid[0], timestamp_sid[1], original_pcap_alerts[key]["proto"], original_pcap_alerts[key]["pkt_gen"])
+                if timestamp_sid[1] in counter:
+                    counter[timestamp_sid[1]]+=1
                 else:
-                    counter[original_pcap_alerts[key][0]]=1
+                    counter[timestamp_sid[1]]=1
 
             print("\n\n")
             print(counter)
 
-            # counter = {}
-            # for key in set(reduced_pcap_alerts.keys()) - set(original_pcap_alerts.keys()):
-            #     print(key, reduced_pcap_alerts[key])
-            #     if reduced_pcap_alerts[key][0] in counter:
-            #         counter[reduced_pcap_alerts[key][0]]+=1
-            #     else:
-            #         counter[reduced_pcap_alerts[key][0]]=1
+            #os.remove(suspicious_pkts_pcap)
 
-            # print("\n\n")
-            # print(counter)
-
-            os.remove(suspicious_pkts_pcap)
-
-        with open(alerts_output_folder + "analysis.txt", 'w') as f:
-            json.dump(information[scenario_folder] , f, ensure_ascii=False, indent=4)
+        # with open(alerts_output_folder + "analysis.txt", 'w') as f:
+        #     json.dump(information[scenario_folder] , f, ensure_ascii=False, indent=4)
 
 # Reads the log file from a simulation folder and saves the main info in a dict
 def get_resource_usage_info(log_file):
@@ -148,10 +142,9 @@ def parse_alerts(alerts_filepath):
     with open(alerts_filepath, 'r') as file:
         for line in file.readlines():
             parsed_line = json.loads(line)
-            if parsed_line["timestamp"] not in alerted_pkts:
-               alerted_pkts[parsed_line["timestamp"]] = [parsed_line["rule"]]
-            else:
-               alerted_pkts[parsed_line["timestamp"]].append(parsed_line["rule"])
+            key = parsed_line["timestamp"] + "_" + parsed_line["rule"]
+            if key not in alerted_pkts:
+               alerted_pkts[key] = parsed_line
                
     return alerted_pkts
 

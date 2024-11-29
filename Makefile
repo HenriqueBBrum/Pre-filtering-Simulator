@@ -15,9 +15,17 @@ ifndef SCENARIO
 SCENARIO=full
 endif	
 
+
 #	python3 -m cProfile -o temp.dat -s time src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} ${COMPILER_GOAL}  2>&1 | tee suspicious_pkts/${SCENARIO}/registered/log.txt
 simulation.community: 
 	python3 src/main.py ${SNORT_CONFIG} ${SNORT_COMMUNITY_RULES} community ${SCENARIO} 2>&1 |  tee suspicious_pkts/${SCENARIO}/community/log.txt
 
-simulation.registered:
+simulation.registered: clean build_registered
 	python3 src/main.py ${SNORT_CONFIG} ${SNORT3_REGISTERED_RULES} registered ${SCENARIO} 2>&1 | tee suspicious_pkts/${SCENARIO}/registered/log.txt
+
+clean:
+	-rm -r suspicious_pkts/${SCENARIO}
+
+build_registered:
+	mkdir suspicious_pkts/${SCENARIO}
+	mkdir suspicious_pkts/${SCENARIO}/registered

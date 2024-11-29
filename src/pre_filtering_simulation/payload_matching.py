@@ -34,7 +34,7 @@ unsupported_buffers = {"json_data", "vba_data", "base64_data"}
 http_request_buffers = {"http_uri", "http_raw_uri", "http_method"}
 http_response_buffers = {"http_stat_code", "http_stat_msg", "file_data"}
 
-def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre, rule_sids):
+def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre):
     position_dict = {}
     buffer, prev_buffer_name = "", ""
     position = 0
