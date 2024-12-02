@@ -1,33 +1,40 @@
 from time import time
 import sys
-import csv
+import json
 
 from snort_parser.config_parser import SnortConfiguration
 from snort_parser.parsing_rules import get_rules, adjust_rules, dedup_rules
-from pre_filtering_simulation.simulation import pre_filtering_simulation
+from pre_filtering_simulation.simulation import pre_filtering_simulation, flow_sampling_simulation
 
-def main(config_path, rules_path, ruleset_name, pre_filtering_scenario):
-    config = SnortConfiguration(snort_version=2, configuration_dir=config_path)
+def main(simulation_config_path, sim_results_folder):
+    with open(simulation_config_path, 'r') as f:
+        simulation_config = json.load(f)
 
-    print("*" * 80)
-    print("*" * 80)
-    print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
-    modified_rules = parse_rules(config, rules_path, pre_filtering_scenario)
-
-    print("*" * 80)
-    print("*" * 80)
-    print("*" * 34 + " SIMULATION " + "*" * 34+ "\n\n")
     start = time()
-    pre_filtering_simulation(modified_rules, "selected_pcaps/pcaps/", pre_filtering_scenario, ruleset_name)
-    print("Simulation time: ", time() - start)
+    if simulation_config["type"] == "pre_filtering":
+        config = SnortConfiguration(snort_version=2, configuration_dir=simulation_config["snort_config_path"])
+        print("*" * 80)
+        print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
+        modified_rules = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
+        rules_info = get_rules_size(modified_rules)
 
+        print("*" * 80, "PRE-FILTERING SIMULATION ")
+        pre_filtering_simulation(simulation_config, modified_rules, rules_info, sim_results_folder)
+    elif simulation_config["type"] == "flow_sampling":
+        print("*" * 80,"FLOW SAMPLING SIMULATION ")
+        flow_sampling_simulation(simulation_config, sim_results_folder)
+    else:
+        print("Wrong simulation type")
+        exit(1)
+
+    print("Simulation time: ", time() - start)
 
 # Functions related to the parsing of Snort/Suricata rules from multiple files, and the subsequent deduplication, 
 # replacement of system variables, port groupping and fixing negated headers 
-def parse_rules(config, rules_path, pre_filtering_scenario):
+def parse_rules(config, pre_filtering_scenario, ruleset_path):
     print("---- Getting and parsing rules..... ----")
     print("---- Splitting bidirectional rules..... ----")
-    original_rules, fixed_bidirectional_rules = get_rules(rules_path) # Get all rules from multiple files or just one
+    original_rules, fixed_bidirectional_rules = get_rules(ruleset_path) # Get all rules from multiple files or just one
     
     print("---- Adjusting rules. Replacing variables..... ----")
     modified_rules = adjust_rules(config, fixed_bidirectional_rules) 
@@ -40,11 +47,9 @@ def parse_rules(config, rules_path, pre_filtering_scenario):
     print("Total adjusted and filtered rules: {}".format(len(modified_rules)))
     print("Total deduped rules: {}".format(len(deduped_rules)))
 
-    get_rules_size(deduped_rules)
-
     return deduped_rules
 
-# Calculate the amount of bytes required by python to store the rules
+# Calculates the amount of bytes required by python to store the rules
 def get_rules_size(rules):
     total_header_size = 0
     total_payload_size = 0
@@ -82,15 +87,11 @@ def get_rules_size(rules):
                                 for modifier in content_pcre[4]:
                                     total_payload_size+=sys.getsizeof(modifier)
 
-    print("\nHeader size: ", total_header_size/1000000,"MB")
-    print("Payload size: ", total_payload_size/1000000,"MB")
-    print("Total size: ", (total_header_size+total_payload_size)/1000000,"MB")
+    return {"header_size": total_header_size/1000000, "payload_size": total_payload_size/1000000, "total_size":(total_header_size+total_payload_size)/1000000}
+
     
 
 if __name__ == '__main__':
-    config_path = sys.argv[1]
-    rules_path = sys.argv[2]
-    ruleset_name = sys.argv[3]
-    pre_filtering_scenario = sys.argv[4]
-
-    main(config_path, rules_path, ruleset_name, pre_filtering_scenario)
+    simulation_config_file = sys.argv[1]
+    sim_results_folder = "simulation_results/"
+    main(simulation_config_file, sim_results_folder)

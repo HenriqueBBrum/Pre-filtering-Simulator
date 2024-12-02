@@ -144,7 +144,6 @@ def __compare_ipopts(pkt_ipopts, rule_ipopts):
     elif pkt_ipopts_name in possible_ipopts and possible_ipopts[pkt_ipopts_name] == rule_ipopts:
         return True
 
-    print("not a match")
     return False
 
 # Compares a packet's fragmentation bits against the fragmentation bits of a rule

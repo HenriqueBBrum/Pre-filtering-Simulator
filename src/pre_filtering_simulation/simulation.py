@@ -1,6 +1,6 @@
 from scapy.all import IP,UDP,TCP 
 from scapy.layers.http import HTTPRequest,HTTPResponse 
-from scapy.utils import PcapWriter, rdpcap 
+from scapy.utils import rdpcap, PcapReader, PcapWriter 
 from scapy.contrib.gtp import GTPHeader 
 from scapy.contrib.gtp_v2 import GTPHeader as GTPHeader_v2 
 
@@ -11,58 +11,128 @@ from socket import getservbyport
 import os
 from time import time
 import traceback
+import json
+import subprocess
+
 
 from .header_matching import compare_header_fields
 from .payload_matching import compare_payload
 from .packet_to_match import PacketToMatch
 
-# Main simulation function where packets are compared against the pre-filtering rules
-def pre_filtering_simulation(rules, pcaps_path, pre_filtering_scenario, ruleset_name):
-    pre_filtering_rules = get_pre_filtering_rules(rules)
-   
-    for pcap_file in os.listdir(pcaps_path):
-        start = time()
-        print("Reading PCAP "+pcaps_path+pcap_file)
-        pcap = rdpcap(pcaps_path+pcap_file)
-        print("Time to read ", len(pcap), " packets in seconds: ", time() - start)
+# Flow sampling simulation to compare againast our pre-filtering proposal. time_threshold in seconds
+def flow_sampling_simulation(sim_config, sim_results_folder):
+    info = {"type": "flow_sampling"}
 
-        print("Starting "+pcaps_path+pcap_file+" processing: ")
-        suspicious_pkts = Manager().list()
-        ip_pkt_count_list = Manager().list()
-        pkt_processing_time = Manager().list() 
+    output_folder = sim_results_folder+"flow_sampling_"+str(sim_config["flow_count_threshold"])+"_"+str(sim_config["time_threshold"])+"/"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    pcaps_path = sim_config["baseline_path"]+"pcaps/"
+    for pcap_file in os.listdir(pcaps_path):
+        current_trace = pcap_file.split(".")[0] # Remove .pcap to get day
+        info[current_trace] = {}
+        start = time()
+        pcap = rdpcap(pcaps_path+pcap_file)
+        info[current_trace]["pcap_size"] = len(pcap)
+        info[current_trace]["time_to_read"] = time() - start
+
+        start = time()
+
+        ip_pkt_count, suspicious_pkts, flow_tracker = sample_flows(pcap, sim_config["flow_count_threshold"], sim_config["time_threshold"])
+
+        info[current_trace]["time_to_process"] = time() - start
+        info[current_trace]["pkts_processed"] = ip_pkt_count
+        info[current_trace]["number_of_flows"] = len(flow_tracker.keys())
+        info[current_trace]["top_five_biggest_flows"] = [x[0] for x in sorted(list(flow_tracker.values()), key=lambda x: x[0], reverse=True)[:5]]
+        info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
+        info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
+
+        info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
+
+    with open(output_folder + "analysis.txt", 'w') as f:
+        json.dump(info , f, ensure_ascii=False, indent=4)
+
+# Run the flow sampling method over the packets in the PCAP
+def sample_flows(pcap, flow_count_threshold, time_threshold):
+    pkt_count, ip_pkt_count = 0, 0
+    suspicious_pkts = []
+    flow_tracker = {} # One entry is (current_count, last_pkt_time)
+
+    for pkt in pcap:
+        if IP in pkt:
+            proto = str(pkt[IP].proto)
+            if TCP in pkt:
+                five_tuple = proto+pkt[IP].src+str(pkt[TCP].sport)+pkt[IP].dst+str(pkt[TCP].dport) # Bidirectional flows?
+            elif UDP in pkt:
+                five_tuple = proto+pkt[IP].src+str(pkt[UDP].sport)+pkt[IP].dst+str(pkt[UDP].dport)
+            else:
+                five_tuple = proto+pkt[IP].src+pkt[IP].dst
+
+            if five_tuple not in flow_tracker:
+                flow_tracker[five_tuple] = (1, pkt.time)
+                suspicious_pkts.append((pkt_count, "first_time"))
+            else:
+                current_pkt_time = pkt.time
+                last_pkt_time = flow_tracker[five_tuple][1]
+                if current_pkt_time-last_pkt_time >= time_threshold:
+                    flow_tracker[five_tuple] = (1, pkt.time)
+                    suspicious_pkts.append((pkt_count, "time_reset"))
+                else:
+                    flow_tracker[five_tuple] = (flow_tracker[five_tuple][0]+1, pkt.time)
+                    if flow_tracker[five_tuple][0] < flow_count_threshold:
+                        suspicious_pkts.append((pkt_count, "within_flow_threhold"))
+
+            ip_pkt_count+=1
+        pkt_count+=1
+
+    return ip_pkt_count, suspicious_pkts, flow_tracker
+
+
+
+
+# Simulate the pre-filtering of packets based on signature rules]
+def pre_filtering_simulation(sim_config, rules, rules_info, sim_results_folder):
+    pre_filtering_rules = get_pre_filtering_rules(rules)
+
+    info = rules_info | {"type": "pre_filtering"}
+    output_folder = sim_results_folder+"pre_filtering_"+sim_config["scenario"]+"_"+sim_config["ruleset_name"]+"/"
+    pcaps_path = sim_config["baseline_path"]+"pcaps/"
+    for pcap_file in os.listdir(pcaps_path):
+        file_name = pcap_file.split(".")[0] # Remove .pcap to get day
+        info[pcap_file] = {"number_of_rules": len(rules)}
+        start = time()
+        pcap = rdpcap(pcaps_path+pcap_file)
+        info[pcap_file]["pcap_size"] = len(pcap)
+        info[pcap_file]["time_to_read"] = time() - start
+
+        suspicious_pkts, ip_pkt_count_list = Manager().list(), Manager().list() 
         tcp_tracker = Manager().dict()
         processes = []
         num_processes = cpu_count() # Use the cpu_count as the number of processes
         share = round(len(pcap)/num_processes)
 
         start = time()
-        # for i in range(num_processes):
-        #     pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]  # Send a batch of packets for each processor
-        #     process = Process(target=compare_pkts_to_rules, args=(pkts_sublist, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, pkt_processing_time, tcp_tracker, i*share))
-        #     process.start()
-        #     processes.append(process)
+        for i in range(num_processes):
+            pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]  # Send a batch of packets for each processor
+            process = Process(target=compare_pkts_to_rules, args=(pkts_sublist, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, i*share))
+            process.start()
+            processes.append(process)
 
-        # for process in processes:
-        #     process.join()
+        for process in processes:
+            process.join()
 
-        compare_pkts_to_rules(pcap, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, 0)
-        exit()
-        sum_time_r, sum_count_r = 0,0
-        for time_info in pkt_processing_time:
-            sum_time_r+=time_info[0]
-            sum_count_r+=time_info[1]
-          
-        print("Avg time rule comparison: ", sum_time_r/sum_count_r, "Amount of comparison:", sum_count_r)
+        # compare_pkts_to_rules(pcap, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, 0)
+        info[pcap_file]["time_to_process"] = time() - start
+        info[pcap_file]["pkts_processed"] = sum(ip_pkt_count_list)
+        info[pcap_file]["number_of_suspicious_pkts"] = len(suspicious_pkts)
+        info[pcap_file]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
 
-        print(Counter(elem[1] for elem in suspicious_pkts))
+        info = compare_to_baseline(sim_config, suspicious_pkts, file_name, output_folder, info)
 
-        print("Time to process", sum(ip_pkt_count_list), "packets against ",len(rules), "rules in seconds: ", time() - start)
-        print("Suspicious packets:", len(suspicious_pkts),",  IP packets:", sum(ip_pkt_count_list),", Packets:", len(pcap), "\n") # Count IP packets
-        print("Finished with file: ", pcap_file)
-        print("*"*50)
+    with open(output_folder + "analysis.txt", 'w') as f:
+        json.dump(info , f, ensure_ascii=False, indent=4)
 
-        save_suspicious_pkts(pre_filtering_scenario, ruleset_name ,pcap_file.split(".")[0], suspicious_pkts)
-
+   
 # Generates the optimal pre-filtering ruleset using most header fields and part of the payload matches
 def get_pre_filtering_rules(rules):
     rules_dict = {}
@@ -84,10 +154,6 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, tcp_t
     pkt_count, ip_pkt_count = start, 0
     for pkt in pkts:
         if IP in pkt:
-            pkt_to_match = PacketToMatch(pkt, rules.keys())
-            print(pkt_to_match.payload_buffers)
-            input()
-            continue
             matched = False
             if unsupported_protocol(pkt):
                 suspicious_pkts.append((pkt_count, "unsupported"))
@@ -151,7 +217,7 @@ def get_pkt_related_rules(pkt_to_match, rules):
     return rules[pkt_proto]+(rules[service] if service in rules else [])
 
 
-
+# Add NetBIOS and SMB
 sip_ports = {5060, 5061, 5080}
 # CIP, IEC104 and S7Comm not here
 def unsupported_protocol(pkt):
@@ -177,18 +243,75 @@ def unsupported_protocol(pkt):
 
         if sport == 502 or sport == 802 or dport == 502 or dport == 802: # DNP3
             return True
-        
 
-def save_suspicious_pkts(pre_filtering_scenario, ruleset_name, pcap_name, suspicious_pkts):
-    scenario_results_folder = "suspicious_pkts/"+pre_filtering_scenario+"/" 
-    if not os.path.exists(scenario_results_folder):
-        os.makedirs(scenario_results_folder)
+def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info): 
+    baseline_pcap = sim_config["baseline_path"]+"pcaps/"+current_trace+".pcap"
+    print(baseline_pcap)
+    suspicious_pkts_pcap = get_suspicious_pkts_pcap(baseline_pcap, suspicious_pkts, output_folder, current_trace)
+    suspicious_pkts_alert_file = snort_with_suspicious_pcap(suspicious_pkts_pcap, sim_config["snort_config_file"], sim_config["ruleset_path"], output_folder, current_trace)
 
-    ruleset_output_folder = "suspicious_pkts/"+pre_filtering_scenario+"/"+ruleset_name+"/"
-    if not os.path.exists(ruleset_output_folder):
-        os.makedirs(ruleset_output_folder)
+    original_pcap_alerts = parse_alerts(sim_config["baseline_path"]+"alerts_registered/"+current_trace+".txt") # Baseline alerts
+    reduced_pcap_alerts = parse_alerts(suspicious_pkts_alert_file)
 
-    suspicious_pkts_output = "suspicious_pkts/"+pre_filtering_scenario+"/"+ruleset_name+"/"+pcap_name+".txt"
-    with open(suspicious_pkts_output, 'w') as file:
-        for match in sorted(suspicious_pkts, key=lambda x: x[0]):
-            file.write(f"{match[0]}\n")
+    info[current_trace]["baseline_alerts"] = len(original_pcap_alerts)
+    info[current_trace]["suspicious_pkts_alerts"] =  len(reduced_pcap_alerts)
+    info[current_trace]["alerts_true_positive"] = len(set(original_pcap_alerts.keys()) & set(reduced_pcap_alerts.keys()))
+    info[current_trace]["alerts_false_negative"] = len(set(original_pcap_alerts.keys()) - set(reduced_pcap_alerts.keys()))
+    info[current_trace]["alerts_false_positive"] = len(set(reduced_pcap_alerts.keys()) - set(original_pcap_alerts.keys()))
+    # counter = {}
+    # for key in set(original_pcap_alerts.keys()) - set(reduced_pcap_alerts.keys()):
+    #     timestamp_sid = key.split("_")
+    #     print(timestamp_sid[0], timestamp_sid[1], original_pcap_alerts[key]["proto"], original_pcap_alerts[key]["pkt_gen"])
+    #     if timestamp_sid[1] in counter:
+    #         counter[timestamp_sid[1]]+=1
+    #     else:
+    #         counter[timestamp_sid[1]]=1
+
+    # print("\n\n")
+    # print(counter)
+
+    os.remove(suspicious_pkts_pcap)
+    return info
+
+# Generate a PCAP with the suspicious pkts to find the alerts
+def get_suspicious_pkts_pcap(baseline_pcap, suspicious_pkts, output_folder, file_name):
+    suspicious_pkts_pcap = output_folder+file_name+".pcap"
+    pcap_writer = PcapWriter(suspicious_pkts_pcap)
+    sorted_suspicious_pkts = sorted(suspicious_pkts, key=lambda x: x[0])
+
+    pkt_count = 0
+    suspicious_pkts_list_count = 0
+    for packet in PcapReader(baseline_pcap):
+        if suspicious_pkts_list_count == len(sorted_suspicious_pkts):
+            break
+
+        if pkt_count == sorted_suspicious_pkts[suspicious_pkts_list_count][0]:
+            pcap_writer.write(packet)
+            pcap_writer.flush()
+            suspicious_pkts_list_count+=1
+
+        pkt_count+=1
+    
+    return suspicious_pkts_pcap
+
+# Run snort with the new suspicious pkts pcap
+def snort_with_suspicious_pcap(suspicious_pkts_pcap, snort_config_path, ruleset_path,  output_folder, file_name):
+    subprocess.run(["snort", "-c", snort_config_path, "--rule-path",ruleset_path, "-r",suspicious_pkts_pcap, "-l",output_folder, \
+                    "-A","alert_json",  "--lua","alert_json = {file = true}"], stdout=subprocess.DEVNULL)
+    
+    new_filepath = output_folder+file_name+".txt"
+    os.rename(output_folder+"alert_json.txt", new_filepath)
+    return new_filepath
+
+# Parses an alert file and keeps only one entry for each packet (based on the 'pkt_num' entry in the alert). 
+# Saves the 'pkt_len', 'dir', 'src_ap'and 'dst_ap' fields as an identifier to compare with other alert files
+def parse_alerts(alerts_filepath):
+    alerted_pkts = {}
+    with open(alerts_filepath, 'r') as file:
+        for line in file.readlines():
+            parsed_line = json.loads(line)
+            key = parsed_line["timestamp"] + "_" + parsed_line["rule"]
+            if key not in alerted_pkts:
+               alerted_pkts[key] = parsed_line
+               
+    return alerted_pkts

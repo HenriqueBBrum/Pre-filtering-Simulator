@@ -1,0 +1,10 @@
+{
+    "type": "flow_sampling",
+    "baseline_path":"selected_pcaps/",
+    "snort_config_path": "etc/configuration/",
+    "ruleset_path":"etc/rules/snort3-registered/",
+    "ruleset_name":"registered",
+    "scenario":"full"
+}
+
+ 
