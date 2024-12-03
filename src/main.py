@@ -17,11 +17,11 @@ def main(simulation_config_path, sim_results_folder):
         print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
         modified_rules = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
         rules_info = get_rules_size(modified_rules)
-
-        print("*" * 80, "PRE-FILTERING SIMULATION ")
+        
+        print("PRE-FILTERING SIMULATION")
         pre_filtering_simulation(simulation_config, modified_rules, rules_info, sim_results_folder)
     elif simulation_config["type"] == "flow_sampling":
-        print("*" * 80,"FLOW SAMPLING SIMULATION ")
+        print("FLOW SAMPLING SIMULATION")
         flow_sampling_simulation(simulation_config, sim_results_folder)
     else:
         print("Wrong simulation type")

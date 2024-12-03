@@ -21,7 +21,7 @@ def compare_payload(pkt_to_match, rule):
         return False
     
     # # Compare packets that have payload with rules that have the "content" or "pcre" keywords
-    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"], rule.sids()[0]):
+    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"]):
         return False
 
     return True

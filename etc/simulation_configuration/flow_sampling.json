@@ -3,6 +3,6 @@
     "baseline_path":"selected_pcaps/",
     "snort_config_file": "etc/configuration/snort.lua",
     "ruleset_path":"etc/rules/snort3-registered/",
-    "flow_count_threshold":10,
-    "time_threshold":10
+    "flow_count_threshold":5,
+    "time_threshold":100
 }

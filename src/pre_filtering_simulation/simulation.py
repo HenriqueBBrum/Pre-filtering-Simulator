@@ -49,7 +49,7 @@ def flow_sampling_simulation(sim_config, sim_results_folder):
 
         info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
 
-    with open(output_folder + "analysis.txt", 'w') as f:
+    with open(output_folder + "analysis.json", 'w') as f:
         json.dump(info , f, ensure_ascii=False, indent=4)
 
 # Run the flow sampling method over the packets in the PCAP
@@ -88,22 +88,23 @@ def sample_flows(pcap, flow_count_threshold, time_threshold):
     return ip_pkt_count, suspicious_pkts, flow_tracker
 
 
-
-
 # Simulate the pre-filtering of packets based on signature rules]
 def pre_filtering_simulation(sim_config, rules, rules_info, sim_results_folder):
     pre_filtering_rules = get_pre_filtering_rules(rules)
 
     info = rules_info | {"type": "pre_filtering"}
-    output_folder = sim_results_folder+"pre_filtering_"+sim_config["scenario"]+"_"+sim_config["ruleset_name"]+"/"
+    output_folder = sim_results_folder+"pre_filtering_"+sim_config["scenario"]+"/"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     pcaps_path = sim_config["baseline_path"]+"pcaps/"
     for pcap_file in os.listdir(pcaps_path):
-        file_name = pcap_file.split(".")[0] # Remove .pcap to get day
-        info[pcap_file] = {"number_of_rules": len(rules)}
+        current_trace = pcap_file.split(".")[0] # Remove .pcap to get day
+        info[current_trace] = {"number_of_rules": len(rules)}
         start = time()
         pcap = rdpcap(pcaps_path+pcap_file)
-        info[pcap_file]["pcap_size"] = len(pcap)
-        info[pcap_file]["time_to_read"] = time() - start
+        info[current_trace]["pcap_size"] = len(pcap)
+        info[current_trace]["time_to_read"] = time() - start
 
         suspicious_pkts, ip_pkt_count_list = Manager().list(), Manager().list() 
         tcp_tracker = Manager().dict()
@@ -122,17 +123,16 @@ def pre_filtering_simulation(sim_config, rules, rules_info, sim_results_folder):
             process.join()
 
         # compare_pkts_to_rules(pcap, pre_filtering_rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, 0)
-        info[pcap_file]["time_to_process"] = time() - start
-        info[pcap_file]["pkts_processed"] = sum(ip_pkt_count_list)
-        info[pcap_file]["number_of_suspicious_pkts"] = len(suspicious_pkts)
-        info[pcap_file]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
+        info[current_trace]["time_to_process"] = time() - start
+        info[current_trace]["pkts_processed"] = sum(ip_pkt_count_list)
+        info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
+        info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
 
-        info = compare_to_baseline(sim_config, suspicious_pkts, file_name, output_folder, info)
+        info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
 
-    with open(output_folder + "analysis.txt", 'w') as f:
+    with open(output_folder + "analysis.json", 'w') as f:
         json.dump(info , f, ensure_ascii=False, indent=4)
-
-   
+ 
 # Generates the optimal pre-filtering ruleset using most header fields and part of the payload matches
 def get_pre_filtering_rules(rules):
     rules_dict = {}
@@ -160,11 +160,15 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, tcp_t
                 matched = True
             elif TCP in pkt: 
                 flow = pkt[IP].dst+str(pkt[TCP].dport)+pkt[IP].src+str(pkt[TCP].sport) #Invert order to match flow
-                if str(pkt[TCP].flags) == "A" and flow in tcp_tracker:
-                    if pkt[TCP].seq == tcp_tracker[flow]["ack"]:
-                        suspicious_pkts.append((pkt_count, "tcp_ack"))
-                        matched = True 
-                        tcp_tracker.pop(flow)
+                if str(pkt[TCP].flags) == "A":
+                    try:
+                        if flow in tcp_tracker and pkt[TCP].seq == tcp_tracker[flow]["ack"]:
+                            suspicious_pkts.append((pkt_count, "tcp_ack"))
+                            matched = True 
+                            tcp_tracker.pop(flow)
+                    except:
+                        print("Key was removed by another thread")
+                        print("Exception: ", traceback.format_exc())
                
             if not matched: 
                 pkt_to_match = PacketToMatch(pkt, rules.keys())
@@ -188,7 +192,6 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, tcp_t
             ip_pkt_count+=1
         pkt_count+=1
     ip_pkt_count_list.append(ip_pkt_count)
-
 
 ip_proto = {1:"icmp", 6:"tcp", 17:"udp"}
 # Returns the rules related to the protocol and services of a packet
@@ -216,7 +219,6 @@ def get_pkt_related_rules(pkt_to_match, rules):
         
     return rules[pkt_proto]+(rules[service] if service in rules else [])
 
-
 # Add NetBIOS and SMB
 sip_ports = {5060, 5061, 5080}
 # CIP, IEC104 and S7Comm not here
@@ -243,6 +245,9 @@ def unsupported_protocol(pkt):
 
         if sport == 502 or sport == 802 or dport == 502 or dport == 802: # DNP3
             return True
+
+
+
 
 def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info): 
     baseline_pcap = sim_config["baseline_path"]+"pcaps/"+current_trace+".pcap"
