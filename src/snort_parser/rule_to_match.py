@@ -1,6 +1,5 @@
 import radix
 import re
-import traceback
 
 ip_flags_dict = {
     'M': 1,
@@ -27,13 +26,18 @@ class RuleToMatch(object):
         self.pkt_header_fields = pkt_header_fields
         self.payload_fields = payload_fields
 
+        self.header_key = pkt_header_fields["header_src_ap"] +  pkt_header_fields["header_dst_ap"]
+        self.service = None
+        if "service" in self.payload_fields:
+            self.service = self.payload_fields["service"][1] # Get the services only 
+
         self.priority_list = []
         self.sid_rev_list = []
 
         self.adjust_fields_for_pkt_matching(pre_filtering_scenario)
       
 
-    # Adjust rule fields for quick matching
+    # Adjust rule fields for quick matching against packets
     def adjust_fields_for_pkt_matching(self, pre_filtering_scenario):
         self.pkt_header_fields['src_ip'] = self.__convert_ip_list_to_radix_tree(self.pkt_header_fields['src_ip'])
         self.pkt_header_fields['dst_ip'] = self.__convert_ip_list_to_radix_tree(self.pkt_header_fields['dst_ip'])
@@ -111,6 +115,7 @@ class RuleToMatch(object):
     # Adjust the "dsize" and "content_pcre" rule data
     def __adjust_payload_matching_fields(self, pre_filtering_scenario):
         temp_payload_fields = {}
+
         if "dsize" in self.payload_fields:
             value = self.payload_fields["dsize"][1]
             comparator = re.search("[^\d]+", value)
@@ -132,7 +137,7 @@ class RuleToMatch(object):
                     content_pcre.append((match[0], match[1], match[2], parsed_pcre_str, snort_only_modifiers))
 
             temp_payload_fields["content_pcre"] = self.__apply_pre_filtering_scenario(content_pcre, pre_filtering_scenario)
-        
+
         self.payload_fields = temp_payload_fields
 
 

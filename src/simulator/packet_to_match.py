@@ -10,12 +10,12 @@ class PacketToMatch(object):
     def __init__(self, pkt, protocols_in_rules):
         self.icmp_in_pkt = ICMP in pkt
         self.tcp_in_pkt = TCP in pkt
-        self.upd_in_pkt = UDP in pkt
+        self.udp_in_pkt = UDP in pkt
 
         self.http_res_in_pkt = HTTPResponse in pkt
         self.http_req_in_pkt = HTTPRequest in pkt
 
-        self.header = self.__get_header_fields(pkt)   
+        self.__get_header_fields(pkt)   
         self.len_payload = {} # The payload length of each protocol. Since a TCP pkt has the IP proto and might others (e.g., HTTP) each protocol has different payload sizes
         for proto in protocols_in_rules:
             proto = proto.upper()
@@ -27,26 +27,24 @@ class PacketToMatch(object):
 
     # Put the pkt header fields in a dict for quick checking
     def __get_header_fields(self, pkt):
-        pkt_fields = {"src_ip": pkt[IP].src, "dst_ip": pkt[IP].dst, "ttl": pkt[IP].ttl, "id": pkt[IP].id, \
+        self.header = {"src_ip": pkt[IP].src, "dst_ip": pkt[IP].dst, "ttl": pkt[IP].ttl, "id": pkt[IP].id, \
                         "ipopts": pkt[IP].options, "fragbits": pkt[IP].flags, "ip_proto": pkt[IP].proto}
         
         if self.icmp_in_pkt:
-            pkt_fields["itype"] = pkt[ICMP].type
-            pkt_fields["icode"] = pkt[ICMP].code
-            pkt_fields["icmp_id"] = pkt[ICMP].id
-            pkt_fields["icmp_seq"] = pkt[ICMP].seq
+            self.header["itype"] = pkt[ICMP].type
+            self.header["icode"] = pkt[ICMP].code
+            self.header["icmp_id"] = pkt[ICMP].id
+            self.header["icmp_seq"] = pkt[ICMP].seq
         elif self.tcp_in_pkt:
-            pkt_fields["src_port"] = pkt[TCP].sport
-            pkt_fields["dst_port"] = pkt[TCP].dport
-            pkt_fields["flags"] = pkt[TCP].flags
-            pkt_fields["seq"] = pkt[TCP].seq
-            pkt_fields["ack"] = pkt[TCP].ack
-            pkt_fields["window"] = pkt[TCP].window
-        elif self.upd_in_pkt:
-            pkt_fields["src_port"] = pkt[UDP].sport
-            pkt_fields["dst_port"] = pkt[UDP].dport
-
-        return pkt_fields
+            self.header["src_port"] = pkt[TCP].sport
+            self.header["dst_port"] = pkt[TCP].dport
+            self.header["flags"] = pkt[TCP].flags
+            self.header["seq"] = pkt[TCP].seq
+            self.header["ack"] = pkt[TCP].ack
+            self.header["window"] = pkt[TCP].window
+        elif self.udp_in_pkt:
+            self.header["src_port"] = pkt[UDP].sport
+            self.header["dst_port"] = pkt[UDP].dport
 
 
     ## Returns the Snort buffers of a packet

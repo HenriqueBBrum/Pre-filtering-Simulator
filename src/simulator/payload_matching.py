@@ -3,7 +3,7 @@ from .header_matching import compare_field
 
 ## Compares the payload of packet against the payload-related fields of a rule
 # A "False" return value means the packet does not match the rule and is not suspicious acording to the rule
-def compare_payload(pkt_to_match, rule):
+def matched_payload(pkt_to_match, rule):
     rule_proto = rule.pkt_header_fields["proto"].upper()
     try:
         len_pkt_payload = pkt_to_match.len_payload[rule_proto]
@@ -21,7 +21,7 @@ def compare_payload(pkt_to_match, rule):
         return False
     
     # # Compare packets that have payload with rules that have the "content" or "pcre" keywords
-    if "content_pcre" in rule.payload_fields and not __compare_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"]):
+    if "content_pcre" in rule.payload_fields and not __matched_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"]):
         return False
 
     return True
@@ -34,7 +34,7 @@ unsupported_buffers = {"json_data", "vba_data", "base64_data"}
 http_request_buffers = {"http_uri", "http_raw_uri", "http_method"}
 http_response_buffers = {"http_stat_code", "http_stat_msg", "file_data"}
 
-def __compare_content_pcre(pkt_to_match, rule_proto, rule_content_pcre):
+def __matched_content_pcre(pkt_to_match, rule_proto, rule_content_pcre):
     position_dict = {}
     buffer, prev_buffer_name = "", ""
     position = 0
