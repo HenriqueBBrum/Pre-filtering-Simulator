@@ -15,11 +15,11 @@ def main(simulation_config_path, sim_results_folder):
         config = SnortConfiguration(snort_version=2, configuration_dir=simulation_config["snort_config_path"])
         print("*" * 80)
         print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
-        final_rules = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
+        groupped_rules = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
 
-        print(final_rules.keys())        
+        exit()
         print("PRE-FILTERING SIMULATION")
-        pre_filtering_simulation(simulation_config, final_rules, {}, sim_results_folder)
+        pre_filtering_simulation(simulation_config, groupped_rules, {}, sim_results_folder)
     elif simulation_config["type"] == "flow_sampling":
         print("FLOW SAMPLING SIMULATION")
         flow_sampling_simulation(simulation_config, sim_results_folder)

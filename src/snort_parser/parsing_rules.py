@@ -25,14 +25,22 @@ def parse_rules(config, pre_filtering_scenario, ruleset_path):
     print("---- Deduping rules based on the packet header and payload matching fields ----")
     deduped_rules = __dedup_rules(config, modified_rules, pre_filtering_scenario)
 
-    grouped_rules = __group_rules_by_protocol(deduped_rules)
+    grouped_by_protocol = __group_rules_by_protocol(deduped_rules)
+
+    grouped_by_src_and_dst =  __group_by_src_and_dst(grouped_by_protocol)
 
     print("\nResults:")
     print("Total original rules: {}".format(len(original_rules)))
     print("Total adjusted and filtered rules: {}".format(len(modified_rules)))
     print("Total deduped rules: {}".format(len(deduped_rules)))
 
-    return grouped_rules
+    for key in grouped_by_src_and_dst:
+        print(key)
+        for src_dst in grouped_by_src_and_dst[key]:
+            print(src_dst)
+            print(len(grouped_by_src_and_dst[key][src_dst]))
+
+    return grouped_by_src_and_dst
 
 # Returns two list of rules from one or multiple files. 
 # The first list contains the parsed rules similar as they apperead in the files but saving the values in dictionaries. 
@@ -78,8 +86,9 @@ def __read_rules_from_file(config, rule_file):
                 modified_rules.append(parsed_rule)
 
             copied_rule = copy.deepcopy(parsed_rule)
-            copied_rule.header["header_src_ap"] = copied_rule.header["src_ip"]+copied_rule.header["src_port"]
-            copied_rule.header["header_dst_ap"] = copied_rule.header["dst_ip"]+copied_rule.header["dst_port"]
+            copied_rule.header["src_ap"] = copied_rule.header["src_ip"]+copied_rule.header["src_port"]
+            copied_rule.header["dst_ap"] = copied_rule.header["dst_ip"]+copied_rule.header["dst_port"]
+            print(copied_rule.header["src_ip"])
 
             copied_rule.header["src_ip"] = __replace_system_variables(copied_rule.header["src_ip"],  config.ip_addresses)
             copied_rule.header["src_port"] = __replace_system_variables(copied_rule.header["src_port"],  config.ports)
@@ -90,8 +99,8 @@ def __read_rules_from_file(config, rule_file):
                 copied_rule.header["direction"] = "unidirectional"
 
                 swap_dir_rule = copy.deepcopy(copied_rule)
-                swap_dir_rule.header["header_src_ap"] = copied_rule.header["header_dst_ap"]
-                swap_dir_rule.header["header_dst_ap"] = copied_rule.header["header_src_ap"]
+                swap_dir_rule.header["src_ap"] = copied_rule.header["dst_ap"]
+                swap_dir_rule.header["dst_ap"] = copied_rule.header["src_ap"]
                 swap_dir_rule.header["src_ip"], swap_dir_rule.header["dst_ip"] =  swap_dir_rule.header["dst_ip"], swap_dir_rule.header["src_ip"]
                 swap_dir_rule.header["src_port"], swap_dir_rule.header["dst_port"] =  swap_dir_rule.header["dst_port"], swap_dir_rule.header["src_port"]
                 
@@ -153,7 +162,7 @@ def __useful_header_and_payload_fields(rule_header, rule_options):
 
     pkt_header_fields, payload_fields = {}, {}
 
-    desired_header_fields = ["proto", "src_ip", "src_port", "src_port_name", "dst_ip", "dst_port", "dst_port_name"]
+    desired_header_fields = ["proto", "src_ip", "src_port", "src_ap", "dst_ip", "dst_port", "dst_ap"]
     unsupported_non_payload_fields = {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}
     for key in desired_header_fields:
         if key in rule_header:
@@ -177,6 +186,119 @@ def __get_simple_option_value(key, options, position=0, default=""):
     except Exception as e:
         print("WARNING -- Error when searching for key {} in rule options \n Returning: {}".format(key, default))
         return default
+
+
+### Functions and classes to group rules based on protocols so each packet is compared against fewer rules ###
+
+# Class represeting a protocol or node
+class Node:
+    def __init__(self, parent, name, children=set()):
+        self.parent = parent
+        self.name = name
+        self.children = children
+
+        self.rules = []
+
+class RulesTree:
+    def __init__(self, base_node_names):
+        self.nodes = {}
+        for parent, name, children in base_node_names:
+            self.nodes[name] = Node(parent, name, children)
+
+    def add_node(self, parent_name, new_node_name):
+        if parent_name not in self.nodes:
+            raise Exception("No parent with this name")
+        elif new_node_name in self.nodes[parent_name].children:
+            print("Node already exists")
+        else:
+            self.nodes[new_node_name] = Node(parent_name, new_node_name)
+            self.nodes[parent_name].children.add(new_node_name)
+        
+    def add_rule(self, node_name, rule):
+        if node_name not in self.nodes:
+            print("Node does not exist")
+        else:
+            self.nodes[node_name].rules.append(rule)
+
+    def safe_rule_add(self, parent_name, new_node_name, rule):
+        if new_node_name not in self.nodes[parent_name].children:
+            self.add_node(parent_name, new_node_name)
+
+        self.add_rule(new_node_name, rule)
+
+    def get_related_rules(self, start_node, node_name):
+        if start_node.name == node_name: # Base case: Has found the node
+            return start_node.rules
+            
+        if len(start_node.children) == 0: # Base case: No the desired node but it has no children
+            return []
+        
+        rules = []
+        for child in start_node.children: # Checking each node
+            r = self.get_related_rules(self.nodes[child], node_name)
+            if r:
+                rules = start_node.rules + r # Has found the node, return to root
+                return rules
+
+        return rules
+        
+    def print_nodes(self):
+       for key, node in self.nodes.items():
+           print(node.parent, node.name, node.children, len(node.rules))
+        
+def __group_rules_by_protocol(rules):
+    rules_tree = RulesTree([("", "ip", {"icmp", "tcp", "udp"}), ("ip", "icmp", set()), ("ip", "tcp", set()), ("ip", "udp", set())])
+    for rule in rules:
+        proto = rule.pkt_header_fields["proto"] 
+        if proto == "ip":
+            if "ip_proto" not in rule.pkt_header_fields:
+                rules_tree.add_rule("ip", rule)
+            else:
+                ip_proto = rule.pkt_header_fields["ip_proto"]["data"]
+                ip_proto = ip_proto if ip_proto != 1 else "icmp"
+                rules_tree.safe_rule_add(proto, ip_proto, rule)
+        elif proto == "icmp":
+            rules_tree.add_rule(proto, rule)
+        elif proto == "udp" or proto == "tcp":
+            if rule.service:
+                if type(rule.service) is list:
+                    for service in rule.service:
+                        rules_tree.safe_rule_add(proto, proto+"_"+service, rule) # parent, node, rule
+                else:
+                    rules_tree.safe_rule_add(proto, proto+"_"+rule.service, rule)
+            else:
+                rules_tree.add_rule(proto, rule) # Add rule to either udp or tcp since there is not service
+        else:
+            if proto == "netflow" or proto == "dns":
+                rules_tree.safe_rule_add("udp", "udp_"+proto, rule)
+            else:
+                rules_tree.safe_rule_add("tcp", "tcp_"+proto, rule)
+
+    groups = {}
+    for proto_or_service in rules_tree.nodes.keys():
+        groups[proto_or_service] = rules_tree.get_related_rules(rules_tree.nodes["ip"], proto_or_service)
+
+    return groups
+
+
+
+### Groups rules now based on the src_ap and dst-ap irrepective of the protocol
+def __group_by_src_and_dst(groups):
+    groupped_rules = {}
+    for key, rules in groups.items():
+        groupped_rules[key] = {}
+        print(key, len(rules))
+        for rule in rules:
+            rule_4tuple_flow = rule.header_key # src_ap + dst_ap
+            print(rule_4tuple_flow)
+            if rule_4tuple_flow not in groupped_rules[key]:
+                groupped_rules[key][rule_4tuple_flow] = [rule]
+            else:
+                groupped_rules[key][rule_4tuple_flow].append(rule)
+
+
+
+
 
 
 
@@ -220,97 +342,3 @@ def __calculate_rules_size(rules):
                                     total_payload_size+=sys.getsizeof(modifier)
 
     return {"header_size": total_header_size/1000000, "payload_size": total_payload_size/1000000, "total_size":(total_header_size+total_payload_size)/1000000}
-
-### Functions and classes to group rules based on protocols so each packet is compared against fewer rules ###
-
-# Class represeting a protocol or node
-class Node:
-    def __init__(self, parent, name, children=set()):
-        self.parent = parent
-        self.name = name
-        self.children = children
-
-        self.rules = []
-
-class RulesTree:
-    def __init__(self, base_node_names):
-        self.nodes = {}
-        for parent, name, children in base_node_names:
-            self.nodes[name] = Node(parent, name, children)
-
-    def add_node(self, parent, name):
-        if parent not in self.nodes:
-            raise Exception("No parent with this name")
-        elif name in self.nodes:
-            print("Node already exists")
-        else:
-            self.nodes[name] = Node(parent, name)
-            self.nodes[parent].children.add(name)
-        
-    def add_rule(self, name, rule):
-        if name not in self.nodes:
-            print("Node does not exist")
-        else:
-            self.nodes[name].rules.append(rule)
-
-    def safe_rule_add(self, parent, name, rule):
-        if name not in self.nodes:
-            self.add_node(parent, name)
-        self.add_rule(name, rule)
-
-    def get_related_rules(self, start_node, name):
-        if start_node.name == name: # Base case: Has found the node
-            return start_node.rules
-            
-        if len(start_node.children) == 0: # Base case: No the desired node but it has no children
-            return []
-        
-        rules = []
-        for child in start_node.children: # Checking each node
-            r = self.get_related_rules(self.nodes[child], name)
-            if r:
-                rules = start_node.rules + r # Has found the node, return to root
-                return rules
-
-        return rules
-        
-    def print_nodes(self):
-       for key, value in self.nodes.items():
-           print(value.parent, value.name, value.children, len(value.rules))
-        
-def __group_rules_by_protocol(rules):
-    rules_tree = RulesTree([("", "ip", {"icmp", "tcp", "udp"}), ("ip", "icmp", set()), ("ip", "tcp", set()), ("ip", "udp", set())])
-    for rule in rules:
-        rule_proto = rule.pkt_header_fields["proto"] 
-        if rule_proto == "ip":
-            if "ip_proto" not in rule.pkt_header_fields:
-                rules_tree.add_rule("ip", rule)
-            else:
-                ip_proto = rule.pkt_header_fields["ip_proto"]["data"]
-                ip_proto = ip_proto if ip_proto != 1 else "icmp"
-                rules_tree.safe_rule_add(rule_proto, ip_proto, rule)
-        elif rule_proto == "icmp":
-            rules_tree.add_rule(rule_proto, rule)
-        elif rule_proto == "udp" or rule_proto == "tcp":
-            if rule.service:
-                if type(rule.service) is list:
-                    for service in rule.service:
-                        rules_tree.safe_rule_add(rule_proto, service, rule)
-                else:
-                    rules_tree.safe_rule_add(rule_proto, rule.service, rule)
-            else:
-                rules_tree.add_rule(rule_proto, rule)
-        else:
-            if rule_proto not in rules_tree.nodes:
-                if rule_proto == "netflow" or rule_proto == "dns":
-                    rules_tree.safe_rule_add("udp", rule_proto, rule)
-                else:
-                    rules_tree.safe_rule_add("tcp", rule_proto, rule)
-
-    groups = {}
-    for proto_or_service in rules_tree.nodes.keys():
-        groups[proto_or_service] = rules_tree.get_related_rules(rules_tree.nodes["ip"], proto_or_service)
-
-    return groups
-
-

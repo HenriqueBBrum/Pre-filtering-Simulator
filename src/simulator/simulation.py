@@ -101,7 +101,7 @@ def pre_filtering_simulation(sim_config, rules, rules_info, sim_results_folder):
 
         info[current_trace] = {"number_of_rules": len(rules)}
         start = time()
-        pcap = rdpcap(pcaps_path+pcap_file)
+        pcap = rdpcap(pcaps_path+pcap_file, 10000)
         info[current_trace]["time_to_read"] = time() - start
         info[current_trace]["pcap_size"] = len(pcap)
 
@@ -126,7 +126,6 @@ def pre_filtering_simulation(sim_config, rules, rules_info, sim_results_folder):
         info[current_trace]["pkts_processed"] = sum(ip_pkt_count_list)
         info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
-
         #info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
     
     # with open(output_folder + "analysis.json", 'w') as f:
@@ -139,7 +138,7 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, tcp_t
     for pkt in pkts:
         if IP in pkt:
             matched = False
-            if unsupported_protocol(pkt):
+            if unsupported_protocols(pkt):
                 suspicious_pkts.append((pkt_count, "unsupported"))
                 matched = True
             elif TCP in pkt: 
@@ -152,25 +151,24 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, tcp_t
                
             if not matched: 
                 pkt_to_match = PacketToMatch(pkt, rules.keys())
-                print(pkt_count)
-                print(pkt)
-                rules_to_compare = get_pkt_related_rules(pkt_to_match, rules)
-                # for rule in rules_to_compare:
-                #     try:
-                #         if not matched_header_fields(pkt_to_match, rule, rule.pkt_header_fields["proto"]):
-                #             continue
+                rules_to_compare, protocol = get_pkt_related_rules(pkt_to_match, rules)
+                for header in rules_to_compare:
+                    for rule in rules_to_compare[header]:
+                        try:
+                            if not matched_header_fields(pkt_to_match, rule, rule.pkt_header_fields["proto"]):
+                                continue
 
-                #         if not matched_payload(pkt_to_match, rule):
-                #             continue
-                        
-                #         suspicious_pkts.append((pkt_count, rule.sids()[0]))
-                #         if TCP in pkt:                  
-                #             flow = pkt[IP].src+str(pkt[TCP].sport)+pkt[IP].dst+str(pkt[TCP].dport)
-                #             tcp_tracker[flow] = {"seq": pkt[TCP].seq, "ack": pkt[TCP].ack, "pkt_count": pkt_count}        
-                #     except Exception as e:
-                #         print("Exception: ", traceback.format_exc())
-                #         suspicious_pkts.append((pkt_count, "error"))
-                #     break
+                            if not matched_payload(pkt_to_match, rule):
+                                continue
+                            
+                            suspicious_pkts.append((pkt_count, rule.sids()[0]))
+                            if TCP in pkt:                  
+                                flow = pkt[IP].src+str(pkt[TCP].sport)+pkt[IP].dst+str(pkt[TCP].dport)
+                                tcp_tracker[flow] = {"seq": pkt[TCP].seq, "ack": pkt[TCP].ack, "pkt_count": pkt_count}        
+                        except Exception as e:
+                            print("Exception: ", traceback.format_exc())
+                            suspicious_pkts.append((pkt_count, "error"))
+                        break
             ip_pkt_count+=1
         pkt_count+=1
     ip_pkt_count_list.append(ip_pkt_count)
@@ -180,7 +178,7 @@ def compare_pkts_to_rules(pkts, rules, suspicious_pkts, ip_pkt_count_list, tcp_t
 # Add NetBIOS and SMB
 sip_ports = {5060, 5061, 5080}
 # CIP, IEC104 and S7Comm not here
-def unsupported_protocol(pkt):
+def unsupported_protocols(pkt):
      if TCP in pkt or UDP in pkt:
         if GTPHeader in pkt or GTPHeader_v2 in pkt:
             return True
@@ -207,46 +205,46 @@ def unsupported_protocol(pkt):
 ip_proto = {1:"icmp", 6:"tcp", 17:"udp"}
 # Returns the rules related to the protocol and services of a packet
 def get_pkt_related_rules(pkt, rules):
+    pkt_proto = ip_proto.get(pkt.header["ip_proto"], "ip")
+    if ((pkt_proto == "udp" and not pkt.udp_in_pkt) or 
+                (pkt_proto == "tcp" and not pkt.tcp_in_pkt) or (pkt_proto == "icmp" and not pkt.icmp_in_pkt)):
+        pkt_proto = "ip"
+    
+    service = None
+    if pkt.udp_in_pkt or pkt.tcp_in_pkt:
+        service = get_service(pkt, pkt_proto, rules.keys(), "dst_port", True)
+      
+    if service in rules:
+        pkt_proto = service
+
+    return rules[pkt_proto],  pkt_proto
+
+def get_service(pkt, transport_proto, rules_services, port, check_src):
+    service = None
     try:
-        pkt_proto = ip_proto.get(pkt.header["ip_proto"], "ip")
-        if ((pkt_proto == "udp" and not pkt.udp_in_pkt) or 
-                    (pkt_proto == "tcp" and not pkt.tcp_in_pkt) or (pkt_proto == "icmp" and not pkt.icmp_in_pkt)):
-            pkt_proto = "ip"
-        
+        service = getservbyport(pkt.header[port], transport_proto)
+    except:
         service = None
-        if pkt.udp_in_pkt or pkt.tcp_in_pkt:
-            try:
-                service = getservbyport(pkt.header["dst_port"], pkt_proto)
-                if service not in rules:
-                    service = getservbyport(pkt.header["src_port"], pkt_proto)
-            except:
-                try:
-                    service = getservbyport(pkt.header["src_port"], pkt_proto)
-                except:
-                    service = None
 
-            print(pkt.header["dst_port"], pkt.header["dst_port"], service)
-            if service == "http-alt":
-                service = "http"
-
-            if service == "https" or service == "submissions" or service == "cvspserver":
-                service = None
-
-            if service == "microsoft-ds":
-                service = "netbios-ssn"
-
-            if service == "domain" or service == "mdns":
-                service = "dns"
+    change_map = {"http-alt": "http", "microsoft-ds": "netbios-ssn", "domain": "dns", "mdns":"dns", "https": None}
+    if service:
+        if service in change_map:
+            service = change_map[service]
             
-            if service == "http" and (not pkt.http_res_in_pkt or not pkt.http_req_in_pkt):
-                service = None
-            
-        print(pkt_proto, service, len(rules[service if service else pkt_proto]))
-    except Exception as e:
-        print("Exception: ", traceback.format_exc())
-        print(rules.keys())
-        input()
-    return [] #rules[service if service else pkt_proto]
+        if service == "http" and not (pkt.http_res_in_pkt or pkt.http_req_in_pkt):
+            service = None
+
+        if not service:
+            return service
+        
+        service = transport_proto+"_"+service
+        if check_src and service not in rules_services: 
+            service = get_service(pkt, transport_proto, rules_services, "src_port", False)
+    
+    if check_src and not service:
+        service = get_service(pkt, transport_proto, rules_services, "src_port", False)
+ 
+    return service
 
 def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info): 
     baseline_pcap = sim_config["baseline_path"]+"pcaps/"+current_trace+".pcap"
