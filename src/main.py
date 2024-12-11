@@ -1,6 +1,7 @@
 from time import time
 import sys
 import json
+import os
 
 from snort_parser.config_parser import SnortConfiguration
 from snort_parser.parsing_rules import parse_rules
@@ -10,24 +11,36 @@ def main(simulation_config_path, sim_results_folder):
     with open(simulation_config_path, 'r') as f:
         simulation_config = json.load(f)
 
+    info = {}
     start = time()
     if simulation_config["type"] == "pre_filtering":
+        start = time()
         config = SnortConfiguration(snort_version=2, configuration_dir=simulation_config["snort_config_path"])
         print("*" * 80)
         print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
         groupped_rules = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
+        info["time_to_process_rules"] = time()-start
 
-        exit()
         print("PRE-FILTERING SIMULATION")
-        pre_filtering_simulation(simulation_config, groupped_rules, {}, sim_results_folder)
+        output_folder = sim_results_folder+"pre_filtering_"+simulation_config["scenario"]+"/"
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+
+        info = pre_filtering_simulation(simulation_config, groupped_rules, info, output_folder)
     elif simulation_config["type"] == "flow_sampling":
         print("FLOW SAMPLING SIMULATION")
-        flow_sampling_simulation(simulation_config, sim_results_folder)
+        output_folder = sim_results_folder+"flow_sampling_"+str(simulation_config["flow_count_threshold"])+"_"+str(simulation_config["time_threshold"])+"/"
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+
+        info = flow_sampling_simulation(simulation_config, output_folder)
     else:
         print("Wrong simulation type")
         exit(1)
 
-    print("Simulation time: ", time() - start)
+    info["total_execution_time"] = time() - start
+    with open(output_folder + "analysis.json", 'w') as f:
+        json.dump(info , f, ensure_ascii=False, indent=4)
 
 
 if __name__ == '__main__':

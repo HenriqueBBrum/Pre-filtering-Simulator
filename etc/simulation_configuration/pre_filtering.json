@@ -4,7 +4,7 @@
     "snort_config_path": "etc/configuration/",
     "snort_config_file": "etc/configuration/snort.lua",
     "ruleset_path":"etc/rules/snort3-registered/",
-    "scenario":"first"
+    "scenario":"group_by_protocol"
 }
 
  

@@ -85,19 +85,20 @@ class RuleParser(object):
         
         header_dict["action"] = self.dicts.action(header[0])
         header_dict["proto"] = self.dicts.proto(header[1])
-        if len(header) == 2: # Ruls like: "alert http (...)"
+        if len(header) == 2: # Rules like: "alert http (...)"
             header_dict["src_ip"] = self.__ip("any")
             header_dict["src_port"] = self.__port("any")
             header_dict["direction"] = self.__direction("<>")
             header_dict["dst_ip"] = self.__ip("any")
             header_dict["dst_port"] = self.__port("any")
-            return header_dict
-
-        header_dict["src_ip"] = self.__ip(header[2])
-        header_dict["src_port"] = self.__port(header[3])
-        header_dict["direction"] = self.__direction(header[4])
-        header_dict["dst_ip"] = self.__ip(header[5])
-        header_dict["dst_port"] = self.__port(header[6])
+            header_dict["ip_port_key"] = "any"+"any"+"-"+"any"+"any"
+        else:
+            header_dict["src_ip"] = self.__ip(header[2])
+            header_dict["src_port"] = self.__port(header[3])
+            header_dict["direction"] = self.__direction(header[4])
+            header_dict["dst_ip"] = self.__ip(header[5])
+            header_dict["dst_port"] = self.__port(header[6])
+            header_dict["ip_port_key"] = header[2]+header[3]+"-"+header[5]+header[6]
         return header_dict
 
     # Parses one IP or a list of IPs. 

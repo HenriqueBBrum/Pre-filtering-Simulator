@@ -15,9 +15,9 @@ possible_ipopts = {"RR": "rr", "EOL":"eol", "NOP":"nop", "Timestamp": "ts", "Sec
                         "LSRR": "lsrr", "LSSRE": "lsrre", "SSRR": "ssrr", "Stream Id":"satid"}
 
 # Compares the header fields of a packet against the ones for a rule
-def matched_header_fields(pkt_to_match, rule, rule_proto):
+def matched_header_fields(pkt_to_match, rule):
      # Compares the packet's port(s) against the rule's port(s) 
-    if (rule_proto == "tcp" or rule_proto == "udp") and (pkt_to_match.tcp_in_pkt or pkt_to_match.udp_in_pkt):
+    if pkt_to_match.tcp_in_pkt or pkt_to_match.udp_in_pkt:
         if not __matched_ports(pkt_to_match.header["dst_port"], rule.pkt_header_fields["dst_port"]):
             return False
         
@@ -34,10 +34,10 @@ def matched_header_fields(pkt_to_match, rule, rule_proto):
     if not __matched_IP_fields(pkt_to_match.header, rule.pkt_header_fields):
         return False
 
-    if rule_proto == "tcp" and pkt_to_match.tcp_in_pkt and not __matched_TCP_fields(pkt_to_match.header, rule.pkt_header_fields):
+    if pkt_to_match.tcp_in_pkt and not __matched_TCP_fields(pkt_to_match.header, rule.pkt_header_fields):
         return False
     
-    if rule_proto == "icmp" and pkt_to_match.icmp_in_pkt and not __matched_ICMP_fields(pkt_to_match.header, rule.pkt_header_fields):
+    if pkt_to_match.icmp_in_pkt and not __matched_ICMP_fields(pkt_to_match.header, rule.pkt_header_fields):
         return False
 
     # Add SSL/TLS support

@@ -27,20 +27,20 @@ def parse_rules(config, pre_filtering_scenario, ruleset_path):
 
     grouped_by_protocol = __group_rules_by_protocol(deduped_rules)
 
-    grouped_by_src_and_dst =  __group_by_src_and_dst(grouped_by_protocol)
+    #grouped_by_src_and_dst =  __group_by_src_and_dst(grouped_by_protocol)
 
     print("\nResults:")
     print("Total original rules: {}".format(len(original_rules)))
     print("Total adjusted and filtered rules: {}".format(len(modified_rules)))
     print("Total deduped rules: {}".format(len(deduped_rules)))
 
-    for key in grouped_by_src_and_dst:
-        print(key)
-        for src_dst in grouped_by_src_and_dst[key]:
-            print(src_dst)
-            print(len(grouped_by_src_and_dst[key][src_dst]))
+    # for key in grouped_by_src_and_dst:
+    #     print(key)
+    #     for src_dst in grouped_by_src_and_dst[key]:
+    #         print(src_dst)
+    #         print(len(grouped_by_src_and_dst[key][src_dst]))
 
-    return grouped_by_src_and_dst
+    return grouped_by_protocol
 
 # Returns two list of rules from one or multiple files. 
 # The first list contains the parsed rules similar as they apperead in the files but saving the values in dictionaries. 
@@ -82,14 +82,7 @@ def __read_rules_from_file(config, rule_file):
             if search(regex_to_find_unsupported_keywords, line):
                 continue
 
-            if len(parsed_rule.header) <= 2:
-                modified_rules.append(parsed_rule)
-
             copied_rule = copy.deepcopy(parsed_rule)
-            copied_rule.header["src_ap"] = copied_rule.header["src_ip"]+copied_rule.header["src_port"]
-            copied_rule.header["dst_ap"] = copied_rule.header["dst_ip"]+copied_rule.header["dst_port"]
-            print(copied_rule.header["src_ip"])
-
             copied_rule.header["src_ip"] = __replace_system_variables(copied_rule.header["src_ip"],  config.ip_addresses)
             copied_rule.header["src_port"] = __replace_system_variables(copied_rule.header["src_port"],  config.ports)
             copied_rule.header["dst_ip"] = __replace_system_variables(copied_rule.header["dst_ip"], config.ip_addresses)
@@ -99,8 +92,9 @@ def __read_rules_from_file(config, rule_file):
                 copied_rule.header["direction"] = "unidirectional"
 
                 swap_dir_rule = copy.deepcopy(copied_rule)
-                swap_dir_rule.header["src_ap"] = copied_rule.header["dst_ap"]
-                swap_dir_rule.header["dst_ap"] = copied_rule.header["src_ap"]
+                temp = copied_rule.header["ip_port_key"].split("-")
+                swap_dir_rule.header["ip_port_key"] = temp[1]+"-"+temp[0]
+
                 swap_dir_rule.header["src_ip"], swap_dir_rule.header["dst_ip"] =  swap_dir_rule.header["dst_ip"], swap_dir_rule.header["src_ip"]
                 swap_dir_rule.header["src_port"], swap_dir_rule.header["dst_port"] =  swap_dir_rule.header["dst_port"], swap_dir_rule.header["src_port"]
                 
@@ -162,7 +156,7 @@ def __useful_header_and_payload_fields(rule_header, rule_options):
 
     pkt_header_fields, payload_fields = {}, {}
 
-    desired_header_fields = ["proto", "src_ip", "src_port", "src_ap", "dst_ip", "dst_port", "dst_ap"]
+    desired_header_fields = ["proto", "src_ip", "src_port", "dst_ip", "dst_port", "ip_port_key"]
     unsupported_non_payload_fields = {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}
     for key in desired_header_fields:
         if key in rule_header:
@@ -230,7 +224,7 @@ class RulesTree:
         if start_node.name == node_name: # Base case: Has found the node
             return start_node.rules
             
-        if len(start_node.children) == 0: # Base case: No the desired node but it has no children
+        if len(start_node.children) == 0: # Base case: Not the desired node and it has no children
             return []
         
         rules = []
@@ -268,11 +262,18 @@ def __group_rules_by_protocol(rules):
                     rules_tree.safe_rule_add(proto, proto+"_"+rule.service, rule)
             else:
                 rules_tree.add_rule(proto, rule) # Add rule to either udp or tcp since there is not service
-        else:
-            if proto == "netflow" or proto == "dns":
-                rules_tree.safe_rule_add("udp", "udp_"+proto, rule)
-            else:
-                rules_tree.safe_rule_add("tcp", "tcp_"+proto, rule)
+        elif proto == "file":
+            rules_tree.safe_rule_add("tcp", "tcp_http", rule)
+            rules_tree.safe_rule_add("tcp", "tcp_smtp", rule)
+            rules_tree.safe_rule_add("udp", "udp_http", rule) # Some http and smtp service keys appeared with udp
+            rules_tree.safe_rule_add("udp", "udp_smtp", rule)
+
+            rules_tree.safe_rule_add("tcp", "tcp_pop3", rule)
+            rules_tree.safe_rule_add("tcp", "tcp_imap", rule)
+            rules_tree.safe_rule_add("tcp", "tcp_netbios-ssn", rule) # Instead of SMB
+            rules_tree.safe_rule_add("tcp", "tcp_ftp", rule)
+        elif proto == "http" or proto == "smtp" or proto == "ssh": # Besides "file" the only keywords were these three
+            rules_tree.safe_rule_add("tcp", "tcp_"+proto, rule) # HTTP and SMTP wixard in snort defaults is only for TCP
 
     groups = {}
     for proto_or_service in rules_tree.nodes.keys():
