@@ -25,22 +25,16 @@ def parse_rules(config, pre_filtering_scenario, ruleset_path):
     print("---- Deduping rules based on the packet header and payload matching fields ----")
     deduped_rules = __dedup_rules(config, modified_rules, pre_filtering_scenario)
 
-    grouped_by_protocol = __group_rules_by_protocol(deduped_rules)
+    grouped_by_protocol = __group_by_protocol(deduped_rules)
 
-    #grouped_by_src_and_dst =  __group_by_src_and_dst(grouped_by_protocol)
-
+    grouped_by_src_and_dst =  __group_by_src_and_dst(grouped_by_protocol)
+   
     print("\nResults:")
     print("Total original rules: {}".format(len(original_rules)))
     print("Total adjusted and filtered rules: {}".format(len(modified_rules)))
     print("Total deduped rules: {}".format(len(deduped_rules)))
 
-    # for key in grouped_by_src_and_dst:
-    #     print(key)
-    #     for src_dst in grouped_by_src_and_dst[key]:
-    #         print(src_dst)
-    #         print(len(grouped_by_src_and_dst[key][src_dst]))
-
-    return grouped_by_protocol
+    return grouped_by_src_and_dst, len(deduped_rules)
 
 # Returns two list of rules from one or multiple files. 
 # The first list contains the parsed rules similar as they apperead in the files but saving the values in dictionaries. 
@@ -240,7 +234,7 @@ class RulesTree:
        for key, node in self.nodes.items():
            print(node.parent, node.name, node.children, len(node.rules))
         
-def __group_rules_by_protocol(rules):
+def __group_by_protocol(rules):
     rules_tree = RulesTree([("", "ip", {"icmp", "tcp", "udp"}), ("ip", "icmp", set()), ("ip", "tcp", set()), ("ip", "udp", set())])
     for rule in rules:
         proto = rule.pkt_header_fields["proto"] 
@@ -282,26 +276,19 @@ def __group_rules_by_protocol(rules):
     return groups
 
 
-
 ### Groups rules now based on the src_ap and dst-ap irrepective of the protocol
 def __group_by_src_and_dst(groups):
     groupped_rules = {}
     for key, rules in groups.items():
         groupped_rules[key] = {}
-        print(key, len(rules))
         for rule in rules:
             rule_4tuple_flow = rule.header_key # src_ap + dst_ap
-            print(rule_4tuple_flow)
             if rule_4tuple_flow not in groupped_rules[key]:
                 groupped_rules[key][rule_4tuple_flow] = [rule]
             else:
                 groupped_rules[key][rule_4tuple_flow].append(rule)
 
-
-
-
-
-
+    return groupped_rules
 
 
 # Calculates the amount of bytes required by python to store the rules

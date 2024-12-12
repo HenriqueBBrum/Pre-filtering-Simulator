@@ -26,9 +26,7 @@ class RuleToMatch(object):
         self.pkt_header_fields = pkt_header_fields
         self.payload_fields = payload_fields
 
-        if "src_ap" in pkt_header_fields and "dst_ap" in pkt_header_fields:
-            self.header_key = pkt_header_fields["src_ap"] +  pkt_header_fields["dst_ap"]
-            
+        self.header_key = pkt_header_fields["ip_port_key"]
         self.service = None
         if "service" in self.payload_fields:
             self.service = self.payload_fields["service"][1] # Get the services only 

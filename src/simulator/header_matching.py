@@ -14,8 +14,8 @@ tcp_flags_dict = {
 possible_ipopts = {"RR": "rr", "EOL":"eol", "NOP":"nop", "Timestamp": "ts", "Security": "sec", "Extended Security": "esec", 
                         "LSRR": "lsrr", "LSSRE": "lsrre", "SSRR": "ssrr", "Stream Id":"satid"}
 
-# Compares the header fields of a packet against the ones for a rule
-def matched_header_fields(pkt_to_match, rule):
+
+def matched_ip_and_port(pkt_to_match, rule):
      # Compares the packet's port(s) against the rule's port(s) 
     if pkt_to_match.tcp_in_pkt or pkt_to_match.udp_in_pkt:
         if not __matched_ports(pkt_to_match.header["dst_port"], rule.pkt_header_fields["dst_port"]):
@@ -30,7 +30,11 @@ def matched_header_fields(pkt_to_match, rule):
 
     if not __matched_IP(pkt_to_match.header["src_ip"], rule.pkt_header_fields["src_ip"]):
         return False
-    
+
+    return True
+
+# Compares the header fields of a packet against the ones for a rule
+def matched_header_fields(pkt_to_match, rule):
     if not __matched_IP_fields(pkt_to_match.header, rule.pkt_header_fields):
         return False
 
@@ -42,8 +46,6 @@ def matched_header_fields(pkt_to_match, rule):
 
     # Add SSL/TLS support
     return True
-
-
 
 # Compares a packet's ports(s) against the ports(s) of a rule. Individual ports are in a dict, while ranges are in a list.
 def __matched_ports(pkt_port, rule_ports):
@@ -72,7 +74,6 @@ def __matched_IP(pkt_ip, rule_ips):
         return best_match.data["match"]
 
     return not rule_ips[1]
-
 
 # Compares a packet's IP fields against the IP fields of a rule 
 def __matched_IP_fields(pkt_fields, rule_pkt_header):
@@ -123,7 +124,6 @@ def __matched_ICMP_fields(pkt_fields, rule_pkt_header):
     if "icmp_seq" in rule_pkt_header and not compare_field(pkt_fields["icmp_seq"], rule_pkt_header["icmp_seq"]["data"], rule_pkt_header["icmp_seq"]["comparator"]):
         return False
     return True
-
 
 # Compares a packet's field against a rule's field using the follwoing operators: >,<,=,!,<=,>=,<>,<=>
 def compare_field(pkt_data, number, comparator):

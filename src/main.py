@@ -18,7 +18,7 @@ def main(simulation_config_path, sim_results_folder):
         config = SnortConfiguration(snort_version=2, configuration_dir=simulation_config["snort_config_path"])
         print("*" * 80)
         print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
-        groupped_rules = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
+        groupped_rules, info["number_of_rules"] = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
         info["time_to_process_rules"] = time()-start
 
         print("PRE-FILTERING SIMULATION")
