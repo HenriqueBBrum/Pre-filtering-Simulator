@@ -1,16 +1,16 @@
 ### This file contains a class that parsers the network variables defined by snort
-##  Works only configuration file based on Snort 2.* configuration
+##  Works only with configuration files from on Snort 2.* 
 
 import re
+import sys
+
+sys.path.append("..")
+from utils.ports import MIN_PORT,MAX_PORT
 
 class SnortConfiguration():
     ports = {}
     ip_addresses = {}
     classification_priority = {}
-
-    MIN_PORT = 0
-    MAX_PORT = 65535
-
 
     def __init__(self, snort_version, configuration_dir):
         self.configuration_dir = configuration_dir
@@ -113,7 +113,7 @@ class SnortConfiguration():
     # Parses one port or a list of ports
     def __parse_ports(self, raw_ports):
         if raw_ports == "any":
-            return [(range(self.MIN_PORT, self.MAX_PORT+1), True)]
+            return [(range(MIN_PORT, MAX_PORT+1), True)]
         elif raw_ports == "!any":
             raise Exception("Invalid ports")
         
@@ -147,12 +147,12 @@ class SnortConfiguration():
                 raise ValueError("Wrong range values")
             
             if range_[1] == "":
-                return [(range(int(range_[0]), self.MAX_PORT+1), bool(~(local_bool ^ parent_bool)+2))]
+                return [(range(int(range_[0]), MAX_PORT+1), bool(~(local_bool ^ parent_bool)+2))]
             elif range_[0] == "":
-                return [(range(self.MIN_PORT, int(range_[1])+1), bool(~(local_bool ^ parent_bool)+2))]
+                return [(range(MIN_PORT, int(range_[1])+1), bool(~(local_bool ^ parent_bool)+2))]
             
-            lower_bound = int(range_[0]) if int(range_[0]) > self.MIN_PORT else self.MIN_PORT
-            upper_bound = int(range_[1]) if int(range_[1]) > self.MIN_PORT else self.MIN_PORT
+            lower_bound = int(range_[0]) if int(range_[0]) > MIN_PORT else MIN_PORT
+            upper_bound = int(range_[1]) if int(range_[1]) > MAX_PORT else MAX_PORT
             return [(range(lower_bound, upper_bound+1), bool(~(local_bool ^ parent_bool)+2))]
         
         return [(raw_port, bool(~(local_bool ^ parent_bool)+2))]

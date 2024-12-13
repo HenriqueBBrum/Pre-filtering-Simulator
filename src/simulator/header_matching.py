@@ -18,10 +18,10 @@ possible_ipopts = {"RR": "rr", "EOL":"eol", "NOP":"nop", "Timestamp": "ts", "Sec
 def matched_ip_and_port(pkt_to_match, rule):
      # Compares the packet's port(s) against the rule's port(s) 
     if pkt_to_match.tcp_in_pkt or pkt_to_match.udp_in_pkt:
-        if not __matched_ports(pkt_to_match.header["dst_port"], rule.pkt_header_fields["dst_port"]):
+        if not __matched_ports(pkt_to_match.header["dport"], rule.pkt_header_fields["dport"]):
             return False
         
-        if not __matched_ports(pkt_to_match.header["src_port"], rule.pkt_header_fields["src_port"]):
+        if not __matched_ports(pkt_to_match.header["sport"], rule.pkt_header_fields["sport"]):
             return False
 
     # Compares the packet's IP(s) against the rule's IP(s) 

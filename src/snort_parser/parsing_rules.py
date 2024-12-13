@@ -7,14 +7,17 @@
 from os import listdir
 from os.path import isfile, join
 from re import search
-import copy
-import sys
+from copy import deepcopy
 
 from .rule_parser import RuleParser
-from .validation_dicts import Dicts
-
 from .rule_to_match import RuleToMatch
 
+import sys
+sys.path.append("..")
+
+from utils.validation_dicts import Dicts
+
+regex_to_find_unsupported_keywords = "; *(sip_|dce_|base64_|sd_pattern|cvs|md5|sha256|sha512|gtp_|dnp3_|cip_|iec104_|mms_|modbus_|s7commplus|rpc:)"
 
 # Functions related to the parsing of Snort/Suricata rules from multiple files, and the subsequent deduplication, 
 # replacement of system variables, port groupping and fixing negated headers 
@@ -57,9 +60,6 @@ def __read_and_fix_rules(config, rules_path, ignored_rule_files={}):
         
     return original_rules, modified_rules
 
-
-regex_to_find_unsupported_keywords = "; *(sip_|dce_|base64_|sd_pattern|cvs|md5|sha256|sha512|gtp_|dnp3_|cip_|iec104_|mms_|modbus_|s7commplus|rpc:)"
-
 # Parse each rule from a rule file
 def __read_rules_from_file(config, rule_file):
     parsed_rules, modified_rules = [], []
@@ -76,21 +76,21 @@ def __read_rules_from_file(config, rule_file):
             if search(regex_to_find_unsupported_keywords, line):
                 continue
 
-            copied_rule = copy.deepcopy(parsed_rule)
+            copied_rule = deepcopy(parsed_rule)
             copied_rule.header["src_ip"] = __replace_system_variables(copied_rule.header["src_ip"],  config.ip_addresses)
-            copied_rule.header["src_port"] = __replace_system_variables(copied_rule.header["src_port"],  config.ports)
+            copied_rule.header["sport"] = __replace_system_variables(copied_rule.header["sport"],  config.ports)
             copied_rule.header["dst_ip"] = __replace_system_variables(copied_rule.header["dst_ip"], config.ip_addresses)
-            copied_rule.header["dst_port"] = __replace_system_variables(copied_rule.header["dst_port"],  config.ports)
+            copied_rule.header["dport"] = __replace_system_variables(copied_rule.header["dport"],  config.ports)
 
             if copied_rule.header.get("direction") == "bidirectional":
                 copied_rule.header["direction"] = "unidirectional"
 
-                swap_dir_rule = copy.deepcopy(copied_rule)
+                swap_dir_rule = deepcopy(copied_rule)
                 temp = copied_rule.header["ip_port_key"].split("-")
                 swap_dir_rule.header["ip_port_key"] = temp[1]+"-"+temp[0]
 
                 swap_dir_rule.header["src_ip"], swap_dir_rule.header["dst_ip"] =  swap_dir_rule.header["dst_ip"], swap_dir_rule.header["src_ip"]
-                swap_dir_rule.header["src_port"], swap_dir_rule.header["dst_port"] =  swap_dir_rule.header["dst_port"], swap_dir_rule.header["src_port"]
+                swap_dir_rule.header["sport"], swap_dir_rule.header["dport"] =  swap_dir_rule.header["dport"], swap_dir_rule.header["sport"]
                 
                 modified_rules.append(copied_rule)
                 modified_rules.append(swap_dir_rule)
@@ -104,7 +104,7 @@ def __replace_system_variables(header_field, existing_variables):
     for value, bool_ in header_field:
         if isinstance(value, str) and "$" in value :
             name = value.replace('$', '')
-            variable_values = copy.deepcopy(existing_variables.get(name, "ERROR"))
+            variable_values = deepcopy(existing_variables.get(name, "ERROR"))
             if not bool_:
                 for index, (variable_value, variable_value_bool) in enumerate(variable_values):
                     variable_values[index] = (variable_value, bool(~(bool_ ^ variable_value_bool)+2))
@@ -150,7 +150,7 @@ def __useful_header_and_payload_fields(rule_header, rule_options):
 
     pkt_header_fields, payload_fields = {}, {}
 
-    desired_header_fields = ["proto", "src_ip", "src_port", "dst_ip", "dst_port", "ip_port_key"]
+    desired_header_fields = ["proto", "src_ip", "sport", "dst_ip", "dport", "ip_port_key"]
     unsupported_non_payload_fields = {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}
     for key in desired_header_fields:
         if key in rule_header:
@@ -302,7 +302,7 @@ def __calculate_rules_size(rules):
             elif key == "src_ip" or key == "dst_ip":
                 for ip in header_field_value[0].prefixes():
                     total_header_size+=sys.getsizeof(ip)
-            elif key == "src_port" or key == "dst_port":
+            elif key == "sport" or key == "dport":
                 for port in header_field_value[0]:
                     total_header_size+=sys.getsizeof(port)
 

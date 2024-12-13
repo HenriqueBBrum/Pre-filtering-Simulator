@@ -1,7 +1,11 @@
 import re
 import ipaddress
 
-from .validation_dicts import Dicts
+import sys
+sys.path.append("..")
+
+from utils.validation_dicts import Dicts
+from utils.ports import MIN_PORT,MAX_PORT
 
 
 # Class representing a NIDS rule.
@@ -33,9 +37,6 @@ class Rule(object):
 #   If there are invalid option in the rule an Error is raised. 
 ###
 class RuleParser(object):
-    MIN_PORT = 0
-    MAX_PORT = 65535
-
     def __init__(self):
         self.dicts = Dicts()
     
@@ -60,25 +61,23 @@ class RuleParser(object):
                 header = re.sub(r"\s+\]", "]", header)
             header = header.split()
         else:
-            raise ValueError("Header is missing, or unparsable")
+            raise ValueError("Header is mising or unparsable")
         
         header = list(filter(None, header))
         if not len(header) == 7 and not len(header) == 2:
-            msg = "Snort rule header is malformed %s" % header
-            raise ValueError(msg)
+            raise ValueError("Snort rule header is malformed ", header)
         
         return self.__header_list_to_dict(header), has_negation
     
-    # Returns a string with the following format: "action proto src_ip src_port direction dst_ip dst_port"
+    # Returns a string with the following format: "action proto src_ip sport direction dst_ip dport"
     def __get_header(self, rule):
         if re.match(r'(^[a-z|A-Z].+?)?(\(.+;\)|;\s\))', rule.lstrip()): #simplify
             header = rule.split('(', 1)
             return header[0]
         else:
-            msg = "Error in syntax, check if rule has been closed properly %s " % rule
-            raise SyntaxError(msg)
+            raise SyntaxError("Error in syntax, check if rule has been closed properly ", rule)
     
-    # Receives a list "[<action>, <proto>, <src_ip>, <src_port>, <direction>, <dst_ip>, <dst_port>", parses and validates each field
+    # Receives a list "[<action>, <proto>, <src_ip>, <sport>, <direction>, <dst_ip>, <dport>", parses and validates each field
     # Returns a dictionary
     def __header_list_to_dict(self, header):
         header_dict = {}
@@ -87,17 +86,17 @@ class RuleParser(object):
         header_dict["proto"] = self.dicts.proto(header[1])
         if len(header) == 2: # Rules like: "alert http (...)"
             header_dict["src_ip"] = self.__ip("any")
-            header_dict["src_port"] = self.__port("any")
+            header_dict["sport"] = self.__port("any")
             header_dict["direction"] = self.__direction("<>")
             header_dict["dst_ip"] = self.__ip("any")
-            header_dict["dst_port"] = self.__port("any")
+            header_dict["dport"] = self.__port("any")
             header_dict["ip_port_key"] = "any"+"any"+"-"+"any"+"any"
         else:
             header_dict["src_ip"] = self.__ip(header[2])
-            header_dict["src_port"] = self.__port(header[3])
+            header_dict["sport"] = self.__port(header[3])
             header_dict["direction"] = self.__direction(header[4])
             header_dict["dst_ip"] = self.__ip(header[5])
-            header_dict["dst_port"] = self.__port(header[6])
+            header_dict["dport"] = self.__port(header[6])
             header_dict["ip_port_key"] = header[2]+header[3]+"-"+header[5]+header[6]
         return header_dict
 
@@ -110,7 +109,7 @@ class RuleParser(object):
             if ip == "any":
                 return [("0.0.0.0/0", True)]
             elif ip == "!any":
-                raise Exception("Invalid IP %s" % ip)
+                raise Exception("Invalid IP: ", ip)
             
             if re.search(r",|(!?\[.*\])", ip):
                 parsed_ips = self.__flatten_list(ip, self.__parse_ip)
@@ -118,7 +117,7 @@ class RuleParser(object):
                 parsed_ips.append(self.__parse_ip(ip, True))
                 
             if not self.__validate_ip(parsed_ips):
-                raise ValueError("Unvalid ip or variable: %s" % ip)        
+                raise ValueError("Unvalid IP or IP variable: ", ip)        
         return parsed_ips   
 
     # Removes all sub-lists and parses the individual elements
@@ -179,9 +178,9 @@ class RuleParser(object):
         parsed_ports = []
         if isinstance(port, str):
             if port == "any":
-                return [(range(self.MIN_PORT, self.MAX_PORT+1), True)]
+                return [(range(MIN_PORT, MAX_PORT+1), True)]
             elif port == "!any":
-                raise Exception("Invalid ports %s" % port)
+                raise Exception("Invalid ports: ", port)
             
             if re.search(r",|(!?\[.*\])", port):
                 parsed_ports = self.__flatten_list(port, self.__parse_port)
@@ -189,7 +188,7 @@ class RuleParser(object):
                 parsed_ports.append(self.__parse_port(port, True))
                 
             if not self.__validate_port(parsed_ports):
-                raise ValueError("Unvalid port or variable: %s" % port)
+                raise ValueError("Unvalid port or variable: ", port)
         return parsed_ports  
      
     # Parses an individual port or port range
@@ -205,12 +204,12 @@ class RuleParser(object):
                 raise ValueError("Wrong range values")
             
             if range_[1] == "":
-                return(range(int(range_[0]), self.MAX_PORT+1), bool(~(local_bool ^ parent_bool)+2))
+                return(range(int(range_[0]), MAX_PORT+1), bool(~(local_bool ^ parent_bool)+2))
             elif range_[0] == "":
-                return(range(self.MIN_PORT, int(range_[1])+1), bool(~(local_bool ^ parent_bool)+2))
+                return(range(MIN_PORT, int(range_[1])+1), bool(~(local_bool ^ parent_bool)+2))
             
-            lower_bound = int(range_[0]) if int(range_[0]) > self.MIN_PORT else self.MIN_PORT
-            upper_bound = int(range_[1]) if int(range_[1]) < self.MAX_PORT else self.MAX_PORT
+            lower_bound = int(range_[0]) if int(range_[0]) > MIN_PORT else MIN_PORT
+            upper_bound = int(range_[1]) if int(range_[1]) < MAX_PORT else MAX_PORT
             return (range(lower_bound, upper_bound+1), bool(~(local_bool ^ parent_bool)+2))
         
         return (port, bool(~(local_bool ^ parent_bool)+2))
@@ -220,18 +219,18 @@ class RuleParser(object):
         for port, bool_ in ports:
             if isinstance(port, str):
                 if not self.dicts.port_variables(port) and not re.match(r"^\$+", port):
-                    if int(port) < self.MIN_PORT or int(port) > self.MAX_PORT:
-                        raise ValueError("Port is out of range %s" % port)
+                    if int(port) < MIN_PORT or int(port) > MAX_PORT:
+                        raise ValueError("Port is is outside TCP and UDP port range: ", port)
             elif isinstance(port, range):    
                if  port.start > port.stop:
-                   raise ValueError("Invalid port range %s" % port)
+                   raise ValueError("Invalid port range: ", port)
                
-               if (port.start < self.MIN_PORT or port.start > self.MAX_PORT+1) or (port.stop < self.MIN_PORT or port.stop > self.MAX_PORT+1):
-                    raise ValueError("Port is out of range %s" % port)
+               if (port.start < MIN_PORT or port.start > MAX_PORT+1) or (port.stop < MIN_PORT or port.stop > MAX_PORT+1):
+                    raise ValueError("Port range is outside TCP and UDP port range: ",  port)
                
         return True
               
-    # Validates the direction
+    # Parses the direction
     def __direction(self, direction):
         directions = {"->": "unidirectional",
                         "<>": "bidirectional"}
@@ -239,13 +238,14 @@ class RuleParser(object):
         if direction in directions:
             return directions[direction]
         else:
-            msg = "Invalid direction variable %s" % direction
-            raise ValueError(msg)
+            raise ValueError("Invalid direction variable ", direction)
+        
+
         
     ### OPTIONS PARSING FUNCTIONS ###
     # Parses the rule body or options, validates it and returns a dictionary
     def __parse_options(self, rule):
-            options_list, options_dict = self.__get_options(rule), {}
+            options_list, options_dict = self.__get_options_as_list(rule), {}
             current_buffer = ""
             for index, option_string in enumerate(options_list):
                 key, value = option_string, ""
@@ -255,12 +255,12 @@ class RuleParser(object):
                 if not self.dicts.verify_option(key)[1]:
                     raise ValueError("Unrecognized option: %s" % key)
 
-                if self.dicts.sticky_buffers(key): # Save the current buffer for the "content" and "pcre" keywords
+                if self.dicts.sticky_buffers(key): # Save the current buffer keyword for the "content" and "pcre" keywords
                     current_buffer = key
                 
                 # Adjust "content" and "pcre" option by checking the buffer, if it has the "!" operator, cleaning the content to match and fidings the modifiers
                 if key == "content" or key == "pcre":
-                    key, parsed_value = self.__get_content_and_pcre(key, value, current_buffer)
+                    key, parsed_value = self.__parse_content_and_pcre(key, value, current_buffer)
                 else:
                     value = value.split(",")
                     parsed_value = value[0] if len(value) == 1 else value
@@ -278,7 +278,7 @@ class RuleParser(object):
     
 
     # Turns the options string, i.e. "(<option>: <settings>; ... <option>: <settings>;)"), into a list of options
-    def __get_options(self, rule):
+    def __get_options_as_list(self, rule):
         options = "{}".format(rule.split('(', 1)[-1].lstrip().rstrip())
         if not options.endswith(")"):
             raise ValueError("Snort rule options is not closed properly, "
@@ -297,8 +297,8 @@ class RuleParser(object):
             last_char = char
         return op_list
 
-
-    def __get_content_and_pcre(self, key, value, current_buffer):
+    # Parses the "content" and "pcre" fields for the string to match and modifiers
+    def __parse_content_and_pcre(self, key, value, current_buffer):
         negate = re.search('^!', value)
         if negate:
             value = value[1:]
@@ -308,6 +308,8 @@ class RuleParser(object):
             modifiers = re_search.group(0)[1:] # Remove the first ','
             content = value[:re_search.span()[0]][1:-1]
             parsed_value = [0] # content ID
+            # if "http/" in content:
+            #     print(content)
         else:
             value = value[1:-1] # Remove '"'
             re_search = re.search('[\w ]*$', value)

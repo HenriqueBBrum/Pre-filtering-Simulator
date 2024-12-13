@@ -984,7 +984,7 @@ gtp_v2_info =
     { type = 123, name = "packet_flow_id", length = 0 },
     { type = 124, name = "rab_contex", length = 0 },
     { type = 125, name = "src_rnc_pdcp", length = 0 },
-    { type = 126, name = "udp_src_port", length = 0 },
+    { type = 126, name = "udp_sport", length = 0 },
     { type = 127, name = "apn_restriction", length = 0 },
     { type = 128, name = "selection_mode", length = 0 },
     { type = 129, name = "src_id", length = 0 },

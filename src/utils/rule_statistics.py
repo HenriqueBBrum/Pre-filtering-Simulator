@@ -11,8 +11,8 @@ class RuleStatistics:
         self.direction_stats = self.compute_direction_stats()
         self.src_stats = self.compute_src_stats()
         self.dst_stats = self.compute_dst_stats()
-        self.src_port_stats = self.compute_src_port_stats()
-        self.dst_port_stats = self.compute_dst_port_stats()
+        self.sport_stats = self.compute_sport_stats()
+        self.dport_stats = self.compute_dport_stats()
 
         self.negation_stats = self.compute_negation_stats(config)
 
@@ -34,12 +34,12 @@ class RuleStatistics:
         result = [str(rule.header.get('dst_ip')) for rule in self.rules]
         return Counter(result)
 
-    def compute_src_port_stats(self):
-        result = [str(rule.header.get('src_port')) for rule in self.rules]
+    def compute_sport_stats(self):
+        result = [str(rule.header.get('sport')) for rule in self.rules]
         return Counter(result)
 
-    def compute_dst_port_stats(self):
-        result = [str(rule.header.get('dst_port'))  for rule in self.rules]
+    def compute_dport_stats(self):
+        result = [str(rule.header.get('dport'))  for rule in self.rules]
         return Counter(result)
     
     # Negation counter should take into account config file?
@@ -59,9 +59,9 @@ class RuleStatistics:
         print("Top 10 src ip: ", dict(self.src_stats.most_common(10)))
         print("Top 10 dst ip: ", dict(self.dst_stats.most_common(10)))
         print()
-        print("Top 10 src port: ", dict(self.src_port_stats.most_common(10)))
+        print("Top 10 src port: ", dict(self.sport_stats.most_common(10)))
         print()
-        print("Top 10 dst port: ", dict(self.dst_port_stats.most_common(10)))
+        print("Top 10 dst port: ", dict(self.dport_stats.most_common(10)))
         print()
         print(self.priorities)
 

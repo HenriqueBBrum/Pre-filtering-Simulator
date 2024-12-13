@@ -42,8 +42,8 @@ class RuleToMatch(object):
         self.pkt_header_fields['src_ip'] = self.__convert_ip_list_to_radix_tree(self.pkt_header_fields['src_ip'])
         self.pkt_header_fields['dst_ip'] = self.__convert_ip_list_to_radix_tree(self.pkt_header_fields['dst_ip'])
 
-        self.pkt_header_fields['src_port'] = self.__turn_port_list_into_dict(self.pkt_header_fields['src_port'])
-        self.pkt_header_fields['dst_port'] = self.__turn_port_list_into_dict(self.pkt_header_fields['dst_port'])
+        self.pkt_header_fields['sport'] = self.__turn_port_list_into_dict(self.pkt_header_fields['sport'])
+        self.pkt_header_fields['dport'] = self.__turn_port_list_into_dict(self.pkt_header_fields['dport'])
 
         # Determine the data and comparator for the "ip_proto" keyword
         if "ip_proto" in self.pkt_header_fields:
