@@ -18,6 +18,7 @@ from .payload_matching import matched_payload
 from .packet_to_match import PacketToMatch
 
 import sys
+sys.tracebacklimit = 0
 sys.path.append("..")
 from utils.ports import SIP_PORTS,SMB_PORTS
 
@@ -36,9 +37,10 @@ def flow_sampling_simulation(sim_config, output_folder):
 
         start = time()
 
-        ip_pkt_count, suspicious_pkts, flow_tracker = sample_flows(pcap, sim_config["flow_count_threshold"], sim_config["time_threshold"])
+        ip_pkt_count, suspicious_pkts, flow_tracker, avg_pkt_processing_time = sample_flows(pcap, sim_config["flow_count_threshold"], sim_config["time_threshold"])
 
-        info[current_trace]["time_to_process"] = time() - start
+        info[current_trace]["total_time_to_process"] = time() - start
+        info[current_trace]["avg_time_pkt_process"] = avg_pkt_processing_time
         info[current_trace]["pkts_processed"] = ip_pkt_count
         info[current_trace]["number_of_flows"] = len(flow_tracker.keys())
         info[current_trace]["top_five_biggest_flows"] = [x[0] for x in sorted(list(flow_tracker.values()), key=lambda x: x[0], reverse=True)[:5]]
@@ -52,10 +54,12 @@ def flow_sampling_simulation(sim_config, output_folder):
 def sample_flows(pcap, flow_count_threshold, time_threshold):
     pkt_count, ip_pkt_count = 0, 0
     suspicious_pkts = []
+    time_to_process = []
     flow_tracker = {} # One entry is (current_count, last_pkt_time)
 
     for pkt in pcap:
         if IP in pkt:
+            start = time()
             proto = str(pkt[IP].proto)
             if TCP in pkt:
                 five_tuple = proto+pkt[IP].src+str(pkt[TCP].sport)+pkt[IP].dst+str(pkt[TCP].dport) # Bidirectional flows?
@@ -79,9 +83,10 @@ def sample_flows(pcap, flow_count_threshold, time_threshold):
                         suspicious_pkts.append((pkt_count, "within_flow_threhold"))
 
             ip_pkt_count+=1
+            time_to_process.append(time()-start)
         pkt_count+=1
 
-    return ip_pkt_count, suspicious_pkts, flow_tracker
+    return ip_pkt_count, suspicious_pkts, flow_tracker, sum(time_to_process)/len(time_to_process)
 
 
 
@@ -93,7 +98,10 @@ def pre_filtering_simulation(sim_config, rules, rules_info, output_folder):
     pcaps_path = sim_config["baseline_path"]+"pcaps/"
 
     for pcap_file in os.listdir(pcaps_path):
-        current_trace = pcap_file.split(".")[0] # Remove .pcap to get day
+        current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
+        if "Tuesday_mid" not in pcap_file:
+            continue
+        print(current_trace)
         info[current_trace] = {}
 
         start = time()
@@ -110,6 +118,7 @@ def pre_filtering_simulation(sim_config, rules, rules_info, output_folder):
         info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
         info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
+        print(json.dumps(info[current_trace], ensure_ascii=False, indent=4), flush=True)
     return info
  
 def process_with_threads(pcap, rules) :
@@ -132,7 +141,7 @@ def process_with_threads(pcap, rules) :
 
     return suspicious_pkts, sum(ip_pkt_count_list)
 
-# Compares a list of packets with rules
+# Find the suspicious packets
 def find_suspicious_packets(pkts, rules):
     suspicious_pkts = []
     time_to_process = []
@@ -140,52 +149,57 @@ def find_suspicious_packets(pkts, rules):
     ip_pkt_count = 0
     for pkt_count, pkt in enumerate(pkts):
         if IP in pkt:
-            matched = False 
             start = time()
-            if unsupported_protocols(pkt):
-                suspicious_pkts.append((pkt_count, "unsupported"))
-                matched = True
-            else:
-                pkt_to_match = PacketToMatch(pkt)
-                protocol, rules_to_compare = get_pkt_related_rules(pkt_to_match, rules)
-                for header_group in rules_to_compare:
-                    if matched:
-                        break
-                    try:
-                        if not matched_ip_and_port(pkt_to_match, rules_to_compare[header_group][0]): 
-                            continue
-                    
-                        # Matched the groups' ip and port header, compare with the other fields of each rule in this group
-                        for rule in rules_to_compare[header_group]:
-                            if not matched_header_fields(pkt_to_match, rule):
-                                continue
+            
+            suspicious_pkt, tcp_tracker = is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker)
+            if suspicious_pkt:
+                suspicious_pkts.append(suspicious_pkt)
 
-                            if not matched_payload(pkt_to_match, rule):
-                                continue
-                            
-                            suspicious_pkts.append((pkt_count, rule.sids()[0]))
-                            if TCP in pkt:
-                                flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
-                                if pkt_to_match.header["flags"] == "A":
-                                    tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"], "ack": pkt_to_match.header["ack"]}    
-                                elif pkt_to_match.header["flags"] == "PA":
-                                    tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"]+pkt_to_match.payload_size, "ack": pkt_to_match.header["ack"]}   
-
-                            matched = True  
-                            break
-                    except Exception as e:
-                        print("Exception: ", traceback.format_exc())
-                        suspicious_pkts.append((pkt_count, "error"))
-                        matched = True
-
-                if not matched and pkt_to_match.tcp_in_pkt:   
-                    suspicious_pkt, tcp_tracker = check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count)
-                    if suspicious_pkt:
-                        suspicious_pkts.append(suspicious_pkt)
-            time_to_process.append(time()-start)
             ip_pkt_count+=1
-
+            time_to_process.append(time()-start)
     return suspicious_pkts, ip_pkt_count, sum(time_to_process)/len(time_to_process)
+
+
+# Checks if a packet is suspicous, unsupported or is in a tcp stream
+def is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker):
+    suspicious_pkt = None
+    if unsupported_protocols(pkt):
+        suspicious_pkt = (pkt_count, "unsupported")
+    else:
+        pkt_to_match = PacketToMatch(pkt)
+        protocol, rules_to_compare = get_pkt_related_rules(pkt_to_match, rules)
+        for header_group in rules_to_compare:
+            if suspicious_pkt:
+                break
+            try:
+                if not matched_ip_and_port(pkt_to_match, rules_to_compare[header_group][0]): 
+                    continue
+            
+                # Matched the groups' ip and port header, compare with the other fields of each rule in this group
+                for rule in rules_to_compare[header_group]:
+                    if not matched_header_fields(pkt_to_match, rule):
+                        continue
+
+                    if not matched_payload(pkt_to_match, rule):
+                        continue
+                    
+                    suspicious_pkt = (pkt_count, rule.sids()[0])
+                    if TCP in pkt:
+                        flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
+                        if pkt_to_match.header["flags"] == "A":
+                            tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"], "ack": pkt_to_match.header["ack"]}    
+                        elif pkt_to_match.header["flags"] == "PA":
+                            tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"]+pkt_to_match.payload_size, "ack": pkt_to_match.header["ack"]}   
+
+                    break
+            except Exception as e:
+                print("Exception: ", traceback.format_exc())
+                suspicious_pkt = (pkt_count, "error")
+
+        if not suspicious_pkt and pkt_to_match.tcp_in_pkt:   
+            suspicious_pkt, tcp_tracker = check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count)
+    
+    return suspicious_pkt, tcp_tracker
 
 # CIP, IEC104 and S7Comm not here
 def unsupported_protocols(pkt):
@@ -320,6 +334,17 @@ def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folde
     #         counter[baseline_pkt_alerts[key]["rule"]]+=1
     #     else:
     #         counter[baseline_pkt_alerts[key]["rule"]]=1
+
+    # print("\n\n")
+    # print(counter)
+
+    # counter = {}
+    # for key in set(experiment_pkt_alerts.keys()) - set(baseline_pkt_alerts.keys()):
+    #     print(key, experiment_pkt_alerts[key]["rule"], experiment_pkt_alerts[key]["proto"], experiment_pkt_alerts[key]["src_ap"], experiment_pkt_alerts[key]["dst_ap"])
+    #     if experiment_pkt_alerts[key]["rule"] in counter:
+    #         counter[experiment_pkt_alerts[key]["rule"]]+=1
+    #     else:
+    #         counter[experiment_pkt_alerts[key]["rule"]]=1
 
     # print("\n\n")
     # print(counter)

@@ -39,7 +39,7 @@ def main(simulation_config_path, sim_results_folder):
         exit(1)
 
     info["total_execution_time"] = time() - start
-    with open(output_folder + "analysis.json", 'w') as f:
+    with open(output_folder + "analysis.json", 'a') as f:
         json.dump(info , f, ensure_ascii=False, indent=4)
 
 

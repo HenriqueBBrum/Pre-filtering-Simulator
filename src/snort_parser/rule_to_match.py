@@ -85,13 +85,13 @@ class RuleToMatch(object):
         if self.payload_fields:
             self.__adjust_payload_matching_fields(pre_filtering_scenario)
 
-    # Converts IP list to a radix tree for quick search
+    # Converts IP list to a radix tree for quick? search
     def __convert_ip_list_to_radix_tree(self, ips):
         must_match = None
         rtree = radix.Radix()
         for ip in ips:
             rnode = rtree.add(ip[0])
-            rnode.data["match"] = ip[1]
+            rnode.data["match"] = ip[1] # Should the pkt's IP actually match the rules?
 
             must_match = ip[1] if must_match == None else must_match | ip[1]
 
