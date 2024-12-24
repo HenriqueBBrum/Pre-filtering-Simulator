@@ -8,8 +8,6 @@ http_response_buffers = {"http_stat_code", "http_stat_msg", "file_data"}
 ## Compares the payload of packet against the payload-related fields of a rule
 # A "False" return value means the packet does not match the rule and is not suspicious acording to the rule
 def matched_payload(pkt_to_match, rule):
-    rule_proto = rule.pkt_header_fields["proto"].upper()
-
     # Compare the packet's payload size against the rule's desired (payload) size
     if "dsize" in rule.payload_fields and not compare_field(pkt_to_match.payload_size, rule.payload_fields["dsize"]["data"], \
                                                                                             rule.payload_fields["dsize"]["comparator"]):
@@ -20,7 +18,7 @@ def matched_payload(pkt_to_match, rule):
         return False
     
     # Compare packets that have payload with rules that have the "content" or "pcre" keywords
-    if "content_pcre" in rule.payload_fields and not __matched_content_pcre(pkt_to_match, rule_proto, rule.payload_fields["content_pcre"]):
+    if "content_pcre" in rule.payload_fields and not __matched_content_pcre(pkt_to_match, rule.payload_fields["content_pcre"]):
         return False
 
     return True
@@ -29,7 +27,7 @@ def matched_payload(pkt_to_match, rule):
 ## Compares "content" and "pcre" strings against the desired packet's buffer
 # Guarentees: Packet has payload and the rule has "content" or "pcre" fields
 
-def __matched_content_pcre(pkt_to_match, payload_proto, rule_content_pcre):
+def __matched_content_pcre(pkt_to_match, rule_content_pcre):
     position_dict = {}
     buffer, actual_buffer_name = "", ""
     position = 0

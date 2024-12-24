@@ -127,16 +127,19 @@ class RuleToMatch(object):
                 self.payload_fields["content_pcre"] = [self.payload_fields["content_pcre"]]
 
             content_pcre = []
+            fast_pattern_match = None
             for match_pos, match in self.payload_fields["content_pcre"]:
                 if match[0] == 0:
                     match_str = self.__clean_content(match[3], "nocase" in match[4] if match[4] else False)
-                    modifiers = self.__parse_content_modifiers(match[4])
+                    modifiers, fast_pattern = self.__parse_content_modifiers(match[4])
                     content_pcre.append((match[0], match[1], match[2], match_str, modifiers)) # type(0 = content, 1 = PCRE), buffer, negation, string, modifiers
+                    if fast_pattern:
+                        fast_pattern_match = content_pcre[-1]
                 else:
                     parsed_pcre_str, snort_only_modifiers = self.__parse_pcre_modifiers(match[3], match[4])
                     content_pcre.append((match[0], match[1], match[2], parsed_pcre_str, snort_only_modifiers))
 
-            temp_payload_fields["content_pcre"] = self.__apply_pre_filtering_scenario(content_pcre, pre_filtering_scenario)
+            temp_payload_fields["content_pcre"] = self.__apply_pre_filtering_scenario(content_pcre, fast_pattern_match, pre_filtering_scenario)
 
         self.payload_fields = temp_payload_fields
 
@@ -205,12 +208,14 @@ class RuleToMatch(object):
     # Parse content modifiers
     def __parse_content_modifiers(self, modifiers):
         modifiers_dict = None
+        fast_pattern = False
         if modifiers:
             modifiers_dict = {}
             for item in modifiers.split(","):
                 modifier_name = item
                 modifier_value = True
                 if item == "fast_pattern":
+                    fast_pattern = True
                     continue
 
                 if item != "nocase":
@@ -226,7 +231,7 @@ class RuleToMatch(object):
             if ("offset" in modifiers_dict or "depth" in modifiers_dict) and ("within" in modifiers_dict or "distance" in modifiers_dict):
                 raise ValueError("Modifiers are not correctly configured: ", modifiers_dict)
             
-        return modifiers_dict
+        return modifiers_dict, fast_pattern
         
     ## Add pcre modifiers to the pcre string since the re module can process them
     # Possible pcre modifiers as detailed by Snort: i,s,m,x,A,E,G,O,R
@@ -253,7 +258,7 @@ class RuleToMatch(object):
         return pcre_string, snort_only_modifiers
 
         
-    def __apply_pre_filtering_scenario(self, content_pcre, pre_filtering_scenario):
+    def __apply_pre_filtering_scenario(self, content_pcre, fast_pattern_match, pre_filtering_scenario):
         final_content_pcre = []
         if pre_filtering_scenario == "first":
             final_content_pcre = [content_pcre[0]]
@@ -269,6 +274,17 @@ class RuleToMatch(object):
             final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[-1]]
         elif pre_filtering_scenario =="first_second":
             final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[1]]
+        elif pre_filtering_scenario == "fast_pattern":
+            longest, size = None, 0   
+            if fast_pattern_match:
+                final_content_pcre = [fast_pattern_match] 
+            else:          
+                for content in content_pcre:
+                    if len(content[3]) > size:
+                        longest = content
+                        size = len(content[3])
+                        
+                final_content_pcre = [longest]
         else:
             final_content_pcre = content_pcre
 

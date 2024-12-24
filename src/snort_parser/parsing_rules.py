@@ -292,41 +292,22 @@ def __group_by_src_and_dst(groups):
 
 
 # Calculates the amount of bytes required by python to store the rules
-def __calculate_rules_size(rules):
-    total_header_size = 0
+def calculate_payload_size(rules):
     total_payload_size = 0
-    for rule in rules:
-        for key, header_field_value in rule.pkt_header_fields.items():
-            if key == "proto" or key == "ipopts":
-                total_header_size+=sys.getsizeof(header_field_value)
-            elif key == "src_ip" or key == "dst_ip":
-                for ip in header_field_value[0].prefixes():
-                    total_header_size+=sys.getsizeof(ip)
-            elif key == "sport" or key == "dport":
-                for port in header_field_value[0]:
-                    total_header_size+=sys.getsizeof(port)
+    for protocol_key in rules:
+        for header_group in rules[protocol_key]:
+            for rule in rules[protocol_key][header_group]:
+                if "content_pcre" in rule.payload_fields:
+                    for content_pcre in rule.payload_fields["content_pcre"]:
+                        if content_pcre:
+                            total_payload_size+=sys.getsizeof(content_pcre[1]) # Buffer name
+                            total_payload_size+=sys.getsizeof(content_pcre[3]) # Content or pcre string
+                            if content_pcre[4]:
+                                if type(content_pcre[4]) is str:
+                                    total_payload_size+=sys.getsizeof(content_pcre[4])
+                                else:
+                                    for modifier in content_pcre[4]:
+                                        total_payload_size+=sys.getsizeof(modifier)
 
-                for port_range in header_field_value[1]:
-                    total_header_size+=sys.getsizeof(port_range[0])
-                    total_header_size+=sys.getsizeof(port_range[-1])
-            else:
-                total_header_size+=sys.getsizeof(header_field_value["data"])+sys.getsizeof(header_field_value["comparator"])
-                if key == "flags":
-                    total_header_size+=sys.getsizeof(header_field_value["exclude"])
 
-        for key, payload_value in rule.payload_fields.items():
-            if key == "dsize":
-                total_payload_size+=sys.getsizeof(payload_value["data"])+sys.getsizeof(payload_value["comparator"])
-            else:
-                for content_pcre in payload_value:
-                    if content_pcre:
-                        total_payload_size+=sys.getsizeof(content_pcre[1]) # Buffer name
-                        total_payload_size+=sys.getsizeof(content_pcre[3]) # Content or pcre string
-                        if content_pcre[4]:
-                            if type(content_pcre[4]) is str:
-                                total_payload_size+=sys.getsizeof(content_pcre[4])
-                            else:
-                                for modifier in content_pcre[4]:
-                                    total_payload_size+=sys.getsizeof(modifier)
-
-    return {"header_size": total_header_size/1000000, "payload_size": total_payload_size/1000000, "total_size":(total_header_size+total_payload_size)/1000000}
+    return total_payload_size/1000000

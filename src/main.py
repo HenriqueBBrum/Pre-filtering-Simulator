@@ -4,7 +4,7 @@ import json
 import os
 
 from snort_parser.config_parser import SnortConfiguration
-from snort_parser.parsing_rules import parse_rules
+from snort_parser.parsing_rules import parse_rules, calculate_payload_size
 from simulator.simulation import pre_filtering_simulation, flow_sampling_simulation
 
 def main(simulation_config_path, sim_results_folder):
@@ -20,7 +20,8 @@ def main(simulation_config_path, sim_results_folder):
         print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
         groupped_rules, info["number_of_rules"] = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
         info["time_to_process_rules"] = time()-start
-
+        info["payload_size_MB"] = calculate_payload_size(groupped_rules)
+        
         print("PRE-FILTERING SIMULATION")
         output_folder = sim_results_folder+"pre_filtering_"+simulation_config["scenario"]+"/"
         if not os.path.exists(output_folder):
@@ -37,6 +38,8 @@ def main(simulation_config_path, sim_results_folder):
     else:
         print("Wrong simulation type")
         exit(1)
+
+    json.dump(info, sys.stdout, indent=4)
 
     info["total_execution_time"] = time() - start
     with open(output_folder + "analysis.json", 'a') as f:

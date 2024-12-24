@@ -90,8 +90,6 @@ def sample_flows(pcap, flow_count_threshold, time_threshold):
 
 
 
-
-
 # Simulate the pre-filtering of packets based on signature rules]
 def pre_filtering_simulation(sim_config, rules, rules_info, output_folder):
     info = rules_info | {"type": "pre_filtering"}
@@ -99,8 +97,7 @@ def pre_filtering_simulation(sim_config, rules, rules_info, output_folder):
 
     for pcap_file in os.listdir(pcaps_path):
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
-        if "Tuesday_mid" not in pcap_file:
-            continue
+
         print(current_trace)
         info[current_trace] = {}
 
@@ -118,40 +115,20 @@ def pre_filtering_simulation(sim_config, rules, rules_info, output_folder):
         info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
         info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
-        print(json.dumps(info[current_trace], ensure_ascii=False, indent=4), flush=True)
     return info
- 
-def process_with_threads(pcap, rules) :
-    suspicious_pkts, ip_pkt_count_list = Manager().list(), Manager().list() 
-    tcp_tracker = Manager().dict()
-    processes = []
-    num_processes = cpu_count() # Use the cpu_count as the number of processes
-    share = round(len(pcap)/num_processes)
-
-    # for i in range(num_processes):
-    #     pkts_sublist = pcap[i*share:(i+1)*share + int(i == (num_processes - 1))*-1*(num_processes*share - len(pcap))]  # Send a batch of packets for each processor
-    #     process = Process(target=find_suspicious_packets, args=(pkts_sublist, rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, i*share))
-    #     process.start()
-    #     processes.append(process)
-
-    # for process in processes:
-    #     process.join()
-
-    find_suspicious_packets(pcap, rules, suspicious_pkts, ip_pkt_count_list, tcp_tracker, 0)
-
-    return suspicious_pkts, sum(ip_pkt_count_list)
 
 # Find the suspicious packets
 def find_suspicious_packets(pkts, rules):
     suspicious_pkts = []
     time_to_process = []
     tcp_tracker = {}
+    ftp_tracker = set()
     ip_pkt_count = 0
     for pkt_count, pkt in enumerate(pkts):
         if IP in pkt:
             start = time()
             
-            suspicious_pkt, tcp_tracker = is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker)
+            suspicious_pkt, tcp_tracker, ftp_tracker = is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker, ftp_tracker)
             if suspicious_pkt:
                 suspicious_pkts.append(suspicious_pkt)
 
@@ -161,7 +138,7 @@ def find_suspicious_packets(pkts, rules):
 
 
 # Checks if a packet is suspicous, unsupported or is in a tcp stream
-def is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker):
+def is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker, ftp_tracker):
     suspicious_pkt = None
     if unsupported_protocols(pkt):
         suspicious_pkt = (pkt_count, "unsupported")
@@ -184,22 +161,28 @@ def is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker):
                         continue
                     
                     suspicious_pkt = (pkt_count, rule.sids()[0])
-                    if TCP in pkt:
-                        flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
-                        if pkt_to_match.header["flags"] == "A":
-                            tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"], "ack": pkt_to_match.header["ack"]}    
-                        elif pkt_to_match.header["flags"] == "PA":
-                            tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"]+pkt_to_match.payload_size, "ack": pkt_to_match.header["ack"]}   
+                    # if TCP in pkt:
+                    #     flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
+                    #     if pkt_to_match.header["flags"] == "A":
+                    #         tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"], "ack": pkt_to_match.header["ack"]}    
+                    #     elif pkt_to_match.header["flags"] == "PA":
+                    #         tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"]+pkt_to_match.payload_size, "ack": pkt_to_match.header["ack"]}   
 
                     break
             except Exception as e:
                 print("Exception: ", traceback.format_exc())
                 suspicious_pkt = (pkt_count, "error")
 
-        if not suspicious_pkt and pkt_to_match.tcp_in_pkt:   
-            suspicious_pkt, tcp_tracker = check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count)
+        # if not suspicious_pkt and pkt_to_match.tcp_in_pkt: 
+        #     if "ftp" not in protocol:  
+        #         suspicious_pkt, tcp_tracker = check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count)
+        #     else:
+        #         flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
+        #         if "ftp" in protocol and  flow not in ftp_tracker and "pass " in pkt_to_match.payload_buffers["nocase"]["pkt_data"]:
+        #             suspicious_pkt = (pkt_count, "ftp")
+        #             ftp_tracker.add(flow)
     
-    return suspicious_pkt, tcp_tracker
+    return suspicious_pkt, tcp_tracker, ftp_tracker
 
 # CIP, IEC104 and S7Comm not here
 def unsupported_protocols(pkt):
