@@ -40,7 +40,7 @@ def flow_sampling_simulation(sim_config, output_folder):
         ip_pkt_count, suspicious_pkts, flow_tracker, avg_pkt_processing_time = sample_flows(pcap, sim_config["flow_count_threshold"], sim_config["time_threshold"])
 
         info[current_trace]["total_time_to_process"] = time() - start
-        info[current_trace]["avg_time_pkt_process"] = avg_pkt_processing_time
+        info[current_trace]["avg_pkt_processing_time"] = avg_pkt_processing_time
         info[current_trace]["pkts_processed"] = ip_pkt_count
         info[current_trace]["number_of_flows"] = len(flow_tracker.keys())
         info[current_trace]["top_five_biggest_flows"] = [x[0] for x in sorted(list(flow_tracker.values()), key=lambda x: x[0], reverse=True)[:5]]
@@ -110,7 +110,7 @@ def pre_filtering_simulation(sim_config, rules, rules_info, output_folder):
         suspicious_pkts, ip_pkt_count, avg_pkt_processing_time = find_suspicious_packets(pkts, rules)
       
         info[current_trace]["total_time_to_process"] = time() - start
-        info[current_trace]["avg_time_pkt_process"] = avg_pkt_processing_time
+        info[current_trace]["avg_pkt_processing_time"] = avg_pkt_processing_time
         info[current_trace]["pkts_processed"] = ip_pkt_count
         info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
