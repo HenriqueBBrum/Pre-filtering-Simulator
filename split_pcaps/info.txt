@@ -1,0 +1,4 @@
+The original PCAPs are divided into three pcaps:
+- "*start" are the first 200000 packets
+- "*mid" are the middle 200000 packets
+- "*end" are the final 200000 packets

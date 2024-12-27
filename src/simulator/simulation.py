@@ -18,7 +18,7 @@ from .payload_matching import matched_payload
 from .packet_to_match import PacketToMatch
 
 import sys
-sys.tracebacklimit = 0
+#sys.tracebacklimit = 0
 sys.path.append("..")
 from utils.ports import SIP_PORTS,SMB_PORTS
 
@@ -26,24 +26,17 @@ from utils.ports import SIP_PORTS,SMB_PORTS
 def flow_sampling_simulation(sim_config, output_folder):
     info = {"type": "flow_sampling"}
 
-    pcaps_path = sim_config["baseline_path"]+"pcaps/"
+    pcaps_path = sim_config["pcaps_path"]
     for pcap_file in os.listdir(pcaps_path):
         current_trace = pcap_file.split(".")[0] # Remove .pcap to get day
         info[current_trace] = {}
+    
         start = time()
-        pcap = rdpcap(pcaps_path+pcap_file)
-        info[current_trace]["pcap_size"] = len(pcap)
-        info[current_trace]["time_to_read"] = time() - start
-
-        start = time()
-
-        ip_pkt_count, suspicious_pkts, flow_tracker, avg_pkt_processing_time = sample_flows(pcap, sim_config["flow_count_threshold"], sim_config["time_threshold"])
+        suspicious_pkts, temp_info = sample_flows(pcaps_path+pcap_file, sim_config["flow_count_threshold"], sim_config["time_threshold"])
 
         info[current_trace]["total_time_to_process"] = time() - start
-        info[current_trace]["avg_pkt_processing_time"] = avg_pkt_processing_time
-        info[current_trace]["pkts_processed"] = ip_pkt_count
-        info[current_trace]["number_of_flows"] = len(flow_tracker.keys())
-        info[current_trace]["top_five_biggest_flows"] = [x[0] for x in sorted(list(flow_tracker.values()), key=lambda x: x[0], reverse=True)[:5]]
+        info[current_trace].update(temp_info)
+        
         info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
 
@@ -51,13 +44,13 @@ def flow_sampling_simulation(sim_config, output_folder):
     return info
 
 # Run the flow sampling method over the packets in the PCAP
-def sample_flows(pcap, flow_count_threshold, time_threshold):
+def sample_flows(pcap_file, flow_count_threshold, time_threshold):
     pkt_count, ip_pkt_count = 0, 0
     suspicious_pkts = []
     time_to_process = []
     flow_tracker = {} # One entry is (current_count, last_pkt_time)
 
-    for pkt in pcap:
+    for pkt in PcapReader(pcap_file):
         if IP in pkt:
             start = time()
             proto = str(pkt[IP].proto)
@@ -72,9 +65,8 @@ def sample_flows(pcap, flow_count_threshold, time_threshold):
                 flow_tracker[five_tuple] = (1, pkt.time)
                 suspicious_pkts.append((pkt_count, "first_time"))
             else:
-                current_pkt_time = pkt.time
                 last_pkt_time = flow_tracker[five_tuple][1]
-                if current_pkt_time-last_pkt_time >= time_threshold:
+                if pkt.time-last_pkt_time >= time_threshold:
                     flow_tracker[five_tuple] = (1, pkt.time)
                     suspicious_pkts.append((pkt_count, "time_reset"))
                 else:
@@ -86,7 +78,14 @@ def sample_flows(pcap, flow_count_threshold, time_threshold):
             time_to_process.append(time()-start)
         pkt_count+=1
 
-    return ip_pkt_count, suspicious_pkts, flow_tracker, sum(time_to_process)/len(time_to_process)
+    info = {}
+
+    info["pcap_size"] = pkt_count
+    info["avg_pkt_processing_time"] = sum(time_to_process)/len(time_to_process)
+    info["pkts_processed"] = ip_pkt_count
+    info["number_of_flows"] = len(flow_tracker.keys())
+    info["top_five_biggest_flows"] = [x[0] for x in sorted(list(flow_tracker.values()), key=lambda x: x[0], reverse=True)[:5]]
+    return suspicious_pkts, info
 
 
 
@@ -97,34 +96,28 @@ def pre_filtering_simulation(sim_config, rules, rules_info, output_folder):
 
     for pcap_file in os.listdir(pcaps_path):
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
-
         print(current_trace)
         info[current_trace] = {}
 
         start = time()
-        pkts = rdpcap(pcaps_path+pcap_file)
-        info[current_trace]["time_to_read_pcap"] = time() - start
-        info[current_trace]["pcap_size"] = len(pkts)
-
-        start = time()
-        suspicious_pkts, ip_pkt_count, avg_pkt_processing_time = find_suspicious_packets(pkts, rules)
+        suspicious_pkts, temp_info = find_suspicious_packets(pcaps_path+pcap_file, rules)
       
         info[current_trace]["total_time_to_process"] = time() - start
-        info[current_trace]["avg_pkt_processing_time"] = avg_pkt_processing_time
-        info[current_trace]["pkts_processed"] = ip_pkt_count
+        info[current_trace].update(temp_info)
+
         info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
         info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
     return info
 
 # Find the suspicious packets
-def find_suspicious_packets(pkts, rules):
+def find_suspicious_packets(pcap_file, rules):
     suspicious_pkts = []
     time_to_process = []
     tcp_tracker = {}
     ftp_tracker = set()
-    ip_pkt_count = 0
-    for pkt_count, pkt in enumerate(pkts):
+    pkt_count, ip_pkt_count = 0, 0
+    for pkt in PcapReader(pcap_file):
         if IP in pkt:
             start = time()
             
@@ -134,7 +127,14 @@ def find_suspicious_packets(pkts, rules):
 
             ip_pkt_count+=1
             time_to_process.append(time()-start)
-    return suspicious_pkts, ip_pkt_count, sum(time_to_process)/len(time_to_process)
+
+    info = {}
+
+    info["pcap_size"] = pkt_count
+    info["avg_pkt_processing_time"] = sum(time_to_process)/len(time_to_process)
+    info["pkts_processed"] = ip_pkt_count
+    
+    return suspicious_pkts, info
 
 
 # Checks if a packet is suspicous, unsupported or is in a tcp stream
@@ -161,26 +161,26 @@ def is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker, ftp_tracker):
                         continue
                     
                     suspicious_pkt = (pkt_count, rule.sids()[0])
-                    # if TCP in pkt:
-                    #     flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
-                    #     if pkt_to_match.header["flags"] == "A":
-                    #         tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"], "ack": pkt_to_match.header["ack"]}    
-                    #     elif pkt_to_match.header["flags"] == "PA":
-                    #         tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"]+pkt_to_match.payload_size, "ack": pkt_to_match.header["ack"]}   
+                    if TCP in pkt:
+                        flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
+                        if pkt_to_match.header["flags"] == "A":
+                            tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"], "ack": pkt_to_match.header["ack"]}    
+                        elif pkt_to_match.header["flags"] == "PA":
+                            tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"]+pkt_to_match.payload_size, "ack": pkt_to_match.header["ack"]}   
 
                     break
             except Exception as e:
                 print("Exception: ", traceback.format_exc())
                 suspicious_pkt = (pkt_count, "error")
 
-        # if not suspicious_pkt and pkt_to_match.tcp_in_pkt: 
-        #     if "ftp" not in protocol:  
-        #         suspicious_pkt, tcp_tracker = check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count)
-        #     else:
-        #         flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
-        #         if "ftp" in protocol and  flow not in ftp_tracker and "pass " in pkt_to_match.payload_buffers["nocase"]["pkt_data"]:
-        #             suspicious_pkt = (pkt_count, "ftp")
-        #             ftp_tracker.add(flow)
+        if not suspicious_pkt and pkt_to_match.tcp_in_pkt: 
+            if "ftp" not in protocol:  
+                suspicious_pkt, tcp_tracker = check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count)
+            else:
+                flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
+                if "ftp" in protocol and  flow not in ftp_tracker and "pass " in pkt_to_match.payload_buffers["nocase"]["pkt_data"]:
+                    suspicious_pkt = (pkt_count, "ftp")
+                    ftp_tracker.add(flow)
     
     return suspicious_pkt, tcp_tracker, ftp_tracker
 
@@ -287,13 +287,13 @@ def check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count):
 
 
 def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info): 
-    baseline_pcap = sim_config["baseline_path"]+"pcaps/"+current_trace+".pcap"
+    baseline_pcap = sim_config["pcaps_path"]+current_trace+".pcap"
 
     suspicious_pkts_pcap = get_suspicious_pkts_pcap(baseline_pcap, suspicious_pkts, output_folder, current_trace)
     suspicious_pkts_alert_file, snort_processing_time = snort_with_suspicious_pcap(suspicious_pkts_pcap, sim_config["snort_config_file"], sim_config["ruleset_path"], output_folder, current_trace)
     info[current_trace]["snort_processing_time"] = snort_processing_time
 
-    baseline_pkt_alerts, baseline_flow_alerts = parse_alerts(sim_config["baseline_path"]+"alerts_registered/"+current_trace+".txt") # Baseline alerts
+    baseline_pkt_alerts, baseline_flow_alerts = parse_alerts(sim_config["baseline_alerts_path"]+current_trace+".txt") # Baseline alerts
     experiment_pkt_alerts, experiment_flow_alerts = parse_alerts(suspicious_pkts_alert_file)
 
     # Alert metrics for individual packets
