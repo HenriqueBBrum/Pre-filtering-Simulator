@@ -92,9 +92,12 @@ def sample_flows(pcap_file, flow_count_threshold, time_threshold):
 # Simulate the pre-filtering of packets based on signature rules]
 def pre_filtering_simulation(sim_config, rules, rules_info, output_folder):
     info = rules_info | {"type": "pre_filtering"}
-    pcaps_path = sim_config["baseline_path"]+"pcaps/"
+    pcaps_path = sim_config["pcaps_path"]
 
     for pcap_file in os.listdir(pcaps_path):
+        # if "Wednesday" not in pcap_file:
+        #     continue
+        
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
         print(current_trace)
         info[current_trace] = {}
@@ -108,6 +111,7 @@ def pre_filtering_simulation(sim_config, rules, rules_info, output_folder):
         info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
         info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
+        print(json.dump(info , sys.stdout, ensure_ascii=False, indent=4))
     return info
 
 # Find the suspicious packets
@@ -120,13 +124,14 @@ def find_suspicious_packets(pcap_file, rules):
     for pkt in PcapReader(pcap_file):
         if IP in pkt:
             start = time()
-            
+           
             suspicious_pkt, tcp_tracker, ftp_tracker = is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker, ftp_tracker)
             if suspicious_pkt:
                 suspicious_pkts.append(suspicious_pkt)
 
             ip_pkt_count+=1
             time_to_process.append(time()-start)
+        pkt_count+=1
 
     info = {}
 
@@ -173,14 +178,14 @@ def is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker, ftp_tracker):
                 print("Exception: ", traceback.format_exc())
                 suspicious_pkt = (pkt_count, "error")
 
-        if not suspicious_pkt and pkt_to_match.tcp_in_pkt: 
-            if "ftp" not in protocol:  
-                suspicious_pkt, tcp_tracker = check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count)
-            else:
-                flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
-                if "ftp" in protocol and  flow not in ftp_tracker and "pass " in pkt_to_match.payload_buffers["nocase"]["pkt_data"]:
-                    suspicious_pkt = (pkt_count, "ftp")
-                    ftp_tracker.add(flow)
+            if not suspicious_pkt and pkt_to_match.tcp_in_pkt: 
+                if "ftp" not in protocol:  
+                    suspicious_pkt, tcp_tracker = check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count)
+                else:
+                    flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
+                    if "ftp" in protocol and flow not in ftp_tracker and "pass " in pkt_to_match.payload_buffers["nocase"]["pkt_data"]:
+                        suspicious_pkt = (pkt_count, "ftp")
+                        ftp_tracker.add(flow)
     
     return suspicious_pkt, tcp_tracker, ftp_tracker
 
@@ -264,24 +269,34 @@ def check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count):
     stream_tcp = False
     if flow in tcp_tracker and pkt_to_match.header["flags"] == "A" and pkt_to_match.header["seq"] == tcp_tracker[flow]["seq"]:
         stream_tcp = True
-    elif flow in tcp_tracker and pkt_to_match.header["flags"]  == "PA" and pkt_to_match.header["ack"] == tcp_tracker[flow]["ack"]:
+    elif flow in tcp_tracker and "PA" in pkt_to_match.header["flags"] and pkt_to_match.header["ack"] == tcp_tracker[flow]["ack"]:
         stream_tcp = True
     elif reversed_flow in tcp_tracker and pkt_to_match.header["flags"]  == "A" and pkt_to_match.header["seq"] == tcp_tracker[reversed_flow]["ack"]:
         stream_tcp = True
-    elif reversed_flow in tcp_tracker and pkt_to_match.header["flags"]  == "PA" and pkt_to_match.header["ack"] == tcp_tracker[reversed_flow]["seq"]:
+    elif reversed_flow in tcp_tracker and "PA" in pkt_to_match.header["flags"] and pkt_to_match.header["ack"] == tcp_tracker[reversed_flow]["seq"]:
         stream_tcp = True
+
+    if flow in tcp_tracker or reversed_flow in tcp_tracker:
+        if "R" in pkt_to_match.header["flags"]:
+            stream_tcp = True
+        elif "F" in pkt_to_match.header["flags"] :
+            stream_tcp = True
+            tcp_tracker = remove_flow(tcp_tracker, flow, reversed_flow)
 
     if stream_tcp:
         suspicious_pkt = (pkt_count, "stream_tcp")
     else:
-        if flow in tcp_tracker:
-            tcp_tracker.pop(flow)
-        elif reversed_flow in tcp_tracker:
-            tcp_tracker.pop(reversed_flow)
+        tcp_tracker = remove_flow(tcp_tracker, flow, reversed_flow)
 
     return suspicious_pkt, tcp_tracker
 
+def remove_flow(tcp_tracker, flow, reversed_flow):
+    if flow in tcp_tracker:
+        tcp_tracker.pop(flow)
+    elif reversed_flow in tcp_tracker:
+        tcp_tracker.pop(reversed_flow)
 
+    return tcp_tracker
 
 
 
@@ -332,7 +347,7 @@ def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folde
     # print("\n\n")
     # print(counter)
 
-    os.remove(suspicious_pkts_pcap)
+    #os.remove(suspicious_pkts_pcap)
     return info
 
 # Generate a PCAP with the suspicious pkts to find the alerts

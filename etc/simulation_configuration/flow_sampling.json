@@ -4,6 +4,6 @@
     "baseline_alerts_path":"etc/alerts/full_pcap/",
     "snort_config_file": "etc/snort_configuration/snort.lua",
     "ruleset_path":"etc/rules/snort3-registered/",
-    "flow_count_threshold":3,
-    "time_threshold":20
+    "flow_count_threshold":5,
+    "time_threshold":100
 }
