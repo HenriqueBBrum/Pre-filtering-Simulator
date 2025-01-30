@@ -5,8 +5,7 @@ import matplotlib.ticker as mtick
 # Load data from a CSV file
 data_file = 'results.csv'
 data = pd.read_csv(data_file)
-#print(data)
-df = data[data['experiment'].isin(["FS N=5 T=100", "FS N=10 T=10", "Wang and Chang", "Our work"])]
+df = data[data['experiment'].isin(["FS N=5 T=100s", "FS N=10 T=10s", "Wang and Chang", "Our work"])]
 
 metrics_name = [("suspicious_pkts_percent", "Packets forwarded to NIDS", "% of packets forwarded"), 
                 ("pkt_alerts_true_positives_percent", "Alerts correctly identified", "% of alerts correctly identified"),

@@ -276,12 +276,11 @@ def check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count):
     elif reversed_flow in tcp_tracker and "PA" in pkt_to_match.header["flags"] and pkt_to_match.header["ack"] == tcp_tracker[reversed_flow]["seq"]:
         stream_tcp = True
 
-    if flow in tcp_tracker or reversed_flow in tcp_tracker:
-        if "R" in pkt_to_match.header["flags"]:
-            stream_tcp = True
-        elif "F" in pkt_to_match.header["flags"] :
-            stream_tcp = True
-            tcp_tracker = remove_flow(tcp_tracker, flow, reversed_flow)
+    if "R" in pkt_to_match.header["flags"]:
+        stream_tcp = True
+    elif "F" in pkt_to_match.header["flags"] :
+        stream_tcp = True
+        tcp_tracker = remove_flow(tcp_tracker, flow, reversed_flow)
 
     if stream_tcp:
         suspicious_pkt = (pkt_count, "stream_tcp")
