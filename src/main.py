@@ -3,8 +3,8 @@ import sys
 import json
 import os
 
-from snort_parser.config_parser import SnortConfiguration
-from snort_parser.parsing_rules import parse_rules, calculate_payload_size
+from nids_parser.config_parser import NIDSConfiguration
+from nids_parser.parsing_rules import parse_rules, calculate_payload_size
 from simulator.simulation import pre_filtering_simulation, flow_sampling_simulation
 
 def main(simulation_config_path, sim_results_folder):
@@ -15,9 +15,9 @@ def main(simulation_config_path, sim_results_folder):
     start = time()
     if simulation_config["type"] == "pre_filtering":
         start = time()
-        config = SnortConfiguration(snort_version=2, configuration_dir=simulation_config["snort_config_path"])
+        config = NIDSConfiguration(configuration_dir=simulation_config["nids_config_path"])
         print("*" * 80)
-        print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
+        print("*" * 26 + " NIDS RULES PARSING STAGE " + "*" * 27+ "\n\n")
         groupped_rules, info["number_of_rules"] = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
         info["time_to_process_rules"] = time()-start
         info["payload_size_MB"] = calculate_payload_size(groupped_rules)

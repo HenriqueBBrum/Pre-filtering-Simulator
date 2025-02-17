@@ -2,8 +2,9 @@
     "type": "pre_filtering",
     "pcaps_path":"/home/hbeckerbrum/NFSDatasets/CICIDS2017/",
     "baseline_alerts_path":"etc/alerts/full_pcap/",
-    "snort_config_file": "etc/snort_configuration/snort.lua",
-    "snort_config_path": "etc/snort_configuration/",
+    "nids_config_path": "etc/nids_configuration/",
+    "nids_name": "snort",
+    "snort_or_suricata_config_path": "etc/nids_configuration/snort_configuration/snort.lua",
     "ruleset_path":"etc/rules/snort3-registered/",
     "scenario":"full_last"
 }
