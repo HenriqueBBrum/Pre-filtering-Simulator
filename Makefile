@@ -9,5 +9,5 @@ simulation.pre_filtering:
 simulation.flow_sampling:
 	python3 src/main.py ${FLOW_SAMPLING_CONFIG}
 
-clean:
-	-rm -r simulation_results/*
+# clean:
+# 	-rm -r simulation_results/*

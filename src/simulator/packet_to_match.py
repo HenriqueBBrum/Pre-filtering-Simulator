@@ -14,7 +14,7 @@ class PacketToMatch(object):
         self.http_res_in_pkt = HTTPResponse in pkt
         self.http_req_in_pkt = HTTPRequest in pkt
 
-        self.__get_header_fields(pkt) 
+        self.header = self.__get_header_fields(pkt) 
         transport_layer_name = pkt[IP].getlayer(1).name if pkt[IP].getlayer(1) else None
         if transport_layer_name:
             self.payload_size = len(pkt[transport_layer_name].payload)
@@ -25,25 +25,26 @@ class PacketToMatch(object):
 
     # Put the pkt header fields in a dict for quick checking
     def __get_header_fields(self, pkt):
-        self.header = {"src_ip": pkt[IP].src, "dst_ip": pkt[IP].dst, "ttl": pkt[IP].ttl, "id": pkt[IP].id, \
+        header = {"src_ip": pkt[IP].src, "dst_ip": pkt[IP].dst, "ttl": pkt[IP].ttl, "id": pkt[IP].id, \
                         "ipopts": pkt[IP].options, "fragbits": pkt[IP].flags, "ip_proto": pkt[IP].proto}
         
         if self.icmp_in_pkt:
-            self.header["itype"] = pkt[ICMP].type
-            self.header["icode"] = pkt[ICMP].code
-            self.header["icmp_id"] = pkt[ICMP].id
-            self.header["icmp_seq"] = pkt[ICMP].seq
+            header["itype"] = pkt[ICMP].type
+            header["icode"] = pkt[ICMP].code
+            header["icmp_id"] = pkt[ICMP].id
+            header["icmp_seq"] = pkt[ICMP].seq
         elif self.tcp_in_pkt:
-            self.header["sport"] = pkt[TCP].sport
-            self.header["dport"] = pkt[TCP].dport
-            self.header["flags"] = pkt[TCP].flags
-            self.header["seq"] = pkt[TCP].seq
-            self.header["ack"] = pkt[TCP].ack
-            self.header["window"] = pkt[TCP].window
+            header["sport"] = pkt[TCP].sport
+            header["dport"] = pkt[TCP].dport
+            header["flags"] = pkt[TCP].flags
+            header["seq"] = pkt[TCP].seq
+            header["ack"] = pkt[TCP].ack
+            header["window"] = pkt[TCP].window
         elif self.udp_in_pkt:
-            self.header["sport"] = pkt[UDP].sport
-            self.header["dport"] = pkt[UDP].dport
+            header["sport"] = pkt[UDP].sport
+            header["dport"] = pkt[UDP].dport
 
+        return header
 
     ## Returns the Snort buffers of a packet
     # Buffers not supported include: "json_data", "vba_data", "base64_data"

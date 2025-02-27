@@ -4,7 +4,7 @@ import json
 import os
 
 from nids_parser.config_parser import NIDSConfiguration
-from nids_parser.parsing_rules import parse_rules, calculate_payload_size
+from nids_parser.rules_to_match import convert_rules_to_matches
 from simulator.simulation import pre_filtering_simulation, flow_sampling_simulation
 
 def main(simulation_config_path, sim_results_folder):
@@ -15,19 +15,19 @@ def main(simulation_config_path, sim_results_folder):
     start = time()
     if simulation_config["type"] == "pre_filtering":
         start = time()
-        config = NIDSConfiguration(configuration_dir=simulation_config["nids_config_path"])
+        nids_config = NIDSConfiguration(configuration_dir=simulation_config["nids_config_path"])
         print("*" * 80)
         print("*" * 26 + " NIDS RULES PARSING STAGE " + "*" * 27+ "\n\n")
-        groupped_rules, info["number_of_rules"] = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
+        matches, info["number_of_rules"] = convert_rules_to_matches(simulation_config, nids_config)
         info["time_to_process_rules"] = time()-start
-        info["payload_size_MB"] = calculate_payload_size(groupped_rules)
+        info["payload_size_MB"] = calculate_payload_size(matches)
         
         print("PRE-FILTERING SIMULATION")
         output_folder = sim_results_folder+"pre_filtering_"+simulation_config["scenario"]+"/"
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        info = pre_filtering_simulation(simulation_config, groupped_rules, info, output_folder)
+        info = pre_filtering_simulation(simulation_config, matches, info, output_folder)
     elif simulation_config["type"] == "flow_sampling":
         print("FLOW SAMPLING SIMULATION")
         output_folder = sim_results_folder+"flow_sampling_"+str(simulation_config["flow_count_threshold"])+"_"+str(simulation_config["time_threshold"])+"/"
@@ -44,6 +44,39 @@ def main(simulation_config_path, sim_results_folder):
     info["total_execution_time"] = time() - start
     with open(output_folder + "analysis.json", 'a') as f:
         json.dump(info , f, ensure_ascii=False, indent=4)
+
+
+
+# Calculates the amount of bytes required by python to store the rules
+def calculate_payload_size(matches):
+
+    def get_size(content):
+        match_size=sys.getsizeof(content[0]) # Buffer name
+        match_size+=sys.getsizeof(content[2]) # Content string
+        if content[3]: # Modifiers
+            if type(content[3]) is str:
+                match_size+=sys.getsizeof(content[3])
+            else:
+                for modifier in content[3]:
+                    match_size+=sys.getsizeof(modifier)
+
+        return match_size
+
+
+    total_payload_size = 0
+    for protocol_key in matches:
+        for header_group in matches[protocol_key]:
+            for match in matches[protocol_key][header_group]:
+                if "content" in match.payload_fields:
+                    for content in match.payload_fields["content"]:
+                        total_payload_size+=get_size(content)
+
+                if "pcre" in match.payload_fields:
+                    for pcre in match.payload_fields["pcre"]:
+                        total_payload_size+=get_size(pcre)
+
+
+    return total_payload_size/1000000
 
 
 if __name__ == '__main__':

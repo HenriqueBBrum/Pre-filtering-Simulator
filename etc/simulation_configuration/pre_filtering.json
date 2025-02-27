@@ -3,9 +3,9 @@
     "pcaps_path":"/home/hbeckerbrum/NFSDatasets/CICIDS2017/",
     "baseline_alerts_path":"etc/alerts/full_pcap/",
     "nids_config_path": "etc/nids_configuration/",
-    "nids_name": "snort",
-    "snort_or_suricata_config_path": "etc/nids_configuration/snort_configuration/snort.lua",
-    "ruleset_path":"etc/rules/snort3-registered/",
+    "nids_name": "suricata",
+    "snort_or_suricata_config_path": "etc/nids_configuration/suricata_configuration/suricata.yaml",
+    "ruleset_path":"etc/rules/suricata-emerging/",
     "scenario":"full_last"
 }
 

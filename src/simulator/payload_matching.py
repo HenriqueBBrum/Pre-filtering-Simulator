@@ -23,6 +23,37 @@ def matched_payload(pkt_to_match, rule):
 
     return True
 
+    
+
+def __matched_content(pkt_to_match, content_matches):
+    position_dict = {}
+    buffer, actual_buffer_name = "", ""
+    position = 0
+
+    for buffer_name, should_match, content, modifiers in content_matches:
+        buffer, buffer_name, position = __get_buffer(pkt_to_match, position_dict, buffer_name)
+        if not buffer:
+            return False
+
+
+def __get_buffer(pkt_to_match, position_dict, buffer, buffer_name):
+    if "http" in buffer_name and not pkt_to_match.http_res_in_pkt and not pkt_to_match.http_req_in_pkt:
+        return None, 0
+    elif buffer_name in http_response_buffers and not pkt_to_match.http_res_in_pkt:
+        return None, 0 
+    elif buffer_name in http_request_buffers and not pkt_to_match.http_req_in_pkt:
+        return None, 0 
+    
+    # Decide on the buffer to match. By default the buffer is "pkt_data"
+    if match_buffer:
+        buffer = pkt_to_match.payload_buffers["nocase"][match_buffer]
+        position = position_dict[match_buffer] if match_buffer in position_dict else 0 # There is a pointer in the buffer already. Start from there
+    else:
+        if not buffer:
+            match_buffer = "pkt_data"
+            buffer = pkt_to_match.payload_buffers["nocase"][match_buffer]
+        
+    actual_buffer_name = match_buffer if match_buffer else actual_buffer_name
 
 ## Compares "content" and "pcre" strings against the desired packet's buffer
 # Guarentees: Packet has payload and the rule has "content" or "pcre" fields
@@ -37,12 +68,6 @@ def __matched_content_pcre(pkt_to_match, rule_content_pcre):
         if match_buffer in unsupported_buffers:
             continue
 
-        if "http" in match_buffer and not pkt_to_match.http_res_in_pkt and not pkt_to_match.http_req_in_pkt:
-            return False
-        elif match_buffer in http_response_buffers and not pkt_to_match.http_res_in_pkt:
-            return False 
-        elif match_buffer in http_request_buffers and not pkt_to_match.http_req_in_pkt:
-            return False 
         
         # Decide on the buffer to match. By default the buffer is "pkt_data"
         if match_buffer:
