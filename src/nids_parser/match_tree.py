@@ -1,30 +1,34 @@
 # Class represeting the matches of a protocol
 class Node:
-    def __init__(self, parents, name, children=set()):
+    def __init__(self, parents, name, applayer=False):
         self.parents = parents
         self.name = name
-        self.children = children
+
+        self.applayer = applayer
+        self.children = set()
 
         self.matches = []
-        self.groupped_matches = {}
 
 class MatchTree:
-    def __init__(self, base_node_names):
+    def __init__(self, root, base_node_names):
         self.nodes = {}
-        for parents, name, children in base_node_names:
-            self.nodes[name] = Node(parents, name, children)
+        self.nodes[root] = self.root = Node([], root)
 
-    def add_node(self, parents, node_name):
+        for parents, name in base_node_names:
+            self.add_node(parents, name)
+
+    def add_node(self, parents, node_name, applayer=False):
         if node_name in self.nodes:
-            raise Exception("Node already exists")
+            raise Exception(f"Node already exists: {node_name}")
         
         for parent in parents:
             if parent not in self.nodes:
-                raise Exception("No parent with this name")
+                raise Exception(f"No parent with this name: {parent}")
           
-        self.nodes[node_name] = Node(parents, node_name)
-        for parent in parents:
-            self.nodes[parent].children.add(node_name)
+        self.nodes[node_name] = Node(parents, node_name, applayer)
+        if node_name != self.root:
+            for parent in parents:
+                self.nodes[parent].children.add(node_name)
         
     def add_match(self, node_name, match):
         if node_name not in self.nodes:
@@ -32,15 +36,15 @@ class MatchTree:
         else:
             self.nodes[node_name].matches.append(match)
 
-    def safe_match_add(self, parents, node_name, match):
+    def safe_match_add(self, parents, node_name, match, applayer):
         if node_name not in self.nodes:
-            self.add_node(parents, node_name)
+            self.add_node(parents, node_name, applayer)
 
         self.add_match(node_name, match)
 
-    def get_related_matches(self, start_node, transport_node, node_name):
-        if transport_node:
-            if start_node.name == transport_node:
+    def get_related_matches(self, start_node, wrong_transport_node, node_name):
+        if wrong_transport_node:
+            if start_node.name == wrong_transport_node:
                 return []
                         
         if start_node.name == node_name: # Base case: Has found the node
@@ -51,7 +55,7 @@ class MatchTree:
         
         matches = []
         for child in start_node.children: # Checking each node
-            r = self.get_related_matches(self.nodes[child], transport_node, node_name)
+            r = self.get_related_matches(self.nodes[child], wrong_transport_node, node_name)
             if r:
                 matches = start_node.matches + r # Has found the node, return to root
                 return matches
