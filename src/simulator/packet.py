@@ -47,8 +47,8 @@ class Packet(object):
         self.layer4_proto = None
         self.layer4_proto_str = None
 
-        self.src_ip       = None
-        self.dst_ip       = None
+        self.src_ip       = ""
+        self.dst_ip       = ""
         self.ipotps       = None
 
         self.icmp_itype   = None
@@ -96,7 +96,6 @@ class Packet(object):
             if self.buffer_len < ETH_SIZE+IPV4_MIN_SIZE:
                 return None
             
-
             ihl = self.__get_byte(14) & 0X0F # Get only "upper" four bits
             self.id = self.__get_bytes(18, 20)
             self.fragbits =  self.__get_byte(20) >> 5 # Not all, just the first three bits
@@ -104,13 +103,13 @@ class Packet(object):
             self.layer4_proto = self.__get_byte(23)
             self.layer4_proto_str = ipproto_str_to_hex.get(self.layer4_proto, "")
 
-            self.src_ip = self.__get_bytes(26, 30, False)
-            self.dst_ip = self.__get_bytes(30, 34, False)
-           
+            self.src_ip = self.__parse_ip_address(26, 30)
+            self.dst_ip = self.__parse_ip_address(30, 34)
+
             ipv4_end = ETH_SIZE+IPV4_MIN_SIZE
             if ihl*4 > IPV4_MIN_SIZE:
                 ipv4_end = 34+(ihl*4-IPV4_MIN_SIZE)
-                self.ipotps = self.__get_bytes(34, ipv4_end, False)
+                self.ipotps = self.__get_byte(34) # Only get the type
             
             payload_start = ipv4_end
             if self.layer4_proto == 0x01:
@@ -131,7 +130,14 @@ class Packet(object):
             return None
 
         return None
-        
+
+    def __parse_ip_address(self, start, end):
+        ip_str = ""
+        ip_bytes= self.__get_bytes(start, end, False)
+        for i in range(0, len(ip_bytes), 2): 
+            ip_str+=(str(int(ip_bytes[i:i+2], 16)) + ".")
+
+        return  ip_str[:-1]
 
     def __parse_icmp(self, layer4_start, icmp_version=4):
         if self.buffer_len < layer4_start + ICMP_MIN_SIZE:

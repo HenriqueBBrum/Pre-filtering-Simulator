@@ -1,5 +1,6 @@
 import radix
 import re
+import socket
 
 ip_flags_dict = {
     'M': 1,
@@ -20,6 +21,9 @@ tcp_flags_dict = {
 
 native_pcre_modifiers = {'i', 's', 'm', 'x'}
 
+
+ipotps_to_hex = {"eol":0x00, "nop":0x01,  "sec": 0x02, "rr": 0x07,  "ts": 0x44, "lsrr": 0x83, "lsrre": 0x83,  "esec": 0x85, "satid": 0x88, "ssr": 0x89, "any": 0XFF}
+
 # Class that contains all the fields required to match against networking packets 
 class Match(object):
 
@@ -38,7 +42,9 @@ class Match(object):
         self.__adjust_header_for_match()
         self.__adjust_payload_for_match(pre_filtering_scenario)
       
-    
+    # How to deal with multiple values of a field?
+    def __get_header_field_value(self, key, pos=0):
+        return self.header_fields[key][pos][1]
 
     # Adjust header fields for quick matching against packets
     def __adjust_header_for_match(self):
@@ -50,37 +56,42 @@ class Match(object):
 
         # Determine the data and comparator for the "ip_proto" keyword
         if "ip_proto" in self.header_fields:
-            rule_ip_proto = self.header_fields["ip_proto"]
+            rule_ip_proto = self.__get_header_field_value("ip_proto")
             comparator = re.search("^[!|>|<]", rule_ip_proto)
             comparator = comparator.group(0) if comparator != None else ""
-            self.header_fields["ip_proto"] = {"data": re.search("[\d]+", rule_ip_proto).group(0), "comparator": comparator}
+            self.header_fields["ip_proto"] = {"data": int(re.search("[\d]+", rule_ip_proto).group(0)), "comparator": comparator}
         
         # Determine the data and comparator for the "ttl", "id", "seq", "ack", "window", "itype", "icode", "icmp_id", "icmp_seq" keywords
         for key in ["ttl", "id", "seq", "ack", "window", "itype", "icode", "icmp_id", "icmp_seq"]:
             if key in self.header_fields:
-                value = self.header_fields[key]
+                value = self.__get_header_field_value(key)
                 comparator = re.search("[^\d]+", value)
                 comparator = comparator.group(0) if comparator != None else ""
                 self.header_fields[key] = {"data": re.findall("[\d]+", value), "comparator": comparator}
 
+
+        # Determine the data and comparator for the "fragbits" keyword
+        if "ipopts" in self.header_fields:
+            self.header_fields["ipopts"] = ipotps_to_hex[self.__get_header_field_value("ipopts")]
+
         # Determine the data and comparator for the "fragbits" keyword
         if "fragbits" in self.header_fields:
-            fragbits = re.sub("[\+\*\!]", "", self.header_fields["fragbits"])
+            fragbits = re.sub("[\+\*\! ]", "", self.__get_header_field_value("fragbits"))
             fragbits_num = sum(ip_flags_dict[flag] for flag in fragbits)
-            comparator = re.sub("[MDR.]", "", self.header_fields["fragbits"])
+            comparator = re.sub("[MDR. ]", "", self.__get_header_field_value("fragbits"))
             self.header_fields["fragbits"] = {"data": fragbits_num, "comparator": comparator}
 
         # Determine the data, comparator and flags to exclude for the (TCP) "flags" keyword
         if "flags" in self.header_fields:
-            flags_to_match = self.header_fields["flags"]
+            flags_to_match = self.__get_header_field_value("flags")
             exclude = ""
-            if type(self.header_fields["flags"]) is list:
-                flags_to_match = self.header_fields["flags"][0]
-                exclude = self.header_fields["flags"][1]
+            if type(flags_to_match) is list:
+                flags_to_match = self.__get_header_field_value("flags")[0]
+                exclude = self.__get_header_field_value("flags")[1]
 
             flags_to_match = re.sub("[1]", "C", flags_to_match)
             flags_to_match = re.sub("[2]", "E", flags_to_match)
-            tcp_flags = re.sub("[\+\*\!]", "", flags_to_match)
+            tcp_flags = re.sub("[\+\*\! ]", "", flags_to_match)
             tcp_flags_num = sum(tcp_flags_dict[flag] for flag in tcp_flags) 
             comparator = re.sub("[a-zA-Z.]", "", flags_to_match)
             self.header_fields["flags"] = {"data": tcp_flags_num, "comparator": comparator, "exclude": exclude}

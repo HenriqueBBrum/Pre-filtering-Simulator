@@ -12,19 +12,26 @@ class Node:
 class MatchTree:
     def __init__(self, root, base_node_names):
         self.nodes = {}
-        self.nodes[root] = self.root = Node([], root)
+        self.root = root
+        self.nodes[root] = Node([], root)
 
         for parents, name in base_node_names:
             self.add_node(parents, name)
 
+
+    def get_root(self):
+        return self.nodes[self.root]
+
     def add_node(self, parents, node_name, applayer=False):
         if node_name in self.nodes:
             raise Exception(f"Node already exists: {node_name}")
-        
+        if type(parents) == str:
+            parents = [parents]
+
         for parent in parents:
             if parent not in self.nodes:
                 raise Exception(f"No parent with this name: {parent}")
-          
+        
         self.nodes[node_name] = Node(parents, node_name, applayer)
         if node_name != self.root:
             for parent in parents:
@@ -57,8 +64,7 @@ class MatchTree:
         for child in start_node.children: # Checking each node
             r = self.get_related_matches(self.nodes[child], wrong_transport_node, node_name)
             if r:
-                matches = start_node.matches + r # Has found the node, return to root
-                return matches
+                return start_node.matches + r # Has found the node, return to root
 
         return matches
         

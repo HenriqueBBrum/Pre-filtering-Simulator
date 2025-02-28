@@ -54,32 +54,30 @@ def sample_flows(pcap_file, flow_count_threshold, time_threshold):
     time_to_process = []
     flow_tracker = {} # One entry is (current_count, last_pkt_time)
 
-    for pkt in rpcap(pcap_file):
-        # if IP in pkt:
-        #     start = time()
-        #     proto = str(pkt[IP].proto)
-        #     if TCP in pkt:
-        #         five_tuple = proto+pkt[IP].src+str(pkt[TCP].sport)+pkt[IP].dst+str(pkt[TCP].dport) # Bidirectional flows?
-        #     elif UDP in pkt:
-        #         five_tuple = proto+pkt[IP].src+str(pkt[UDP].sport)+pkt[IP].dst+str(pkt[UDP].dport)
-        #     else:
-        #         five_tuple = proto+pkt[IP].src+pkt[IP].dst
+    for len, t, pkt in rpcap(pcap_file):
+        parsed_pkt = Packet(pkt, len)
+        if parsed_pkt.layer3_proto == IPV4:
+            start = time()
+            if pkt.layer4_proto == TCP or pkt.layer4_proto == UDP:
+                five_tuple = pkt.layer4_proto_str+pkt.src_ip+str(pkt.src_port)+pkt.dst_ip+str(pkt.dst_port) # Bidirectional flows?
+            else:
+                five_tuple = pkt.layer4_proto_str+pkt.src_ip+pkt.dst_ip
 
-        #     if five_tuple not in flow_tracker:
-        #         flow_tracker[five_tuple] = (1, pkt.time)
-        #         suspicious_pkts.append((pkt_count, "first_time"))
-        #     else:
-        #         last_pkt_time = flow_tracker[five_tuple][1]
-        #         if pkt.time-last_pkt_time >= time_threshold:
-        #             flow_tracker[five_tuple] = (1, pkt.time)
-        #             suspicious_pkts.append((pkt_count, "time_reset"))
-        #         else:
-        #             flow_tracker[five_tuple] = (flow_tracker[five_tuple][0]+1, pkt.time)
-        #             if flow_tracker[five_tuple][0] < flow_count_threshold:
-        #                 suspicious_pkts.append((pkt_count, "within_flow_threhold"))
+            if five_tuple not in flow_tracker:
+                flow_tracker[five_tuple] = (1, pkt.time)
+                suspicious_pkts.append((pkt_count, "first_time"))
+            else:
+                last_pkt_time = flow_tracker[five_tuple][1]
+                if pkt.time-last_pkt_time >= time_threshold:
+                    flow_tracker[five_tuple] = (1, pkt.time)
+                    suspicious_pkts.append((pkt_count, "time_reset"))
+                else:
+                    flow_tracker[five_tuple] = (flow_tracker[five_tuple][0]+1, pkt.time)
+                    if flow_tracker[five_tuple][0] < flow_count_threshold:
+                        suspicious_pkts.append((pkt_count, "within_flow_threhold"))
 
-        #     ip_pkt_count+=1
-        #     time_to_process.append(time()-start)
+            ip_pkt_count+=1
+            time_to_process.append(time()-start)
         pkt_count+=1
 
     info = {}
@@ -94,7 +92,7 @@ def sample_flows(pcap_file, flow_count_threshold, time_threshold):
 
 
 # Simulate the pre-filtering of packets based on signature rules]
-def pre_filtering_simulation(sim_config, match_tree, _info, output_folder):
+def pre_filtering_simulation(sim_config, matches, _info, output_folder):
     info = _info | {"type": "pre_filtering"}
     pcaps_path = sim_config["pcaps_path"]
 
@@ -107,7 +105,7 @@ def pre_filtering_simulation(sim_config, match_tree, _info, output_folder):
         info[current_trace] = {}
 
         start = time()
-        suspicious_pkts, temp_info = find_suspicious_packets(pcaps_path+pcap_file, match_tree)
+        suspicious_pkts, temp_info = find_suspicious_packets(pcaps_path+pcap_file, matches)
       
         info[current_trace]["total_time_to_process"] = time() - start
         info[current_trace].update(temp_info)
@@ -119,7 +117,7 @@ def pre_filtering_simulation(sim_config, match_tree, _info, output_folder):
     return info
 
 # Find the suspicious packets
-def find_suspicious_packets(pcap_file, match_tree):
+def find_suspicious_packets(pcap_file, matches):
     suspicious_pkts = []
     time_to_process = []
     tcp_tracker = {}
@@ -128,20 +126,24 @@ def find_suspicious_packets(pcap_file, match_tree):
     for len, t, pkt in rpcap(pcap_file):
         parsed_pkt = Packet(pkt, len)
         if parsed_pkt.layer3_proto == IPV4:
+            #print(ip_pkt_count)
             start = time()
-    
-            suspicious_pkt, tcp_tracker, ftp_tracker = is_packet_suspicious(pkt, pkt_count, match_tree, tcp_tracker, ftp_tracker)
+            
+            suspicious_pkt, tcp_tracker, ftp_tracker = is_packet_suspicious(parsed_pkt, pkt_count, matches, tcp_tracker, ftp_tracker)
             if suspicious_pkt:
                 suspicious_pkts.append(suspicious_pkt)
 
             ip_pkt_count+=1
             time_to_process.append(time()-start)
+           
+            #input()
 
         pkt_count+=1
-    info = {}
 
+    info = {}
     info["pcap_size"] = pkt_count
-    info["avg_pkt_processing_time"] = sum(time_to_process)/len(time_to_process)
+    #print(time_to_process)
+    #info["avg_pkt_processing_time"] = sum(time_to_process)/len(time_to_process)
     info["pkts_processed"] = ip_pkt_count
     
     return suspicious_pkts, info
@@ -152,40 +154,55 @@ def find_suspicious_packets(pcap_file, match_tree):
 
 def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker, ftp_tracker):
     suspicious_pkt = None
-    if unsupported_protocols(pkt):
+    if unsupported_protocols(pkt.layer4_proto, pkt.src_port, pkt.dst_port):
         suspicious_pkt = (pkt_count, "unsupported")
     else:
-        related_matches = matches[pkt.layer4_proto]
-        if pkt.applayer_proto and pkt.applayer_proto in matches:
-            related_matches = matches[pkt.layer4_proto + pkt.applayer_proto]
+        related_matches_key = "ip"
+        if pkt.layer4_proto_str and pkt.layer4_proto_str in matches:
+            related_matches_key = pkt.layer4_proto_str
+            if pkt.applayer_proto and pkt.applayer_proto in matches:
+                related_matches_key+=pkt.applayer_proto
         
-        for key, header_group_matches in related_matches:
+        # print(related_matches_key, len(matches[related_matches_key].items()))
+        for key, header_group_matches in matches[related_matches_key].items():
             if suspicious_pkt:
                 break
-            try:
-                if not matched_ip_and_port(pkt, header_group_matches[0]): 
+                
+            if not matched_ip_and_port(pkt, header_group_matches[0]): 
+                continue
+
+            for match in header_group_matches:
+
+                if not matched_header_fields(pkt, match):
                     continue
-            
-                # Matched the groups' ip and port header, compare with the other fields of each match in this group
-                for match in header_group_matches:
-                    if not matched_header_fields(pkt, match):
-                        continue
 
-                    # if not matched_payload(pkt_to_match, match):
-                    #     continue
+                # if not matched_payload(pkt_to_match, match):
+                #     continue
                     
-                    # suspicious_pkt = (pkt_count, match.sids()[0])
-                    # if pkt_to_match.tcp_in_pkt:
-                    #     flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
-                    #     if pkt_to_match.header["flags"] == "A":
-                    #         tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"], "ack": pkt_to_match.header["ack"]}    
-                    #     elif pkt_to_match.header["flags"] == "PA":
-                    #         tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"]+pkt_to_match.payload_size, "ack": pkt_to_match.header["ack"]}   
+            # try:
+            #     if not matched_ip_and_port(pkt, header_group_matches[0]): 
+            #         continue
+            
+            #     # Matched the groups' ip and port header, compare with the other fields of each match in this group
+            #     for match in header_group_matches:
+            #         if not matched_header_fields(pkt, match):
+            #             continue
 
-                    break
-            except Exception as e:
-                print("Exception: ", traceback.format_exc())
-                suspicious_pkt = (pkt_count, "error")
+            #         # if not matched_payload(pkt_to_match, match):
+            #         #     continue
+                    
+            #         # suspicious_pkt = (pkt_count, match.sids()[0])
+            #         # if pkt_to_match.tcp_in_pkt:
+            #         #     flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
+            #         #     if pkt_to_match.header["flags"] == "A":
+            #         #         tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"], "ack": pkt_to_match.header["ack"]}    
+            #         #     elif pkt_to_match.header["flags"] == "PA":
+            #         #         tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"]+pkt_to_match.payload_size, "ack": pkt_to_match.header["ack"]}   
+
+            #         break
+            # except Exception as e:
+            #     print("Exception: ", traceback.format_exc())
+            #     suspicious_pkt = (pkt_count, "error")
 
             # if not suspicious_pkt and pkt_to_match.tcp_in_pkt: 
             #     if service != "ftp":  

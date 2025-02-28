@@ -27,8 +27,7 @@ def main(simulation_config_path, sim_results_folder):
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        # matches  = []
-        # info = pre_filtering_simulation(simulation_config, matches, info, output_folder)
+        info = pre_filtering_simulation(simulation_config, matches, info, output_folder)
     elif simulation_config["type"] == "flow_sampling":
         print("FLOW SAMPLING SIMULATION")
         output_folder = sim_results_folder+"flow_sampling_"+str(simulation_config["flow_count_threshold"])+"_"+str(simulation_config["time_threshold"])+"/"
