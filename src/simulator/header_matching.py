@@ -180,11 +180,8 @@ def __matched_fragbits(pkt_fragbits, fragbits_num, comparator):
 
 # Compares a packet's TCP flags against the TCP flags of a match
 def __matched_tcp_flags(pkt_tcp_flags, match_tcp_flags):
-    print(pkt_tcp_flags, match_tcp_flags)
-
     if match_tcp_flags["exclude"]:
-        expression = "["+match_tcp_flags["exclude"]+"]*"
-        pkt_tcp_flags = re.sub(expression, "", pkt_tcp_flags)
+        pkt_tcp_flags = pkt_tcp_flags & (match_tcp_flags["exclude"] ^ 0XFF) # Get the complement of "excluded" and zero the "excluded" values in the pkt flags
 
     if match_tcp_flags["comparator"] == "" and pkt_tcp_flags == match_tcp_flags["data"]:
         return True

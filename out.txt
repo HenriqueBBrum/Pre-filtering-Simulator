@@ -1,6 +1,0 @@
-python3 src/main.py etc/simulation_configuration/pre_filtering.json
-********************************************************************************
-************************** NIDS RULES PARSING STAGE ***************************
-
-
----- Parsing rules from etc/rules/suricata-emerging/ ----

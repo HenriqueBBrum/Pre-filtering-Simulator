@@ -15,7 +15,7 @@ def main(simulation_config_path, sim_results_folder):
     start = time()
     if simulation_config["type"] == "pre_filtering":
         start = time()
-        nids_config = NIDSConfiguration(configuration_dir=simulation_config["nids_config_path"])
+        nids_config = NIDSConfiguration(configuration_dir=simulation_config["ipvars_config_path"])
         print("*" * 80)
         print("*" * 26 + " NIDS RULES PARSING STAGE " + "*" * 27+ "\n\n")
         matches, info["number_of_rules"] = convert_rules_to_matches(simulation_config, nids_config)
@@ -27,7 +27,7 @@ def main(simulation_config_path, sim_results_folder):
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        info = pre_filtering_simulation(simulation_config, matches, info, output_folder)
+        info = pre_filtering_simulation(simulation_config, matches, output_folder, info)
     elif simulation_config["type"] == "flow_sampling":
         print("FLOW SAMPLING SIMULATION")
         output_folder = sim_results_folder+"flow_sampling_"+str(simulation_config["flow_count_threshold"])+"_"+str(simulation_config["time_threshold"])+"/"
@@ -51,13 +51,13 @@ def main(simulation_config_path, sim_results_folder):
 def calculate_payload_size(matches):
 
     def get_size(content):
-        match_size=sys.getsizeof(content[0]) # Buffer name
-        match_size+=sys.getsizeof(content[2]) # Content string
-        if content[3]: # Modifiers
-            if type(content[3]) is str:
-                match_size+=sys.getsizeof(content[3])
+        match_size = 0
+        match_size+=sys.getsizeof(content[1]) # Content string
+        if content[2]: # Modifiers
+            if type(content[2]) is str:
+                match_size+=sys.getsizeof(content[2])
             else:
-                for modifier in content[3]:
+                for modifier in content[2]:
                     match_size+=sys.getsizeof(modifier)
 
         return match_size
@@ -82,4 +82,5 @@ def calculate_payload_size(matches):
 if __name__ == '__main__':
     simulation_config_file = sys.argv[1]
     sim_results_folder = "simulation_results/"
+    
     main(simulation_config_file, sim_results_folder)

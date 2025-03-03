@@ -37,7 +37,7 @@ ICMP_TYPE_WITH_ID_AND_SEQ = {13, 14, 17, 18}
 class Packet(object):
     def __init__(self, buffer, buffer_len) -> None:
         self.buffer_len = buffer_len
-        self.hex_buffer = None
+        self.hex_buffer = ""
 
         self.layer3_proto = None
 
@@ -67,6 +67,7 @@ class Packet(object):
         self.applayer_proto = None
 
         self.payload      = None
+        self.payload_lower_case = b""
         self.payload_len  = None
 
         ether_type_hex = int(codecs.encode(buffer[12:14], "hex"), 16)
@@ -75,7 +76,7 @@ class Packet(object):
             self.__parse()
 
     def __str__(self):
-        print_str ="-"*10+"PKT data"+"-"*10+"\n"
+        print_str ="\n"+"-"*10+"PKT data"+"-"*10+"\n"
         print_str+=("Layer 3 proto=" + str(self.layer3_proto) + "\n")
         print_str+=("IP fields:  ID="+ str(self.id)+", Fragbits="+str(self.fragbits)+", TTL="+str(self.ttl)+", Layer 4 proto="+str(self.layer4_proto)+ "\n")
         if self.layer4_proto == TCP:
@@ -134,6 +135,13 @@ class Packet(object):
             self.applayer_proto = self.__get_applayer_proto()
  
             self.payload = self.hex_buffer[payload_start*2:]
+            for i in range(0, len(self.payload), 2):
+                temp = int(self.payload[i:i+2], 16)
+                if temp >= 65 and temp <=90:
+                    self.payload_lower_case+=(f'{(temp+32):x}'.encode())
+                else:
+                    self.payload_lower_case+=self.payload[i:i+2]
+
             self.payload_len = len(self.payload)
             return IPV4
         elif eth_type == IPV6:

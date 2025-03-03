@@ -48,7 +48,7 @@ class NIDSConfiguration():
         if raw_ips == "any":
             return [("0.0.0.0/0", True)]
         elif raw_ips == "!any":
-            raise Exception("Invalid IP %s" % raw_ips)
+            raise ValueError("Invalid IP ", raw_ips)
         
         parsed_ips = []
         if re.search(r",|(!?\[.*\])", raw_ips):
@@ -139,7 +139,7 @@ class NIDSConfiguration():
         elif re.match(r'^(!?[0-9]+:|:[0-9]+)', raw_port):
             range_ = raw_port.split(":")
             if len(range_) != 2 or "!" in range_[1]:
-                raise ValueError("Wrong range values")
+                raise ValueError("Wrong range values ", range_)
             
             if range_[1] == "":
                 return [(range(int(range_[0]), MAX_PORT+1), bool(~(local_bool ^ parent_bool)+2))]

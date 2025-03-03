@@ -29,17 +29,11 @@ class Rule(object):
     def rule_to_string(self):    
         return str(self.header)+str(self.options)
     
-    def getitem__(self, key):
-        if key == 'all':
-            return self.data
-        else:
-            return self.data[key]
-        
     # Returns value of key in rule options. Option value format: (option_index, [option_index_values])
     def get_simple_option_value(self, key, position=0, default=""):
         try:
             if key in self.options:
-                self.options[key][position][1]
+                return self.options[key][position][1]
         except Exception as e:
             print("WARNING -- Error when searching for key {} in rule options \n Returning: {}".format(key, default))
             return default
@@ -120,7 +114,7 @@ class RulesParser(object):
                     modified_rules.append(swap_dir_rule)
                 else:
                     modified_rules.append(cp_rule)
-                break
+
         return parsed_rules, modified_rules
 
     # Substitute system variables for the real values in the config file
@@ -156,11 +150,11 @@ class RulesParser(object):
                 header = re.sub(r"\s+\]", "]", header)
             header = header.split()
         else:
-            raise ValueError("Header is mising or unparsable")
+            raise Exception("Header is mising or unparsable")
         
         header = list(filter(None, header))
         if not len(header) == 7 and not len(header) == 2:
-            raise ValueError("Snort rule header is malformed ", header)
+            raise Exception("Snort rule header is malformed ", header)
         
         return self.__header_list_to_dict(header), has_negation
     
@@ -204,7 +198,7 @@ class RulesParser(object):
             if ip == "any":
                 return [("0.0.0.0/0", True)]
             elif ip == "!any":
-                raise Exception("Invalid IP: ", ip)
+                raise ValueError("Invalid IP: ", ip)
             
             if re.search(r",|(!?\[.*\])", ip):
                 parsed_ips = self.__flatten_list(ip, self.__parse_ip)
@@ -275,7 +269,7 @@ class RulesParser(object):
             if port == "any":
                 return [(range(MIN_PORT, MAX_PORT+1), True)]
             elif port == "!any":
-                raise Exception("Invalid ports: ", port)
+                raise ValueError("Invalid ports: ", port)
             
             if re.search(r",|(!?\[.*\])", port):
                 parsed_ports = self.__flatten_list(port, self.__parse_port)
@@ -296,7 +290,7 @@ class RulesParser(object):
         if re.match(r'^(!?[0-9]+:|:[0-9]+)', port):
             range_ = port.split(":")
             if len(range_) != 2 or "!" in range_[1]:
-                raise ValueError("Wrong range values")
+                raise ValueError("Wrong range values", range_)
             
             if range_[1] == "":
                 return(range(int(range_[0]), MAX_PORT+1), bool(~(local_bool ^ parent_bool)+2))
@@ -315,7 +309,7 @@ class RulesParser(object):
             if isinstance(port, str):
                 if not self.dicts.port_variables(port) and not re.match(r"^\$+", port):
                     if int(port) < MIN_PORT or int(port) > MAX_PORT:
-                        raise ValueError("Port is is outside TCP and UDP port range: ", port)
+                        raise ValueError("Port is outside TCP and UDP port range: ", port)
             elif isinstance(port, range):    
                if  port.start > port.stop:
                    raise ValueError("Invalid port range: ", port)
@@ -342,18 +336,18 @@ class RulesParser(object):
     def __parse_options(self, rule):
         options_list = self.__get_options_as_list(rule)
         if self.nids_name == "snort":
-            options_dict = self.__parse_snort_options(options_list)
+            options_dict = self.__parse_nids_options(options_list, snort=True)
         else:
-            options_dict = self.__parse_suricata_options(options_list)
+            options_dict = self.__parse_nids_options(options_list, snort=False)
 
         return options_dict
 
 
     # Turns the options string, i.e. "(<option>: <settings>; ... <option>: <settings>;)"), into a list of options
     def __get_options_as_list(self, rule):
-        options = "{}".format(rule.split('(', 1)[-1].lstrip().rstrip())
+        options = "{}".format(rule.split('(', 1)[-1].lstrip().rstrip()) # Get everything after the first '('
         if not options.endswith(")"):
-            raise ValueError("Rule options is not closed properly, "
+            raise Exception("Rule options is not closed properly, "
                              "you have a syntax error")
 
         op_list = list()
@@ -369,33 +363,32 @@ class RulesParser(object):
             last_char = char
         return op_list
     
-    def __parse_snort_options(self, options_list):
+    def __parse_nids_options(self, options_list, snort):
         options_dict = {}
-        current_buffer = ""
-
         for index, option_string in enumerate(options_list):
             key, value = option_string, ""
             if ':' in option_string:
                 key, value = option_string.split(":", 1)
 
-            if not self.dicts.verify_option(key)[1]:
-                raise ValueError("Unrecognized option: %s" % key)
-
-            # if self.dicts.sticky_buffers(key): # Save the current buffer keyword for the "content" and "pcre" keywords
-            #     current_buffer = key
+            if not self.dicts.is_option(key) or (snort and self.dicts.suricata_only_options(key)):
+                raise KeyError("Unrecognized option: ", key)
             
+            if not snort and self.dicts.content_modifiers(key):
+                if "content" not in options_dict:
+                    raise Exception("Content modifiers without a content")
+                
+                options_dict["content"][-1][-1][-1].append(option_string)
+                continue
+
             # Adjust "content" and "pcre" option by checking the buffer, if it has the "!" operator, cleaning the content to match and fidings the modifiers
             if key == "content":
-                parsed_value = self.__parse_content(value, current_buffer=None)
+                parsed_value = self.__parse_content(value, snort)
             elif key == "pcre":
-                parsed_value = self.__parse_pcre(value, current_buffer=None)
+                parsed_value = self.__parse_pcre(value)
             else:
                 value = value.split(",")
                 parsed_value = value[0] if len(value) == 1 else value
-                if type(value) is str and value and value[0] == '"' and value[-1] == '"':  # If value is a string, remove redundant ""                   
-                    parsed_value = value[1:-1]
 
-            # print(key, value, parsed_value)
             if key not in options_dict:
                 options_dict[key] = [(index, parsed_value)]
             else:
@@ -403,63 +396,22 @@ class RulesParser(object):
         return options_dict
     
 
-    def __parse_suricata_options(self, options_list):
-        options_dict = {}
-        current_buffer = ""
-        last_content = None
-        for index, option_string in enumerate(options_list):
-            key, value = option_string, ""
-            if ':' in option_string:
-                key, value = option_string.split(":", 1)
-
-            if not self.dicts.verify_option(key)[1]:
-                raise ValueError("Unrecognized option: %s" % key)
-            
-            # if self.dicts.content_modifiers(key)[1]:
-            #     if 
-            #     last_content[3].append(key+" "+value+",") # Creates a string of the modifiers: "nocase,offset:10,"
-
-            # if self.dicts.sticky_buffers(key): # Save the current buffer keyword for the "content" and "pcre" keywords
-            #     current_buffer = key
-            
-            # Adjust "content" and "pcre" option by checking the buffer, if it has the "!" operator, cleaning the content to match and fidings the modifiers
-            if key == "content":
-                parsed_value = self.__parse_content(value, current_buffer=None, snort=False)
-                #last_content_index = parsed_value
-            elif key == "pcre":
-                parsed_value = self.__parse_pcre(value, current_buffer=None)
-            else:
-                value = value.split(",")
-                parsed_value = value[0] if len(value) == 1 else value
-                if type(value) is str and value and value[0] == '"' and value[-1] == '"':  # If value is a string, remove redundant ""                   
-                    parsed_value = value[1:-1]
-
-            # Creates a list of all instances of the option
-            if key not in options_dict:
-                options_dict[key] = [(index, parsed_value)]
-            else:
-                options_dict[key].append((index, parsed_value))
-        return options_dict
-
 
      # Parses the "content" and "pcre" fields for the string to match and modifiers
-    def __parse_content(self, value, current_buffer=None, snort=True):
+    def __parse_content(self, value, snort):
         parsed_value = None
         negate = re.search('^!', value)
         if negate:
             value = value[1:]
 
-        if snort:
+        # Snort has the modifiers within the content keyword
+        if snort: 
             re_search = re.search('[\w ,-]*$', value)
-            modifiers = re_search.group(0)[1:] # Remove the first ','
+            modifiers = re_search.group(0)[1:].split(",") # Remove the first ','
             content = value[:re_search.span()[0]][1:-1]
-            parsed_value = [current_buffer, False if negate else True, content] # content ID
-            if modifiers:
-                parsed_value.append(modifiers)
-            else:
-                parsed_value.append(None)
+            parsed_value = (False if negate else True, content, modifiers)
         else:
-            parsed_value = [current_buffer, False if negate else True, value[1:-1], None]
+            parsed_value = (False if negate else True, value[1:-1], [])
 
         return parsed_value
 
@@ -469,14 +421,8 @@ class RulesParser(object):
             value = value[1:]
 
         value = value[1:-1] # Remove '"'
-        re_search = re.search('[\w ]*$', value)
+        re_search = re.search('[\w ]*$', value) # Get modifiers at the end
         modifiers = re_search.group(0) 
         pcre = value[1:re_search.span()[0]-1] # Don't return the '/' chars and grab only the PCRE string
-        parsed_value = [current_buffer, False if negate else True, pcre]
 
-        if modifiers:
-            parsed_value.append(modifiers)
-        else:
-            parsed_value.append(None)
-
-        return parsed_value
+        return (False if negate else True, pcre, modifiers)

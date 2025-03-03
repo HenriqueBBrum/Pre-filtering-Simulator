@@ -15,14 +15,16 @@ tcp_flags_dict = {
     'P': 8,
     'A': 16,
     'U': 32,
+    '1': 128,
+    '2': 64,
     'E': 64,
+    '1': 128,
     'C': 128,
 }
 
-native_pcre_modifiers = {'i', 's', 'm', 'x'}
-
-
 ipotps_to_hex = {"eol":0x00, "nop":0x01,  "sec": 0x02, "rr": 0x07,  "ts": 0x44, "lsrr": 0x83, "lsrre": 0x83,  "esec": 0x85, "satid": 0x88, "ssr": 0x89, "any": 0XFF}
+
+native_pcre_modifiers = {'i', 's', 'm', 'x'}
 
 # Class that contains all the fields required to match against networking packets 
 class Match(object):
@@ -88,13 +90,12 @@ class Match(object):
             if type(flags_to_match) is list:
                 flags_to_match = self.__get_header_field_value("flags")[0]
                 exclude = self.__get_header_field_value("flags")[1]
-
-            flags_to_match = re.sub("[1]", "C", flags_to_match)
-            flags_to_match = re.sub("[2]", "E", flags_to_match)
+            
             tcp_flags = re.sub("[\+\*\! ]", "", flags_to_match)
-            tcp_flags_num = sum(tcp_flags_dict[flag] for flag in tcp_flags) 
+            tcp_flags_num = sum(tcp_flags_dict[flag] for flag in tcp_flags)
+            exclude_num = sum(tcp_flags_dict[flag] for flag in exclude)  
             comparator = re.sub("[a-zA-Z.]", "", flags_to_match)
-            self.header_fields["flags"] = {"data": tcp_flags_num, "comparator": comparator, "exclude": exclude}
+            self.header_fields["flags"] = {"data": tcp_flags_num, "comparator": comparator, "exclude": exclude_num}
 
     # Converts IP list to a radix tree for quick? search
     def __convert_ip_list_to_radix_tree(self, ips):
@@ -132,36 +133,58 @@ class Match(object):
             comparator = comparator.group(0) if comparator != None else ""
             self.payload_fields["dsize"] = {"data": re.findall("[\d]+", value), "comparator": comparator}
 
-        content = []
+        final_content_list = []
         if "content" in self.payload_fields:
             fast_pattern_match = None
-            for match_pos, match in self.payload_fields["content"]:
-                match_str = self.__hexify_content(match[2], False) #self.__clean_content(match[3], "nocase" in match[4] if match[4] else False)
-                modifiers, fast_pattern = self.__parse_content_modifiers(match[3])
-                content.append((match[0], match[1], match_str, modifiers)) # buffer, negation, string, modifiers
-                # if fast_pattern:
-                #     fast_pattern_match = content_pcre[-1]
-               # self.__apply_pre_filtering_scenario(content_pcre, fast_pattern_match, pre_filtering_scenario)        
+            for content_pos, content in self.payload_fields["content"]:
+                modifiers, fast_pattern = self.__parse_content_modifiers(content[2])
+                match_str = self.__hexify_content(content[1], "nocase" in modifiers).encode()
+                final_content_list.append((content[0], match_str, modifiers)) # negation, string, modifiers
+                if fast_pattern:
+                    fast_pattern_match = final_content_list[-1]
         
-        self.payload_fields["content"] = content
+            self.payload_fields["content"] = final_content_list
 
+            self.__apply_pre_filtering_scenario(fast_pattern_match, pre_filtering_scenario)
 
         pcre = []
         if "pcre" in self.payload_fields:
             for match_pos, match in self.payload_fields["pcre"]:
-                parsed_pcre_str, nids_modifiers = self.__parse_pcre_modifiers(match[2], match[3])
-                pcre.append((match[0], match[1], parsed_pcre_str, nids_modifiers))
+                parsed_pcre_str, nids_modifiers = self.__parse_pcre_modifiers(match[1], match[2])
+                pcre.append((match[0], parsed_pcre_str.encode(), nids_modifiers))
 
-         # self.__apply_pre_filtering_scenario(content_pcre, fast_pattern_match, pre_filtering_scenario)
-
-        self.payload_fields["pcre"] = pcre
-
+            self.payload_fields["pcre"] = pcre
         
+    # Parse content modifiers
+    def __parse_content_modifiers(self, modifiers):
+        modifiers_dict = {}
+        fast_pattern = False
+        if modifiers:
+            modifiers_dict = {}
+            for item in modifiers:
+                modifier_name = item
+                modifier_value = True
+                if item == "fast_pattern":
+                    fast_pattern = True
+                    continue
 
+                if item != "nocase":
+                    modifier_name = re.search('^[a-zA-Z]*', item).group(0)
+                    modifier_value = re.search('\d*$', item).group(0)
+
+                if modifier_name in modifiers_dict:
+                    raise Exception("Two identical modifiers in the same content matching: ", modifiers_dict)
+
+                modifiers_dict[modifier_name] = modifier_value
+
+            if ("offset" in modifiers_dict or "depth" in modifiers_dict) and ("within" in modifiers_dict or "distance" in modifiers_dict):
+                raise Exception("Modifiers are not correctly configured: ", modifiers_dict)
+            
+        return modifiers_dict, fast_pattern
 
     # Converts content to hex only
     def __hexify_content(self, content, nocase):
-        clean_content = ""
+        clean_content, temp_str = "", ""
         escaped = False
         i = 0
         while i < len(content):
@@ -174,48 +197,31 @@ class Match(object):
 
             escaped = False
 
+            # Get hex numbers
             if content[i] == '|' and i+1<len(content):
                 i+=1
                 while content[i] != '|':
                     if content[i] != ' ':
-                        clean_content+=content[i]
+                        temp_str+=content[i]
+
+                    if len(temp_str) == 2:
+                        temp = int(temp_str, 16)
+                        if nocase and (temp >= 65 and temp <=90):
+                            clean_content+=(f'{(temp+32):x}'.upper())
+                        else:
+                            clean_content+=temp_str
+                        temp_str = ""
+
                     i+=1
             else:
                 if content[i] == '/':
                     escaped = True
-                     
-                clean_content+=(format(ord(content[i].lower()), "x") if nocase else format(ord(content[i]), "x"))
+
+                if not escaped:
+                    clean_content+=(format(ord(content[i].lower()), "x") if nocase else format(ord(content[i]), "x"))
 
             i+=1
         return clean_content
-
-    # Parse content modifiers
-    def __parse_content_modifiers(self, modifiers):
-        modifiers_dict = None
-        fast_pattern = False
-        if modifiers:
-            modifiers_dict = {}
-            for item in modifiers.split(","):
-                modifier_name = item
-                modifier_value = True
-                if item == "fast_pattern":
-                    fast_pattern = True
-                    continue
-
-                if item != "nocase":
-                    split_modifier = item.split(" ")
-                    modifier_name = split_modifier[0]
-                    modifier_value = split_modifier[1]
-
-                if modifier_name in modifiers_dict:
-                    raise ValueError("Two identical modifiers in the same content matching: ", modifiers_dict)
-
-                modifiers_dict[modifier_name] = modifier_value
-
-            if ("offset" in modifiers_dict or "depth" in modifiers_dict) and ("within" in modifiers_dict or "distance" in modifiers_dict):
-                raise ValueError("Modifiers are not correctly configured: ", modifiers_dict)
-            
-        return modifiers_dict, fast_pattern
         
     ## Add pcre modifiers to the pcre string since the re module can process them
     # Possible pcre modifiers as detailed by Snort: i,s,m,x,A,E,G,O,R
@@ -243,37 +249,37 @@ class Match(object):
         return pcre_string, snort_only_modifiers
 
         
-    # def __apply_pre_filtering_scenario(self, content_pcre, fast_pattern_match, pre_filtering_scenario):
-    #     final_content_pcre = []
-    #     if pre_filtering_scenario == "first":
-    #         final_content_pcre = [content_pcre[0]]
-    #     elif pre_filtering_scenario =="longest":
-    #         longest, size = None, 0
-    #         for content in content_pcre:
-    #             if len(content[3]) > size:
-    #                 longest = content
-    #                 size = len(content[3])
+    def __apply_pre_filtering_scenario(self, fast_pattern_match, pre_filtering_scenario):
+        final_content_pcre = []
+        # if pre_filtering_scenario == "first":
+        #     final_content_pcre = [content_pcre[0]]
+        # elif pre_filtering_scenario =="longest":
+        #     longest, size = None, 0
+        #     for content in content_pcre:
+        #         if len(content[3]) > size:
+        #             longest = content
+        #             size = len(content[3])
 
-    #         final_content_pcre = [longest]
-    #     elif pre_filtering_scenario =="first_last":
-    #         final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[-1]]
-    #     elif pre_filtering_scenario =="first_second":
-    #         final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[1]]
-    #     elif pre_filtering_scenario == "fast_pattern":
-    #         longest, size = None, 0   
-    #         if fast_pattern_match:
-    #             final_content_pcre = [fast_pattern_match] 
-    #         else:          
-    #             for content in content_pcre:
-    #                 if len(content[3]) > size:
-    #                     longest = content
-    #                     size = len(content[3])
+        #     final_content_pcre = [longest]
+        # elif pre_filtering_scenario =="first_last":
+        #     final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[-1]]
+        # elif pre_filtering_scenario =="first_second":
+        #     final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[1]]
+        # elif pre_filtering_scenario == "fast_pattern":
+        #     longest, size = None, 0   
+        #     if fast_pattern_match:
+        #         final_content_pcre = [fast_pattern_match] 
+        #     else:          
+        #         for content in content_pcre:
+        #             if len(content[3]) > size:
+        #                 longest = content
+        #                 size = len(content[3])
                         
-    #             final_content_pcre = [longest]
-    #     else:
-    #         final_content_pcre = content_pcre
+        #         final_content_pcre = [longest]
+        # else:
+        #     final_content_pcre = content_pcre
 
-    #     return final_content_pcre
+        return final_content_pcre
 
     def sids(self):
         return list(set(self.sid_rev_list))

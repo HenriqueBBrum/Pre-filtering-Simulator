@@ -119,7 +119,7 @@ def __group_by_protocol(matches):
         else:
             match_tree.safe_match_add(["tcp", "udp"], proto, match, applayer=True) 
 
-    match_tree.print_nodes()
+    # match_tree.print_nodes()
     return match_tree
 
 
@@ -135,19 +135,19 @@ def __group_by_rule_header(match_tree):
 
         return groupped_matches
 
-    final_groups = {}
+    final_matches = {}
     for key, node in match_tree.nodes.items():
         if node.applayer:
             tcp_matches = match_tree.get_related_matches(match_tree.get_root(), "udp", key)  # Don't go by the udp path
-            final_groups["tcp"+key] = group(tcp_matches)
+            final_matches["tcp"+key] = group(tcp_matches)
 
             udp_matches = match_tree.get_related_matches(match_tree.get_root(), "tcp", key) # Don't go by the tcp path
-            final_groups["udp"+key] = group(udp_matches)
+            final_matches["udp"+key] = group(udp_matches)
         else:
-            final_groups[key] = group(match_tree.get_related_matches(match_tree.get_root(), None, key))
-            print(key, len(match_tree.get_related_matches(match_tree.get_root(), None, key)))
+            final_matches[key] = group(match_tree.get_related_matches(match_tree.get_root(), None, key))
+            # print(key, len(match_tree.get_related_matches(match_tree.get_root(), None, key)))
 
-    return final_groups
+    return final_matches
 
     
    

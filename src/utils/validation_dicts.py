@@ -389,7 +389,7 @@ class Dicts():
         
 
     # Check if a rule option is a valid option type 
-    def verify_option(self, option):
+    def is_option(self, option):
         if option in self.payload_options():
             return "payload", True
         if option in self.non_payload_options():
