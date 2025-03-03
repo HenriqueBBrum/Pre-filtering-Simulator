@@ -126,7 +126,6 @@ def find_suspicious_packets(pcap_file, matches):
     for len, t, pkt in rpcap(pcap_file):
         parsed_pkt = Packet(pkt, len)
         if parsed_pkt.layer3_proto == IPV4:
-            #print(ip_pkt_count)
             start = time()
             
             suspicious_pkt, tcp_tracker, ftp_tracker = is_packet_suspicious(parsed_pkt, pkt_count, matches, tcp_tracker, ftp_tracker)
@@ -136,7 +135,7 @@ def find_suspicious_packets(pcap_file, matches):
             ip_pkt_count+=1
             time_to_process.append(time()-start)
            
-            #input()
+            input()
 
         pkt_count+=1
 
@@ -176,8 +175,8 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker, ftp_tracker):
                 if not matched_header_fields(pkt, match):
                     continue
 
-                # if not matched_payload(pkt_to_match, match):
-                #     continue
+                if not matched_payload(pkt, match):
+                    continue
                     
             # try:
             #     if not matched_ip_and_port(pkt, header_group_matches[0]): 

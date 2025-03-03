@@ -108,8 +108,8 @@ def __matched_ICMP_fields(pkt, match_pkt_header):
 
 # Compares a packet's TCP fields against the TCP fields of a match 
 def __matched_TCP_fields(pkt, match_pkt_header):
-    # if "flags" in match_pkt_header and not __matched_tcp_flags(pkt.tcp_flags, match_pkt_header["flags"]):
-    #     return False
+    if "flags" in match_pkt_header and not __matched_tcp_flags(pkt.tcp_flags, match_pkt_header["flags"]):
+        return False
 
     if "seq" in match_pkt_header and not compare_field(pkt.tcp_seq, match_pkt_header["seq"]["data"], match_pkt_header["seq"]["comparator"]):
         return False
@@ -180,20 +180,19 @@ def __matched_fragbits(pkt_fragbits, fragbits_num, comparator):
 
 # Compares a packet's TCP flags against the TCP flags of a match
 def __matched_tcp_flags(pkt_tcp_flags, match_tcp_flags):
-    pkt_tcp_flags = str(pkt_tcp_flags)
+    print(pkt_tcp_flags, match_tcp_flags)
+
     if match_tcp_flags["exclude"]:
         expression = "["+match_tcp_flags["exclude"]+"]*"
         pkt_tcp_flags = re.sub(expression, "", pkt_tcp_flags)
 
-    pkt_tcp_flags_num = sum(tcp_flags_dict[flag] for flag in pkt_tcp_flags) 
-
-    if match_tcp_flags["comparator"] == "" and pkt_tcp_flags_num == match_tcp_flags["data"]:
+    if match_tcp_flags["comparator"] == "" and pkt_tcp_flags == match_tcp_flags["data"]:
         return True
-    elif match_tcp_flags["comparator"] == "+" and (pkt_tcp_flags_num & match_tcp_flags["data"] == match_tcp_flags["data"]):
+    elif match_tcp_flags["comparator"] == "+" and (pkt_tcp_flags & match_tcp_flags["data"] == match_tcp_flags["data"]):
         return True
-    elif match_tcp_flags["comparator"] == "!" and pkt_tcp_flags_num != match_tcp_flags["data"]:
+    elif match_tcp_flags["comparator"] == "!" and pkt_tcp_flags != match_tcp_flags["data"]:
         return True
-    elif match_tcp_flags["comparator"] == "*" and (pkt_tcp_flags_num & match_tcp_flags["data"] >= 1):
+    elif match_tcp_flags["comparator"] == "*" and (pkt_tcp_flags & match_tcp_flags["data"] >= 1):
         return True
     
     return False

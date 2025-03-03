@@ -74,6 +74,19 @@ class Packet(object):
             self.hex_buffer = codecs.encode(buffer, "hex") # Do this only if packet is IP
             self.__parse()
 
+    def __str__(self):
+        print_str ="-"*10+"PKT data"+"-"*10+"\n"
+        print_str+=("Layer 3 proto=" + str(self.layer3_proto) + "\n")
+        print_str+=("IP fields:  ID="+ str(self.id)+", Fragbits="+str(self.fragbits)+", TTL="+str(self.ttl)+", Layer 4 proto="+str(self.layer4_proto)+ "\n")
+        if self.layer4_proto == TCP:
+            print_str+=("TCP fields: Flags="+ str(self.tcp_flags)+", SEQ="+str(self.tcp_seq)+", ACK="+str(self.tcp_ack)+", Window="+str(self.tcp_window)+ "\n")
+
+        if self.src_port:
+            print_str+=("Src port=" + str(self.src_port) + ", Dst port=" + str(self.dst_port) + "\n")
+
+        print_str+=("-"*14+"-"*14+"\n")
+        return print_str 
+    
 
     def __parse(self):
         self.__parse_eth()
@@ -143,7 +156,6 @@ class Packet(object):
         if self.buffer_len < layer4_start + ICMP_MIN_SIZE:
             return
         
-         
         self.icmp_itype = self.__get_byte(layer4_start)
         self.icmp_icode = self.__get_byte(layer4_start+1)
 
@@ -167,7 +179,7 @@ class Packet(object):
         self.tcp_seq = self.__get_bytes(layer4_start+4, layer4_start+8)
         self.tcp_ack = self.__get_bytes(layer4_start+8, layer4_start+12)
         data_offset = self.__get_byte(layer4_start+12) >> 4 # Get only "lower" four bits
-        self.tcp_flags= self.__get_byte(layer4_start+13, False)
+        self.tcp_flags= self.__get_byte(layer4_start+13, True)
         self.tcp_window = self.__get_bytes(layer4_start+14, layer4_start+16)
        
         # print("tcp", self.src_port, self.dst_port, self.tcp_seq, self.tcp_ack, self.tcp_flags, self.tcp_window)
