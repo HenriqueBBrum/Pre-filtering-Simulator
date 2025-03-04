@@ -23,14 +23,14 @@ def main(simulation_config_path, sim_results_folder):
         info["payload_size_MB"] = calculate_payload_size(matches)
         
         print("PRE-FILTERING SIMULATION")
-        output_folder = sim_results_folder+"pre_filtering_"+simulation_config["nids_name"]+simulation_config["scenario"]+"/"
+        output_folder = sim_results_folder+"pre_filtering_"+simulation_config["nids_name"]+"_"+simulation_config["scenario"]+"/"
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
         info = pre_filtering_simulation(simulation_config, matches, output_folder, info)
     elif simulation_config["type"] == "flow_sampling":
         print("FLOW SAMPLING SIMULATION")
-        output_folder = sim_results_folder+"flow_sampling_"+simulation_config["nids_name"]+str(simulation_config["flow_count_threshold"])+"_"+str(simulation_config["time_threshold"])+"/"
+        output_folder = sim_results_folder+"flow_sampling_"+simulation_config["nids_name"]+"_"+str(simulation_config["flow_count_threshold"])+"_"+str(simulation_config["time_threshold"])+"/"
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 

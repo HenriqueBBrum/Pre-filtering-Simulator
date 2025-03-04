@@ -4,7 +4,7 @@
     "nids_name": "suricata",
     "baseline_alerts_path":"etc/alerts/full_pcap/suricata/",
     "nids_config_path": "etc/nids_configuration/suricata_configuration/suricata.yaml",
-    "ruleset_path":"etc/rules/suricata-emerging/",
+    "ruleset_path":"etc/rules/suricata-emerging/emerging-all.rules",
     "flow_count_threshold":10,
-    "time_threshold":100
+    "time_threshold":25
 }
