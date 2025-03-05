@@ -175,7 +175,8 @@ class Match(object):
                 if modifier_name in modifiers_dict:
                     raise Exception("Two identical modifiers in the same content matching: ", modifiers_dict)
 
-                modifiers_dict[modifier_name] = modifier_value
+                if modifier_name == "nocase" or modifier_value:
+                    modifiers_dict[modifier_name] = modifier_value
 
             if ("offset" in modifiers_dict or "depth" in modifiers_dict) and ("within" in modifiers_dict or "distance" in modifiers_dict):
                 raise Exception("Modifiers are not correctly configured: ", modifiers_dict)

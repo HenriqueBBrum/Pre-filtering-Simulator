@@ -407,7 +407,9 @@ class RulesParser(object):
         # Snort has the modifiers within the content keyword
         if snort: 
             re_search = re.search('[\w ,-]*$', value)
-            modifiers = re_search.group(0)[1:].split(",") # Remove the first ','
+            modifiers = []
+            if re_search.group(0)[1:]:
+                modifiers = re_search.group(0)[1:].split(",") # Remove the first ','
             content = value[:re_search.span()[0]][1:-1]
             parsed_value = (False if negate else True, content, modifiers)
         else:
