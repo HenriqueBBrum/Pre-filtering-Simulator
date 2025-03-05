@@ -1,0 +1,12 @@
+{
+    "type": "pre_filtering",
+    "pcaps_path":"/home/hbeckerbrum/NFSDatasets/CICIDS2017/",
+    "ipvars_config_path":"etc/nids_configuration/",
+    "nids_name": "snort",
+    "baseline_alerts_path":"etc/alerts/snort/",
+    "nids_config_path": "etc/nids_configuration/snort/snort.lua",
+    "ruleset_path":"etc/rules/snort3-registered/",
+    "scenario":"full_test"
+}
+
+ 

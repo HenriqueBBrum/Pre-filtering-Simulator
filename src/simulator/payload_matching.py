@@ -32,17 +32,30 @@ def matched_payload(pkt_to_match, match, fast_pattern):
     return True
 
     
-
 def __matched_content(pkt_to_match, content_matches):
+    pos, last_match_pos = 0, 0
     for should_match, match_str, modifiers in content_matches:
+        pos = 0
+        if "offset" in modifiers:
+            pos = int(modifiers["offset"])*2
+
+        if "distance" in modifiers:
+            pos = last_match_pos + int(modifiers["distance"])*2
+
+        if pos > pkt_to_match.payload_len:
+            return False
+        
         if "nocase" in modifiers:
-            match_pos = pkt_to_match.payload_lower_case.find(match_str)
+            match_pos = pkt_to_match.payload_lower_case[pos:].find(match_str)
         else:
-            match_pos = pkt_to_match.payload.find(match_str)
+            match_pos = pkt_to_match.payload[pos:].find(match_str)
    
         # Return false if no match was found but the rule required finding a match or if a match was found but the rule required not fiding the match
         if (match_pos == -1 and should_match) or (match_pos >= 0 and not should_match):
-            return False    
+            return False  
+
+        if match_pos != -1:
+            last_match_pos = pos+int(match_pos)+int(len(match_str))
     return True
 
 

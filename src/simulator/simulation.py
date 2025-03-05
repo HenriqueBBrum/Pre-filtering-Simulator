@@ -83,38 +83,44 @@ def sample_flows(pcap_file, flow_count_threshold, time_threshold):
     return suspicious_pkts, info
 
 
+tcp_tracker = {}
+ftp_tracker = set()
 
 # Simulate the pre-filtering of packets based on signature rules]
 def pre_filtering_simulation(sim_config, matches, output_folder, info):
     info = info | {"type": "pre_filtering"}
     pcaps_path = sim_config["pcaps_path"]
     for pcap_file in os.listdir(pcaps_path):
+        if "Friday" not in pcap_file:
+            continue
+
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
         info[current_trace] = {}
         time_to_process = []
+        global tcp_tracker,  ftp_tracker
         tcp_tracker = {}
         ftp_tracker = set()
         pkt_count, ip_pkt_count = 0, 0
 
         suspicious_pkts = []
-        start = time()
+        experiment_start = time()
         for length, t_sec, t_usec, pkt in rpcap(pcaps_path+pcap_file):
             pkt_to_match = Packet(pkt, length)
             if pkt_to_match.layer3_proto == IPV4:
-                start = time()
+                packet_comparison_start = time()
                 
-                is_suspicious, motive, tcp_tracker, ftp_tracker = is_packet_suspicious(pkt_to_match, matches, tcp_tracker, ftp_tracker)
+                is_suspicious, motive = is_packet_suspicious(pkt_to_match, matches)
                 if is_suspicious:
-                    suspicious_pkts.append((t_sec, t_usec, pkt_count, motive))
+                    suspicious_pkts.append((t_sec, t_usec, pkt, motive))
 
                 ip_pkt_count+=1
-                time_to_process.append(time()-start)
+                time_to_process.append(time()-packet_comparison_start)
             pkt_count+=1
 
         info[current_trace]["pcap_size"] = pkt_count
         info[current_trace]["avg_pkt_processing_time"] = sum(time_to_process)/len(time_to_process)
         info[current_trace]["pkts_processed"] = ip_pkt_count
-        info[current_trace]["total_time_to_process"] = time() - start
+        info[current_trace]["total_time_to_process"] = time() - experiment_start
         info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[-1] for elem in suspicious_pkts)
 
@@ -122,10 +128,21 @@ def pre_filtering_simulation(sim_config, matches, output_folder, info):
     return info
 
 # Checks if a packet is suspicous, unsupported or is in a tcp stream
-def is_packet_suspicious(pkt_to_match, matches, tcp_tracker, ftp_tracker):
+def is_packet_suspicious(pkt_to_match, matches):
     if unsupported_protocols(pkt_to_match.layer4_proto, pkt_to_match.src_port, pkt_to_match.dst_port):
-        return True, "unsupported", tcp_tracker, ftp_tracker
-    
+        return True, "unsupported"
+
+    if pkt_to_match.layer4_proto == TCP: 
+        if pkt_to_match.applayer_proto != "ftp": 
+            _is_tcp_stream, motive = is_tcp_stream(pkt_to_match)
+            if _is_tcp_stream: 
+                return _is_tcp_stream, motive
+        else:
+            flow = pkt_to_match.src_ip+str(pkt_to_match.src_port)+pkt_to_match.dst_ip+str(pkt_to_match.dst_port)
+            if flow not in ftp_tracker and b"7061737320" in pkt_to_match.payload_lower_case:
+                ftp_tracker.add(flow)
+                return True, "ftp"     
+
     related_matches_key = "ip"
     if pkt_to_match.layer4_proto_str and pkt_to_match.layer4_proto_str in matches:
         related_matches_key = pkt_to_match.layer4_proto_str
@@ -146,28 +163,18 @@ def is_packet_suspicious(pkt_to_match, matches, tcp_tracker, ftp_tracker):
                     continue
                 
                 if pkt_to_match.layer4_proto == TCP:
-                    flow = pkt_to_match.src_ip+str(pkt_to_match.src_port)+pkt_to_match.src_ip+str(pkt_to_match.dst_port)
+                    flow = pkt_to_match.src_ip+str(pkt_to_match.src_port)+pkt_to_match.dst_ip+str(pkt_to_match.dst_port)
                     if pkt_to_match.tcp_flags == 16: #ACK
                         tcp_tracker[flow] = {"seq": pkt_to_match.tcp_seq, "ack": pkt_to_match.tcp_ack}    
-                    elif pkt_to_match.tcp_flags == 28: #"PA"
-                        tcp_tracker[flow] = {"seq": pkt_to_match.tcp_seq+pkt_to_match.payload_size, "ack": pkt_to_match.tcp_ack}   
+                    elif pkt_to_match.tcp_flags == 24: #"PA"
+                        tcp_tracker[flow] = {"seq": pkt_to_match.tcp_seq+pkt_to_match.payload_len, "ack": pkt_to_match.tcp_ack}   
 
-                return True, match.sids()[0], tcp_tracker, ftp_tracker
+                return True, match.sids()[0]
         except Exception as e:
             print("Exception: ", traceback.format_exc())
-            return True, "error", tcp_tracker, ftp_tracker
-
-    if pkt_to_match.layer4_proto == TCP: 
-        if pkt_to_match.applayer_proto != "ftp": 
-            tcp_stream, motive, tcp_tracker = is_tcp_stream(pkt_to_match, tcp_tracker) 
-            return tcp_stream, motive, tcp_tracker, ftp_tracker
-        else:
-            flow = pkt_to_match.src_ip+str(pkt_to_match.src_port)+pkt_to_match.src_ip+str(pkt_to_match.dst_port)
-            if pkt_to_match.applayer_proto == "ftp" and flow not in ftp_tracker and b"7061737320" in pkt_to_match.payload_lower_case:
-                ftp_tracker.add(flow)
-                return True, "ftp", tcp_tracker, ftp_tracker
+            return True, "error"
     
-    return False, "", tcp_tracker, ftp_tracker
+    return False, ""
 
 # CIP, IEC104 and S7Comm not here
 def unsupported_protocols(layer_4_proto, src_port, dst_port):
@@ -193,10 +200,10 @@ def unsupported_protocols(layer_4_proto, src_port, dst_port):
         if src_port in SMB_PORTS or dst_port in SMB_PORTS: #SMB
             return True
 
-def is_tcp_stream(pkt_to_match, tcp_tracker):
+def is_tcp_stream(pkt_to_match):
     flow = pkt_to_match.src_ip+str(pkt_to_match.src_port)+pkt_to_match.dst_ip+str(pkt_to_match.dst_port)
-    reversed_flow = pkt_to_match.src_ip+str(pkt_to_match.dst_port)+pkt_to_match.src_ip+str(pkt_to_match.src_port) #Invert order to match flow
-
+    reversed_flow = pkt_to_match.dst_ip+str(pkt_to_match.dst_port)+pkt_to_match.src_ip+str(pkt_to_match.src_port) #Invert order to match flow
+   
     stream_tcp = False
     if flow in tcp_tracker and pkt_to_match.tcp_flags == 16 and pkt_to_match.tcp_seq == tcp_tracker[flow]["seq"]:
         stream_tcp = True
@@ -211,28 +218,26 @@ def is_tcp_stream(pkt_to_match, tcp_tracker):
         stream_tcp = True
     elif pkt_to_match.tcp_flags == 1:
         stream_tcp = True
-        tcp_tracker = remove_flow(tcp_tracker, flow, reversed_flow)
+        remove_flow(flow, reversed_flow)
 
     if stream_tcp:
-        return True, "stream_tcp", tcp_tracker
+        return True, "stream_tcp"
     
-    tcp_tracker = remove_flow(tcp_tracker, flow, reversed_flow)
+    remove_flow(flow, reversed_flow)
+    return False, ""
 
-    return False, "", tcp_tracker
-
-def remove_flow(tcp_tracker, flow, reversed_flow):
+def remove_flow(flow, reversed_flow):
     if flow in tcp_tracker:
         tcp_tracker.pop(flow)
     elif reversed_flow in tcp_tracker:
         tcp_tracker.pop(reversed_flow)
 
-    return tcp_tracker
 
 
 
 ### Functions to compare the experiments results ""
 def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info): 
-    suspicious_pkts_alert_file, nids_processing_time = nids_with_suspicious_pcap(sim_config, suspicious_pkts, current_trace, output_folder)
+    suspicious_pkts_alert_file, nids_processing_time = nids_with_suspicious_pcap(sim_config, suspicious_pkts, current_trace, output_folder) # WHAT IF THERE IS NO SUSPCIIOUS PACKETS?
     info[current_trace]["nids_processing_time"] = nids_processing_time
 
     if sim_config["nids_name"] == "snort":

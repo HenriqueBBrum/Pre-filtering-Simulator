@@ -114,7 +114,6 @@ class RulesParser(object):
                     modified_rules.append(swap_dir_rule)
                 else:
                     modified_rules.append(cp_rule)
-
         return parsed_rules, modified_rules
 
     # Substitute system variables for the real values in the config file
@@ -393,6 +392,7 @@ class RulesParser(object):
                 options_dict[key] = [(index, parsed_value)]
             else:
                 options_dict[key].append((index, parsed_value))
+
         return options_dict
     
 

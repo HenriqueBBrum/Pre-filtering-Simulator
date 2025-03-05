@@ -22,7 +22,7 @@ tcp_flags_dict = {
     'C': 128,
 }
 
-ipotps_to_hex = {"eol":0x00, "nop":0x01,  "sec": 0x02, "rr": 0x07,  "ts": 0x44, "lsrr": 0x83, "lsrre": 0x83,  "esec": 0x85, "satid": 0x88, "ssr": 0x89, "any": 0XFF}
+ipotps_to_hex = {"eol":0x00, "nop":0x01,  "sec": 0x02, "rr": 0x07,  "ts": 0x44, "lsrr": 0x83, "lsrre": 0x83,  "esec": 0x85, "satid": 0x88, "ssr": 0x89, "ssrr": 0x89, "any": 0XFF}
 
 native_pcre_modifiers = {'i', 's', 'm', 'x'}
 
@@ -65,9 +65,9 @@ class Match(object):
         
         # Determine the data and comparator for the "ttl", "id", "seq", "ack", "window", "itype", "icode", "icmp_id", "icmp_seq" keywords
         for key in ["ttl", "id", "seq", "ack", "window", "itype", "icode", "icmp_id", "icmp_seq"]:
-            if key in self.header_fields:
+            if key in self.header_fields:                    
                 value = self.__get_header_field_value(key)
-                comparator = re.search("[^\d]+", value)
+                comparator = re.search("[^\d ]+", value)
                 comparator = comparator.group(0) if comparator != None else ""
                 self.header_fields[key] = {"data": re.findall("[\d]+", value), "comparator": comparator}
 
@@ -129,7 +129,7 @@ class Match(object):
     def __adjust_payload_for_match(self, pre_filtering_scenario):
         if "dsize" in self.payload_fields:
             value = self.payload_fields["dsize"][0][1] # Options/Paylod_fields are stored as {"key": [(index, value), ]}
-            comparator = re.search("[^\d]+", value)
+            comparator = re.search("[^\d ]+", value)
             comparator = comparator.group(0) if comparator != None else ""
             self.payload_fields["dsize"] = {"data": re.findall("[\d]+", value), "comparator": comparator}
 
@@ -168,10 +168,10 @@ class Match(object):
                     fast_pattern = True
                     continue
 
-                if item != "nocase":
+                if item!="nocase" and "fast" not in item:
                     modifier_name = re.search('^[a-zA-Z]*', item).group(0)
                     modifier_value = re.search('\d*$', item).group(0)
-
+                
                 if modifier_name in modifiers_dict:
                     raise Exception("Two identical modifiers in the same content matching: ", modifiers_dict)
 
@@ -179,7 +179,6 @@ class Match(object):
 
             if ("offset" in modifiers_dict or "depth" in modifiers_dict) and ("within" in modifiers_dict or "distance" in modifiers_dict):
                 raise Exception("Modifiers are not correctly configured: ", modifiers_dict)
-            
         return modifiers_dict, fast_pattern
 
     # Converts content to hex only
@@ -207,9 +206,9 @@ class Match(object):
                     if len(temp_str) == 2:
                         temp = int(temp_str, 16)
                         if nocase and (temp >= 65 and temp <=90):
-                            clean_content+=(f'{(temp+32):x}'.upper())
+                            clean_content+=(f'{(temp+32):x}'.upper()).lower() # Lower from upper to lower of hex 6D to 6d
                         else:
-                            clean_content+=temp_str
+                            clean_content+=temp_str.lower()
                         temp_str = ""
 
                     i+=1

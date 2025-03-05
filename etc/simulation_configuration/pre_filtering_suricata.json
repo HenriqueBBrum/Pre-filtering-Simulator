@@ -1,0 +1,12 @@
+{
+    "type": "pre_filtering",
+    "pcaps_path":"/home/hbeckerbrum/NFSDatasets/CICIDS2017/",
+    "ipvars_config_path":"etc/nids_configuration/",
+    "nids_name": "suricata",
+    "baseline_alerts_path":"etc/alerts/suricata/",
+    "nids_config_path": "etc/nids_configuration/suricata/suricata.yaml",
+    "ruleset_path":"etc/rules/suricata-emerging/emerging-all.rules",
+    "scenario":"full_test"
+}
+
+ 

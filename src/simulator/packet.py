@@ -26,7 +26,7 @@ IPV6 = 0X8DD
 
 ICMP = 0X01
 TCP = 0X06
-UDP = 0X01
+UDP = 0X11
 
 ipproto_str_to_hex = {0x01:"icmp", 0x06:"tcp", 0x11:"udp"}
 ICMP_TYPE_WITH_ID_AND_SEQ = {13, 14, 17, 18}
@@ -130,11 +130,12 @@ class Packet(object):
                 payload_start = self.__parse_tcp(ipv4_end)
             elif self.layer4_proto == 0x11:
                 payload_start = self.__parse_udp(ipv4_end)
+
             self.applayer_proto = self.__get_applayer_proto()
  
             self.payload = self.hex_buffer[payload_start*2:]
             self.payload_lower_case = self.hex_buffer_lower[payload_start*2:]
-            self.payload_len = len(self.payload)
+            self.payload_len = int(len(self.payload)/2)
             return IPV4
         elif eth_type == IPV6:
             if self.buffer_len < ETH_SIZE+IPV6_SIZE:
@@ -201,15 +202,18 @@ class Packet(object):
 
 
     def __get_applayer_proto(self):
-        if self.layer4_proto != 0x06 or self.layer4_proto != 0x11:
+        if self.layer4_proto != TCP and self.layer4_proto != UDP:
             return None
         
         proto = None
         try:
             proto = getservbyport(self.dst_port, self.layer4_proto_str)
         except:
-            proto = None
-
+            try:
+                proto = getservbyport(self.src_port, self.layer4_proto_str)
+            except:
+                return None
+       
         change_map = {"http-alt": "http", "microsoft-ds": "netbios-ssn", "domain": "dns", "mdns":"dns", "https": None}
         if proto:
             if proto in change_map:

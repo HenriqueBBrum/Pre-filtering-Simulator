@@ -1,10 +1,10 @@
 {
     "type": "flow_sampling",
     "pcaps_path":"/home/hbeckerbrum/NFSDatasets/CICIDS2017/",
-    "nids_name": "suricata",
-    "baseline_alerts_path":"etc/alerts/full_pcap/suricata/",
-    "nids_config_path": "etc/nids_configuration/suricata_configuration/suricata.yaml",
-    "ruleset_path":"etc/rules/suricata-emerging/emerging-all.rules",
+    "nids_name": "snort",
+    "baseline_alerts_path":"etc/alerts/full_pcap/snort/",
+    "nids_config_path": "etc/nids_configuration/snort/snort.lua",
+    "ruleset_path":"etc/rules/snort3-registered/",
     "flow_count_threshold":10,
     "time_threshold":25
 }
