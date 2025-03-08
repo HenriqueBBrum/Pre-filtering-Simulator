@@ -164,8 +164,8 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
                 if not matched_header_fields(pkt, match):
                     continue
 
-                # if not matched_payload(pkt, rule):
-                #     continue
+                if not matched_payload(pkt, match):
+                    continue
                 
                 if pkt.tcp:
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"])
@@ -201,14 +201,14 @@ def check_stream_tcp(pkt, pkt_count, tcp_tracker):
         stream_tcp = True
     elif "F" in pkt.header["flags"] :
         stream_tcp = True
-        remove_flow(tcp_tracker, flow, reversed_flow)
+        remove_flow(flow, reversed_flow, tcp_tracker)
 
     if stream_tcp:
         suspicious_pkt = (pkt_count, "stream_tcp")
     else:
-        remove_flow(tcp_tracker, flow, reversed_flow)
+        remove_flow(flow, reversed_flow, tcp_tracker)
 
-    return suspicious_pkt, tcp_tracker
+    return suspicious_pkt
 
 def remove_flow(flow, reversed_flow, tcp_tracker):
     if flow in tcp_tracker:

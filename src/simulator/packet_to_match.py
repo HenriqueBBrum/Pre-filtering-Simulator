@@ -86,7 +86,7 @@ class PacketToMatch(object):
         
         for key in payload_buffers:
             payload_buffers[key].append(payload_buffers[key][0].lower())
-
+        
         return payload_buffers
 
     # Get http_* and file_data buffers for HTTP packets

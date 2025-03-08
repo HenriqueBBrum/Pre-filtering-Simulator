@@ -7,32 +7,87 @@ http_response_buffers = {"http_stat_code", "http_stat_msg", "file_data"}
 
 ## Compares the payload of packet against the payload-related fields of a rule
 # A "False" return value means the packet does not match the rule and is not suspicious acording to the rule
-def matched_payload(pkt_to_match, rule):
+def matched_payload(pkt, rule):
     # Compare the packet's payload size against the rule's desired (payload) size
-    if "dsize" in rule.payload_fields and not compare_field(pkt_to_match.payload_size, rule.payload_fields["dsize"]["data"], \
+    if "dsize" in rule.payload_fields and not compare_field(pkt.payload_size, rule.payload_fields["dsize"]["data"], \
                                                                                             rule.payload_fields["dsize"]["comparator"]):
         return False
 
     # If the packet has no payload but the rule has payload fields, return that it does not match the rule
-    if pkt_to_match.payload_size == 0 and ("content_pcre" in rule.payload_fields):
+    if pkt.payload_size == 0 and ("content_pcre" in rule.payload_fields):
         return False
     
     # Compare packets that have payload with rules that have the "content" or "pcre" keywords
-    if "content" in rule.payload_fields and not __matched_content(pkt_to_match, rule.payload_fields["content_pcre"]):
+    if "content" in rule.payload_fields and not __matched_content(pkt, rule.payload_fields["content"]):
         return False
 
-    if "pcre" in rule.payload_fields and not __matched_pcre(pkt_to_match, rule.payload_fields["content_pcre"]):
+    if "pcre" in rule.payload_fields and not __matched_pcre(pkt, rule.payload_fields["pcre"]):
         return False
 
     return True
 
 
-#def __matched_content()
+def __matched_content(pkt, match_contents):
+    position_dict = {}
 
-## Compares "content" and "pcre" strings against the desired packet's buffer
-# Guarentees: Packet has payload and the rule has "content" or "pcre" fields
+    for buffer_name, should_match, match_str, modifiers in match_contents:
+        if buffer_name not in pkt.payload_buffers or not pkt.payload_buffers[buffer_name][0]: 
+            return False
+        
+        if "http" in buffer_name and (pkt.http_res or pkt.http_req):
+            return False
+        
+        position = position_dict[buffer_name] if buffer_name in position_dict else 0
+        buffer = pkt.payload_buffers[buffer_name][0]
+        start, end, nocase = __process_content_modifiers(modifiers, position, len(buffer))
+        match_pos = pkt.payload_buffers[buffer_name][nocase][start:end].find(match_str)
 
-def __matched_content_pcre(pkt_to_match, rule_content_pcre):
+        # Return false if no match was found but the rule required finding a match or if a match was found but the rule required not fiding the match
+        if (match_pos == -1 and should_match) or (match_pos >= 0 and not should_match):
+            return False
+        
+        # The packet had the desired match or the packet did not have the undesired match
+        if match_pos != -1:
+            position = start+int(match_pos)+int(len(match_str))
+            position_dict[buffer_name] = position
+
+    return True
+
+def __matched_pcre(pkt, match_pcres):
+    position_dict = {}
+    for buffer_name, should_match, pcre, relative_match in match_pcres:
+        if buffer_name not in pkt.payload_buffers or not pkt.payload_buffers[buffer_name][0]: 
+            return False
+        
+        if "http" in buffer_name and (pkt.http_res or pkt.http_req):
+            return False
+        
+        position = position_dict[buffer_name] if buffer_name in position_dict else 0
+        buffer = pkt.payload_buffers[buffer_name][0]
+        if relative_match:
+            start = position
+
+        match = search(pcre, pkt.payload_buffers[buffer][start:])
+        if match:
+            match_pos = match.start()
+            match_str = match.group(0) # Differently from the content keyword, in PCRE the matched string is not the PCRE string
+        else:
+            match_pos = -1 
+
+        # Return false if no match was found but the rule required finding a match or if a match was found but the rule required not fiding the match
+        if (match_pos == -1 and should_match) or (match_pos >= 0 and not should_match):
+            return False
+        
+        # The packet had the desired match or the packet did not have the undesired match
+        if match_pos != -1:
+            position = start+int(match_pos)+int(len(match_str))
+            position_dict[buffer_name] = position
+
+    return True
+
+
+
+def __matched_content_pcre(pkt, rule_content_pcre):
     position_dict = {}
     buffer, actual_buffer_name = "", ""
     position = 0
@@ -42,21 +97,21 @@ def __matched_content_pcre(pkt_to_match, rule_content_pcre):
         if match_buffer in unsupported_buffers:
             continue
 
-        if "http" in match_buffer and not pkt_to_match.http_res and not pkt_to_match.http_req:
+        if "http" in match_buffer and not pkt.http_res and not pkt.http_req:
             return False
-        elif match_buffer in http_response_buffers and not pkt_to_match.http_res:
+        elif match_buffer in http_response_buffers and not pkt.http_res:
             return False 
-        elif match_buffer in http_request_buffers and not pkt_to_match.http_req:
+        elif match_buffer in http_request_buffers and not pkt.http_req:
             return False 
         
         # Decide on the buffer to match. By default the buffer is "pkt_data"
         if match_buffer:
-            buffer = pkt_to_match.payload_buffers["nocase"][match_buffer]
+            buffer = pkt.payload_buffers["nocase"][match_buffer]
             position = position_dict[match_buffer] if match_buffer in position_dict else 0 # There is a pointer in the buffer already. Start from there
         else:
             if not buffer:
                 match_buffer = "pkt_data"
-                buffer = pkt_to_match.payload_buffers["nocase"][match_buffer]
+                buffer = pkt.payload_buffers["nocase"][match_buffer]
             
         actual_buffer_name = match_buffer if match_buffer else actual_buffer_name
 
@@ -64,13 +119,13 @@ def __matched_content_pcre(pkt_to_match, rule_content_pcre):
         start, end, nocase = 0, len(buffer), False
         if match_type == 0: # "content" keyword match
             start, end, nocase = __process_content_modifiers(match_modifiers, position, end)
-            buffer = buffer if nocase else pkt_to_match.payload_buffers["original"][actual_buffer_name]
+            buffer = buffer if nocase else pkt.payload_buffers["original"][actual_buffer_name]
             match_pos = buffer[start:end].find(match_str)
         else: # "pcre" keyword match
             if match_modifiers == 'R':
                 start = position
 
-            match = search(match_str, pkt_to_match.payload_buffers["original"][actual_buffer_name][start:end])
+            match = search(match_str, pkt.payload_buffers["original"][actual_buffer_name][start:end])
             if match:
                 match_pos = match.start()
                 match_str = match.group(0) # Differently from the content keyword, in PCRE the matched string is not the PCRE string

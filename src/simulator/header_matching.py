@@ -171,7 +171,7 @@ def __matched_tcp_flags(pkt_tcp_flags, match_tcp_flags):
 
     if match_tcp_flags["comparator"] == "" and pkt_tcp_flags == match_tcp_flags["data"]:
         return True
-    elif match_tcp_flags["comparator"] == "+" and (pkt_tcp_flags & match_tcp_flags["data"] == tcp_match_tcp_flagsflags["data"]):
+    elif match_tcp_flags["comparator"] == "+" and (pkt_tcp_flags & match_tcp_flags["data"] == match_tcp_flags["data"]):
         return True
     elif match_tcp_flags["comparator"] == "!" and pkt_tcp_flags != match_tcp_flags["data"]:
         return True

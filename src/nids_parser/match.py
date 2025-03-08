@@ -149,10 +149,10 @@ class Match(object):
         final_content_list = []
         if "content" in payload_fields:
             fast_pattern_match = None
-            for content in payload_fields["content"]:
-                match_str = self.__clean_content(content[-2], "nocase" in content[-1] if content[-1] else False)
-                modifiers, fast_pattern = self.__parse_content_modifiers(content[-1])
-                final_content_list.append((content[0], content[1], match_str, modifiers)) # buffer, negation, string, modifiers
+            for buffer_name, should_match, match_str, modifiers in payload_fields["content"]:
+                match_str = self.__clean_content(match_str, "nocase" in modifiers if modifiers else False)
+                modifiers, fast_pattern = self.__parse_content_modifiers(modifiers)
+                final_content_list.append((buffer_name, should_match, match_str, modifiers)) # buffer, negation, string, modifiers
                 if fast_pattern:
                     fast_pattern_match = final_content_list[-1]
         
@@ -162,11 +162,12 @@ class Match(object):
 
         pcre_list = []
         if "pcre" in payload_fields:
-            for pcre in payload_fields["pcre"]:
-                buffer_name, parsed_pcre_str, relative_match = self.__parse_pcre_modifiers(pcre[2], pcre[3])
-                if not buffer_name:
-                    buffer_name == pcre[0]
-                pcre_list.append((buffer_name, pcre[1], parsed_pcre_str, relative_match))
+            for buffer_name, should_match, pcre, modifiers in payload_fields["pcre"]:
+                final_buffer_name, parsed_pcre_str, relative_match = self.__parse_pcre_modifiers(pcre, modifiers)
+                if not final_buffer_name:
+                    final_buffer_name == buffer_name
+
+                pcre_list.append((final_buffer_name, should_match, parsed_pcre_str, relative_match))
     
             payload_fields["pcre"] = pcre_list
 
