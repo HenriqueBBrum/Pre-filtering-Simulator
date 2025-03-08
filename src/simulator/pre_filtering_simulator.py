@@ -24,44 +24,63 @@ from utils.ports import SIP_PORTS,SMB_PORTS
 
 
 # Simulate the pre-filtering of packets based on signature rules]
-def pre_filtering_simulation(sim_config, rules, rules_info, output_folder):
-    info = rules_info | {"type": "pre_filtering"}
+def pre_filtering_simulation(sim_config, matches, output_folder, info):
+    info["type"] = "pre_filtering"
     pcaps_path = sim_config["pcaps_path"]
 
     for pcap_file in os.listdir(pcaps_path):
+        if "Friday_start" not in pcap_file:
+            continue
+
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
         print(current_trace)
         info[current_trace] = {}
 
         start = time()
-        suspicious_pkts, temp_info = find_suspicious_packets(pcaps_path+pcap_file, rules)
+        suspicious_pkts, temp_info = find_suspicious_packets(pcaps_path+pcap_file, matches)
       
         info[current_trace]["total_time_to_process"] = time() - start
         info[current_trace].update(temp_info)
 
         info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
-        info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
+        #info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
         print(json.dump(info , sys.stdout, ensure_ascii=False, indent=4))
     return info
 
 # Find the suspicious packets
-def find_suspicious_packets(pcap_file, rules):
+def find_suspicious_packets(pcap_file, matches):
     suspicious_pkts = []
     time_to_process = []
     tcp_tracker = {}
     ftp_tracker = set()
     pkt_count, ip_pkt_count = 0, 0
-    for pkt in PcapReader(pcap_file):
-        if IP in pkt:
+    for scapy_pkt in PcapReader(pcap_file):
+        if IP in scapy_pkt:
             start = time()
-           
-            suspicious_pkt, tcp_tracker, ftp_tracker = is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker, ftp_tracker)
+            if unsupported_protocols(scapy_pkt):
+                suspicious_pkt = (pkt_count, "unsupported")
+            else:
+                pkt = PacketToMatch(scapy_pkt)
+                proto, related_matches = get_related_matches(pkt, matches) 
+                suspicious_pkt = is_packet_suspicious(pkt, pkt_count, related_matches, tcp_tracker)
+            
+                if not suspicious_pkt and pkt.tcp: 
+                    if "ftp" not in proto:  
+                        suspicious_pkt = check_stream_tcp(pkt, pkt_count, tcp_tracker)
+                    else:
+                        flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"])
+                        if flow not in ftp_tracker and "pass " in pkt.payload_buffers["pkt_data"][1]:
+                            suspicious_pkt = (pkt_count, "ftp")
+                            ftp_tracker.add(flow)
+
             if suspicious_pkt:
                 suspicious_pkts.append(suspicious_pkt)
 
             ip_pkt_count+=1
             time_to_process.append(time()-start)
+            if ip_pkt_count > 5000:
+                break
         pkt_count+=1
 
     info = {}
@@ -72,60 +91,12 @@ def find_suspicious_packets(pcap_file, rules):
     
     return suspicious_pkts, info
 
-
-# Checks if a packet is suspicous, unsupported or is in a tcp stream
-def is_packet_suspicious(pkt, pkt_count, rules, tcp_tracker, ftp_tracker):
-    suspicious_pkt = None
-    if unsupported_protocols(pkt):
-        suspicious_pkt = (pkt_count, "unsupported")
-    else:
-        pkt_to_match = PacketToMatch(pkt)
-        protocol, rules_to_compare = get_pkt_related_rules(pkt_to_match, rules)
-        for header_group in rules_to_compare:
-            if suspicious_pkt:
-                break
-            try:
-                if not matched_ip_and_port(pkt_to_match, rules_to_compare[header_group][0]): 
-                    continue
-            
-                # Matched the groups' ip and port header, compare with the other fields of each rule in this group
-                for rule in rules_to_compare[header_group]:
-                    if not matched_header_fields(pkt_to_match, rule):
-                        continue
-
-                    if not matched_payload(pkt_to_match, rule):
-                        continue
-                    
-                    suspicious_pkt = (pkt_count, rule.sids()[0])
-                    if TCP in pkt:
-                        flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
-                        if pkt_to_match.header["flags"] == "A":
-                            tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"], "ack": pkt_to_match.header["ack"]}    
-                        elif pkt_to_match.header["flags"] == "PA":
-                            tcp_tracker[flow] = {"seq": pkt_to_match.header["seq"]+pkt_to_match.payload_size, "ack": pkt_to_match.header["ack"]}   
-
-                    break
-            except Exception as e:
-                print("Exception: ", traceback.format_exc())
-                suspicious_pkt = (pkt_count, "error")
-
-            if not suspicious_pkt and pkt_to_match.tcp_in_pkt: 
-                if "ftp" not in protocol:  
-                    suspicious_pkt, tcp_tracker = check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count)
-                else:
-                    flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
-                    if "ftp" in protocol and flow not in ftp_tracker and "pass " in pkt_to_match.payload_buffers["nocase"]["pkt_data"]:
-                        suspicious_pkt = (pkt_count, "ftp")
-                        ftp_tracker.add(flow)
-    
-    return suspicious_pkt, tcp_tracker, ftp_tracker
-
 # CIP, IEC104 and S7Comm not here
 def unsupported_protocols(pkt):
-     if TCP in pkt or UDP in pkt:
+    if TCP in pkt or UDP in pkt:
         if GTPHeader in pkt or GTPHeader_v2 in pkt:
             return True
- 
+
         transport_layer = pkt.getlayer(UDP) if pkt.getlayer(UDP) else pkt.getlayer(TCP)
         sport = pkt[transport_layer.name].sport
         dport = pkt[transport_layer.name].dport
@@ -141,89 +112,106 @@ def unsupported_protocols(pkt):
 
         if sport == 502 or sport == 802 or dport == 502 or dport == 802: # DNP3
             return True
-        
+
         if sport in SIP_PORTS or dport in SIP_PORTS: # SIP
             return True 
-        
+
         if sport in SMB_PORTS or dport in SMB_PORTS: #SMB
             return True
 
 ip_proto = {1:"icmp", 6:"tcp", 17:"udp"}
 # Returns the rules related to the protocol and services of a packet
-def get_pkt_related_rules(pkt, rules):
+def get_related_matches(pkt, matches):
     pkt_proto = ip_proto.get(pkt.header["ip_proto"], "ip")
-    if ((pkt_proto == "udp" and not pkt.udp_in_pkt) or 
-                (pkt_proto == "tcp" and not pkt.tcp_in_pkt) or (pkt_proto == "icmp" and not pkt.icmp_in_pkt)):
-        pkt_proto = "ip"
-    
-    service = None
-    if pkt.udp_in_pkt or pkt.tcp_in_pkt:
-        service = get_service(pkt, pkt_proto, rules.keys(), "dport", True) # Get service based on dport
-      
-    if service in rules:
-        pkt_proto = service
+    applayer_proto =  None
+    if pkt.tcp or pkt.udp:
+        applayer_proto = get_applayer_proto(pkt_proto, pkt.header["sport"], pkt.header["dport"])
 
-    return pkt_proto, rules[pkt_proto]
+    related_matches_key = "ip"
+    if pkt_proto in matches:
+        related_matches_key = pkt_proto
+        if applayer_proto and related_matches_key+applayer_proto in matches:
+            related_matches_key+=applayer_proto
 
-def get_service(pkt, transport_proto, rules_services, port, check_src):
-    service = None
+    return related_matches_key, matches[pkt_proto]
+
+change_map = {"http-alt": "http", "microsoft-ds": "netbios-ssn", "domain": "dns", "mdns":"dns", "https": None}
+def get_applayer_proto(proto_str, sport, dport):
+    applayer_proto = None
     try:
-        service = getservbyport(pkt.header[port], transport_proto)
-    except:
-        service = None
-
-    change_map = {"http-alt": "http", "microsoft-ds": "netbios-ssn", "domain": "dns", "mdns":"dns", "https": None}
-    if service:
-        if service in change_map:
-            service = change_map[service]
-            
-        if service == "http" and not (pkt.http_res_in_pkt or pkt.http_req_in_pkt):
-            service = None
-
-        if not service:
-            return service
+        applayer_proto = getservbyport(sport, proto_str)
+    except Exception as e:
+        try:
+            applayer_proto = getservbyport(dport, proto_str)
+        except  Exception as e:
+            return None
         
-        service = transport_proto+"_"+service
-        if check_src and service not in rules_services: 
-            service = get_service(pkt, transport_proto, rules_services, "sport", False)
-    
-    if check_src and not service:
-        service = get_service(pkt, transport_proto, rules_services, "sport", False)
- 
-    return service
+    if applayer_proto:
+        if applayer_proto in change_map:
+            applayer_proto = change_map[applayer_proto]
+            
+    return applayer_proto 
 
-def check_stream_tcp(pkt_to_match, tcp_tracker, pkt_count):
+# Checks if a packet is suspicous, unsupported or is in a tcp stream
+def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
+    for header_group in matches:
+        #try:
+            if not matched_ip_and_port(pkt, matches[header_group][0]): 
+                continue
+        
+            # Matched the groups' ip and port header, compare with the other fields of each rule in this group
+            for match in matches[header_group]:
+                if not matched_header_fields(pkt, match):
+                    continue
+
+                # if not matched_payload(pkt, rule):
+                #     continue
+                
+                if pkt.tcp:
+                    flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"])
+                    if pkt.header["flags"] == "A":
+                        tcp_tracker[flow] = {"seq": pkt.header["seq"], "ack": pkt.header["ack"]}    
+                    elif pkt.header["flags"] == "PA":
+                        tcp_tracker[flow] = {"seq": pkt.header["seq"]+pkt.payload_size, "ack": pkt.header["ack"]}   
+
+                return (pkt_count, match.sids()[0])
+        # except Exception as e:
+        #     print("Exception: ", traceback.format_exc())
+        #     return (pkt_count, "error")
+        
+    return None
+
+
+def check_stream_tcp(pkt, pkt_count, tcp_tracker):
     suspicious_pkt = None
-    flow = pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"])+pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])
-    reversed_flow = pkt_to_match.header["dst_ip"]+str(pkt_to_match.header["dport"])+pkt_to_match.header["src_ip"]+str(pkt_to_match.header["sport"]) #Invert order to match flow
+    flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"])
+    reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) #Invert order to match flow
 
     stream_tcp = False
-    if flow in tcp_tracker and pkt_to_match.header["flags"] == "A" and pkt_to_match.header["seq"] == tcp_tracker[flow]["seq"]:
+    if flow in tcp_tracker and pkt.header["flags"] == "A" and pkt.header["seq"] == tcp_tracker[flow]["seq"]:
         stream_tcp = True
-    elif flow in tcp_tracker and "PA" in pkt_to_match.header["flags"] and pkt_to_match.header["ack"] == tcp_tracker[flow]["ack"]:
+    elif flow in tcp_tracker and "PA" in pkt.header["flags"] and pkt.header["ack"] == tcp_tracker[flow]["ack"]:
         stream_tcp = True
-    elif reversed_flow in tcp_tracker and pkt_to_match.header["flags"]  == "A" and pkt_to_match.header["seq"] == tcp_tracker[reversed_flow]["ack"]:
+    elif reversed_flow in tcp_tracker and pkt.header["flags"]  == "A" and pkt.header["seq"] == tcp_tracker[reversed_flow]["ack"]:
         stream_tcp = True
-    elif reversed_flow in tcp_tracker and "PA" in pkt_to_match.header["flags"] and pkt_to_match.header["ack"] == tcp_tracker[reversed_flow]["seq"]:
+    elif reversed_flow in tcp_tracker and "PA" in pkt.header["flags"] and pkt.header["ack"] == tcp_tracker[reversed_flow]["seq"]:
         stream_tcp = True
 
-    if "R" in pkt_to_match.header["flags"]:
+    if "R" in pkt.header["flags"]:
         stream_tcp = True
-    elif "F" in pkt_to_match.header["flags"] :
+    elif "F" in pkt.header["flags"] :
         stream_tcp = True
-        tcp_tracker = remove_flow(tcp_tracker, flow, reversed_flow)
+        remove_flow(tcp_tracker, flow, reversed_flow)
 
     if stream_tcp:
         suspicious_pkt = (pkt_count, "stream_tcp")
     else:
-        tcp_tracker = remove_flow(tcp_tracker, flow, reversed_flow)
+        remove_flow(tcp_tracker, flow, reversed_flow)
 
     return suspicious_pkt, tcp_tracker
 
-def remove_flow(tcp_tracker, flow, reversed_flow):
+def remove_flow(flow, reversed_flow, tcp_tracker):
     if flow in tcp_tracker:
         tcp_tracker.pop(flow)
     elif reversed_flow in tcp_tracker:
         tcp_tracker.pop(reversed_flow)
-
-    return tcp_tracker

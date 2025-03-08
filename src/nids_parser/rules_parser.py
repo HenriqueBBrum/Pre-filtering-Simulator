@@ -88,9 +88,6 @@ class RulesParser(object):
 
                 header, has_negation = self.__parse_header(line)
                 options = self.__parse_options(line) 
-                if "content" not in options:
-                    continue
-
                 parsed_rule = Rule(line, header, options, has_negation)
                 parsed_rules.append(parsed_rule)
                
@@ -357,7 +354,7 @@ class RulesParser(object):
                     (not snort and self.dicts.supported_suricata_sticky_buffers(key)): # Save the current buffer keyword
                     current_buffer = self.__simplify_buffers(key) 
                 else:
-                    current_buffer = ""
+                    current_buffer = "pkt_data"
                 continue
 
             # Suricata only: Add content modifiers to the last content option
@@ -383,7 +380,7 @@ class RulesParser(object):
                     options_dict[key] = [parsed_value]
             else:
                 options_dict[key].append(parsed_value)
-
+     
         return options_dict
 
 
@@ -410,26 +407,14 @@ class RulesParser(object):
     # Fix buffers 
     def __simplify_buffers(self, buffer_name):
         buffer_name = buffer_name.replace('.', '_')
-        if "uri" in buffer_name:
-            return "http_uri"
-        elif "body" in buffer_name: # Response only now is valid for request as well
-            return "http_body"
-        elif "header" in buffer_name and "name" not in buffer_name:
-            return "http_header"
-        elif "cookie" in buffer_name:
-            return "http_cookie"
-        elif "user_agent" in buffer_name:
-            return "user-agent"
-        elif "accept_lang" in buffer_name:
-            return "accept-lang"
-        elif "accept_enc" in buffer_name:
-            return "accept-enc"
-        elif "content_len" in buffer_name:
-            return "content-len"
-        elif "content_type" in buffer_name:
-            return "content-type"
-        elif "raw_data" in buffer_name:
-            return "pkt_data"
+        if buffer_name == "http_uri_raw":
+            return "http_raw_uri"
+        elif buffer_name == "http_header_raw":
+            return "http_raw_header"
+        elif buffer_name == "http_response_body":
+            return "http_server_body"
+        elif buffer_name == "http_request_body":
+            return "http_client_body"
         
         return buffer_name
 

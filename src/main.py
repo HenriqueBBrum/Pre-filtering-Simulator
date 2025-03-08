@@ -10,7 +10,7 @@ from simulator.flow_sampling_simulator import flow_sampling_simulation
 
 OUTPUT_FOLDER = "simulation_results"
 
-def generate_simulation(nids_name, simulation_type):
+def generate_simulation(simulation_type, nids_name):
     simulation_config = {}
     simulation_config["nids_name"] = nids_name
     simulation_config["pcaps_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/split_pcaps/pcaps/"
@@ -28,15 +28,17 @@ def generate_simulation(nids_name, simulation_type):
         simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
         simulation_config["scenario"] = "testing"
 
+    return simulation_config
 
-def main(simulation_type):
-    simulation_config = generate_simulation(simulation_type)
+def main(simulation_type, nids_name):
+    simulation_config = generate_simulation(simulation_type, nids_name)
 
     info = {}
     start = time()
     if simulation_type:
         start = time()
-        nids_config = NIDSConfiguration(configuration_dir=simulation_config["ipvars_config_path"])
+        print(simulation_config)
+        nids_config = NIDSConfiguration(simulation_config["ipvars_config_path"])
         print("*" * 80)
         print("*" * 26 + " NIDS RULES PARSING STAGE " + "*" * 27+ "\n\n")
         matches, info["number_of_rules"] = convert_rules_to_matches(simulation_config, nids_config)
@@ -44,11 +46,11 @@ def main(simulation_type):
         info["payload_size_MB"] = calculate_payload_size(matches)
         
         print("PRE-FILTERING SIMULATION")
-        output_folder = OUTPUT_FOLDER+"pre_filtering_"+simulation_config["nids_name"]+"_"+simulation_config["scenario"]+"/"
+        output_folder = OUTPUT_FOLDER+"pre_filtering_"+nids_name+"_"+simulation_config["scenario"]+"/"
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        #pre_filtering_simulation(simulation_config, matches, output_folder, info)
+        pre_filtering_simulation(simulation_config, matches, output_folder, info)
     elif simulation_config["type"] == "flow_sampling":
         for n in [5, 10, 25, 50, 100]:
             for t in [5, 10, 25, 50, 100]:

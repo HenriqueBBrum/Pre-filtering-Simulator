@@ -32,7 +32,6 @@ class MatchTree:
         for parents, name in base_node_names:
             self.add_node(parents, name)
 
-
     def get_root(self):
         return self.nodes[self.root]
 

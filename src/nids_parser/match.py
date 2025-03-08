@@ -14,7 +14,6 @@ tcp_flags_dict = {
     'P': 8,
     'A': 16,
     'U': 32,
-    '1': 128,
     '2': 64,
     'E': 64,
     '1': 128,
@@ -48,31 +47,37 @@ class Match(object):
         self.priority_list = []
         self.sid_rev_list = []
 
-        self.header_fields = self.__adjust_header_for_match(header_fields)
-        self.payload_fields = self.__adjust_payload_for_match(payload_fields, pre_filtering_scenario)
-      
+        self.header_fields = self.__adjust_header(header_fields)
+        self.payload_fields = self.__adjust_payload(payload_fields, pre_filtering_scenario)
+
+        # if "flags" in self.header_fields:
+        #     print(self.header_fields)
+        #     print(self.payload_fields)
+
+        #     print("\n------------------------------------------------\n")
 
     def sids(self):
         return list(set(self.sid_rev_list))
     
     # Adjust header fields for quick matching against packets> Assuming they are not lists...
-    def __adjust_header_for_match(self, header_fields):
-        header_fields['src_ip'] = self.__convert_ip_list_to_radix_tree(header_fields['src_ip'])
-        header_fields['dst_ip'] = self.__convert_ip_list_to_radix_tree(header_fields['dst_ip'])
+    def __adjust_header(self, header_fields):
+        clean_header_fields = {"proto": header_fields["proto"]}
+        clean_header_fields['src_ip'] = self.__convert_ip_list_to_radix_tree(header_fields['src_ip'])
+        clean_header_fields['dst_ip'] = self.__convert_ip_list_to_radix_tree(header_fields['dst_ip'])
 
-        header_fields['sport'] = self.__turn_port_list_into_dict(header_fields['sport'])
-        header_fields['dport'] = self.__turn_port_list_into_dict(header_fields['dport'])
+        clean_header_fields['sport'] = self.__turn_port_list_into_dict(header_fields['sport'])
+        clean_header_fields['dport'] = self.__turn_port_list_into_dict(header_fields['dport'])
 
         # Determine the data and comparator for the "ip_proto" keyword
         if "ip_proto" in header_fields:
             rule_ip_proto = header_fields["ip_proto"][0]
             comparator = re.search("^[!|>|<]", rule_ip_proto)
             comparator = comparator.group(0) if comparator != None else ""
-            header_fields["ip_proto"] = {"data": int(re.search("[\d]+", rule_ip_proto).group(0)), "comparator": comparator}
+            clean_header_fields["ip_proto"] = {"data": int(re.search("[\d]+", rule_ip_proto).group(0)), "comparator": comparator}
         
          # Determine the data and comparator for the "fragbits" keyword
         if "ipopts" in header_fields:
-            header_fields["ipopts"] = ipotps_to_hex[header_fields["ipopts"][0]]
+            clean_header_fields["ipopts"] = ipotps_to_hex[header_fields["ipopts"][0]]
 
         # Determine the data and comparator for the "ttl", "id", "seq", "ack", "window", "itype", "icode", "icmp_id", "icmp_seq" keywords
         for key in ["ttl", "id", "seq", "ack", "window", "itype", "icode", "icmp_id", "icmp_seq"]:
@@ -80,30 +85,30 @@ class Match(object):
                 value = header_fields[key][0]
                 comparator = re.search("[^\d ]+", value)
                 comparator = comparator.group(0) if comparator != None else ""
-                header_fields[key] = {"data": re.findall("[\d]+", value), "comparator": comparator}
-
+                clean_header_fields[key] = {"data": re.findall("[\d]+", value), "comparator": comparator}
+               
          # Determine the data and comparator for the "fragbits" keyword
         if "fragbits" in header_fields:
             fragbits = re.sub("[\+\*\! ]", "", header_fields["fragbits"][0])
             fragbits_num = sum(ip_flags_dict[flag] for flag in fragbits)
             comparator = re.sub("[MDR. ]", "", header_fields["fragbits"][0])
-            header_fields["fragbits"] = {"data": fragbits_num, "comparator": comparator}
+            clean_header_fields["fragbits"] = {"data": fragbits_num, "comparator": comparator}
 
         # Determine the data, comparator and flags to exclude for the (TCP) "flags" keyword
-        if "flags" in self.pkt_header_fields:
+        if "flags" in header_fields:
             flags_to_match = header_fields["flags"][0]
             exclude = ""
-            if type(self.pkt_header_fields["flags"]) is list:
+            if len(header_fields["flags"]) == 2:
                 flags_to_match = header_fields["flags"][0]
                 exclude = header_fields["flags"][1]
 
             tcp_flags = re.sub("[\+\*\! ]", "", flags_to_match)
             tcp_flags_num = sum(tcp_flags_dict[flag] for flag in tcp_flags)
             exclude_num = sum(tcp_flags_dict[flag] for flag in exclude)  
-            comparator = re.sub("[a-zA-Z.]", "", flags_to_match)
-            header_fields["flags"] = {"data": tcp_flags_num, "comparator": comparator, "exclude": exclude_num}
+            comparator = re.sub("[a-zA-Z12]", "", flags_to_match)
+            clean_header_fields["flags"] = {"data": tcp_flags_num, "comparator": comparator, "exclude": exclude_num}
 
-        return header_fields
+        return clean_header_fields
 
 
     # Converts IP list to a radix tree for quick? search
@@ -134,7 +139,7 @@ class Match(object):
         return (individual_ports,port_ranges,must_match)
 
     # Adjust the "dsize" and "content_pcre" rule data
-    def __adjust_payload_for_match(self, payload_fields, pre_filtering_scenario):
+    def __adjust_payload(self, payload_fields, pre_filtering_scenario):
         if "dsize" in payload_fields:
             value = payload_fields["dsize"][0] # Options/Paylod_fields are stored as {"key": [(value), ]}
             comparator = re.search("[^\d ]+", value)
@@ -145,7 +150,7 @@ class Match(object):
         if "content" in payload_fields:
             fast_pattern_match = None
             for content in payload_fields["content"]:
-                match_str = self.__clean_content(match[-2], "nocase" in match[-1] if match[-1] else False)
+                match_str = self.__clean_content(content[-2], "nocase" in content[-1] if content[-1] else False)
                 modifiers, fast_pattern = self.__parse_content_modifiers(content[-1])
                 final_content_list.append((content[0], content[1], match_str, modifiers)) # buffer, negation, string, modifiers
                 if fast_pattern:
@@ -155,15 +160,15 @@ class Match(object):
 
             # self.__apply_pre_filtering_scenario(fast_pattern_match, pre_filtering_scenario)
 
-        pcre = []
+        pcre_list = []
         if "pcre" in payload_fields:
-            for match in payload_fields["pcre"]:
-                parsed_pcre_str, nids_only_modifiers, buffer_name = self.__parse_pcre_modifiers(match[2], match[3])
+            for pcre in payload_fields["pcre"]:
+                buffer_name, parsed_pcre_str, relative_match = self.__parse_pcre_modifiers(pcre[2], pcre[3])
                 if not buffer_name:
-                    buffer_name == match[0]
-                pcre.append((buffer_name, match[1], parsed_pcre_str, nids_only_modifiers))
+                    buffer_name == pcre[0]
+                pcre_list.append((buffer_name, pcre[1], parsed_pcre_str, relative_match))
     
-            payload_fields["pcre"] = pcre
+            payload_fields["pcre"] = pcre_list
 
         return payload_fields                    
 
@@ -265,7 +270,7 @@ class Match(object):
         buffer_name = None
 
         if not modifiers:
-            return pcre_string, relative_match, buffer_name
+            return buffer_name, pcre_string, relative_match
 
         if len(set(modifiers)) != len(modifiers):
             raise Exception("PCRE string with duplicate modifiers, fix it. PCRE: ", pcre_string, " modifiers: ", modifiers)
@@ -284,7 +289,7 @@ class Match(object):
         if prepend_modifiers:
             pcre_string = "(?"+prepend_modifiers+')'+pcre_string
             
-        return pcre_string, relative_match, buffer_name
+        return buffer_name, pcre_string, relative_match
 
 
         

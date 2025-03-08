@@ -1,5 +1,5 @@
-### This file contains a class that parsers the network variables defined by snort
-##  Works only with configuration files from on Snort 2.* 
+### This file contains a class that parsers the network variables defined by Snort and Suricata
+## The config files to parse are based on Snort 2.* config
 
 import re
 import sys
@@ -7,36 +7,31 @@ import sys
 sys.path.append("..")
 from utils.ports import MIN_PORT,MAX_PORT
 
-class SnortConfiguration():
+class NIDSConfiguration():
     ports = {}
     ip_addresses = {}
     classification_priority = {}
 
-    def __init__(self, snort_version, configuration_dir):
+    def __init__(self, configuration_dir):
         self.configuration_dir = configuration_dir
-        self.snort_version = snort_version
 
         self.__parse()
     
-    # Parses the Snort configuration file and the classification priority
+    # Parses the ip and port variables file and the classification priority
     def __parse(self):
-        if self.snort_version == 2:
-            snort_config_file= "{}/snort.conf".format(self.configuration_dir) 
-            priority_classification_file = "{}/classification.config".format(self.configuration_dir)
-            self.__parse_snort_config(snort_config_file)
-            self.__parse_classification_priority(priority_classification_file)
+        ip_port_vars= "{}/ip_port_vars.config".format(self.configuration_dir) 
+        priority_classification_file = "{}/classification.config".format(self.configuration_dir)
+        self.__parse_ip_port_vars(ip_port_vars)
+        self.__parse_classification_priority(priority_classification_file)
 
 
 
     # Translates the ip and port variables to their real values (e.g: $HOME_NET ->[10.0.0.1, 10.0.02, ...])
     # For more info, go to -> https://suricata.readthedocs.io/en/suricata-4.1.4/rules/intro.html#source-and-destination
-    def __parse_snort_config(self, snort_config_file):
-        with open(snort_config_file, 'r') as config_file:
+    def __parse_ip_port_vars(self, ip_port_vars):
+        with open(ip_port_vars, 'r') as config_file:
             lines  = config_file.readlines()
             for line in lines:
-                if "# Step #2:"in line: ## NETWORK SETTINGS ARE ONLY IN "STEP 1" FOR TYPICAL SNORT CONFIGURATION FILES
-                    break
-
                 if line.startswith("ipvar"):
                     ipvar_line_elements = line.split(" ", 2) # ipvar NAME IPs
                     name = ipvar_line_elements[1]
@@ -53,7 +48,7 @@ class SnortConfiguration():
         if raw_ips == "any":
             return [("0.0.0.0/0", True)]
         elif raw_ips == "!any":
-            raise Exception("Invalid IP %s" % raw_ips)
+            raise ValueError("Invalid IP ", raw_ips)
         
         parsed_ips = []
         if re.search(r",|(!?\[.*\])", raw_ips):
@@ -144,7 +139,7 @@ class SnortConfiguration():
         elif re.match(r'^(!?[0-9]+:|:[0-9]+)', raw_port):
             range_ = raw_port.split(":")
             if len(range_) != 2 or "!" in range_[1]:
-                raise ValueError("Wrong range values")
+                raise ValueError("Wrong range values ", range_)
             
             if range_[1] == "":
                 return [(range(int(range_[0]), MAX_PORT+1), bool(~(local_bool ^ parent_bool)+2))]

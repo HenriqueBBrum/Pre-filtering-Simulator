@@ -1,0 +1,153 @@
+{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 22.731542110443115,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.294974088668823
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 28.020752668380737,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 28.626628637313843
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 29.442296981811523,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 30.003377676010132
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 23.262452125549316,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.85188889503479
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 22.889409065246582,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.45939540863037
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 22.61810326576233,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.19754934310913
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 22.849487781524658,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.422625064849854
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 23.138925075531006,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.713316202163696
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 23.13305354118347,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.688496351242065
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 23.14627480506897,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.73792338371277
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 22.973881721496582,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.53298258781433
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 22.83022928237915,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.394625186920166
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 22.82134771347046,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.39405393600464
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 23.020968198776245,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.59166145324707
+}{
+    "number_of_rules": 44773,
+    "time_to_process_rules": 22.5392484664917,
+    "payload_size_MB": 90.285117,
+    "total_execution_time": 23.140697479248047
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 22.874531269073486,
+    "payload_size_MB": 91.365938,
+    "total_execution_time": 23.46298384666443
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 22.90349817276001,
+    "payload_size_MB": 91.365938,
+    "type": "pre_filtering",
+    "Friday_start": {
+        "total_time_to_process": 2.7555124759674072,
+        "pcap_size": 5894,
+        "avg_pkt_processing_time": 0.0002387658378358508,
+        "pkts_processed": 5001,
+        "number_of_suspicious_pkts": 5001,
+        "suspicious_pkts_counter": {
+            "498/11": 3994,
+            "2463/10": 18,
+            "unsupported": 989
+        }
+    },
+    "total_execution_time": 26.23808240890503
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 22.777351140975952,
+    "payload_size_MB": 91.365938,
+    "type": "pre_filtering",
+    "Friday_start": {
+        "total_time_to_process": 170.8245894908905,
+        "pcap_size": 5894,
+        "avg_pkt_processing_time": 0.033845769336428126,
+        "pkts_processed": 5001,
+        "number_of_suspicious_pkts": 5001,
+        "suspicious_pkts_counter": {
+            "498/11": 3994,
+            "2462/10": 18,
+            "unsupported": 989
+        }
+    },
+    "total_execution_time": 194.2013087272644
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 22.734964847564697,
+    "payload_size_MB": 91.365938,
+    "type": "pre_filtering",
+    "Friday_start": {
+        "total_time_to_process": 2.713866710662842,
+        "pcap_size": 5894,
+        "avg_pkt_processing_time": 0.00023365492726344866,
+        "pkts_processed": 5001,
+        "number_of_suspicious_pkts": 5001,
+        "suspicious_pkts_counter": {
+            "498/11": 3994,
+            "2462/10": 18,
+            "unsupported": 989
+        }
+    },
+    "total_execution_time": 26.029481410980225
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 23.189967393875122,
+    "payload_size_MB": 91.365938,
+    "type": "pre_filtering",
+    "Friday_start": {
+        "total_time_to_process": 2.7292449474334717,
+        "pcap_size": 5894,
+        "avg_pkt_processing_time": 0.00023443444779671995,
+        "pkts_processed": 5001,
+        "number_of_suspicious_pkts": 5001,
+        "suspicious_pkts_counter": {
+            "498/11": 3994,
+            "2463/10": 18,
+            "unsupported": 989
+        }
+    },
+    "total_execution_time": 26.531797170639038
+}

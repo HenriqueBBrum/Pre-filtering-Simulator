@@ -18,11 +18,16 @@ def matched_payload(pkt_to_match, rule):
         return False
     
     # Compare packets that have payload with rules that have the "content" or "pcre" keywords
-    if "content_pcre" in rule.payload_fields and not __matched_content_pcre(pkt_to_match, rule.payload_fields["content_pcre"]):
+    if "content" in rule.payload_fields and not __matched_content(pkt_to_match, rule.payload_fields["content_pcre"]):
+        return False
+
+    if "pcre" in rule.payload_fields and not __matched_pcre(pkt_to_match, rule.payload_fields["content_pcre"]):
         return False
 
     return True
 
+
+#def __matched_content()
 
 ## Compares "content" and "pcre" strings against the desired packet's buffer
 # Guarentees: Packet has payload and the rule has "content" or "pcre" fields
@@ -37,11 +42,11 @@ def __matched_content_pcre(pkt_to_match, rule_content_pcre):
         if match_buffer in unsupported_buffers:
             continue
 
-        if "http" in match_buffer and not pkt_to_match.http_res_in_pkt and not pkt_to_match.http_req_in_pkt:
+        if "http" in match_buffer and not pkt_to_match.http_res and not pkt_to_match.http_req:
             return False
-        elif match_buffer in http_response_buffers and not pkt_to_match.http_res_in_pkt:
+        elif match_buffer in http_response_buffers and not pkt_to_match.http_res:
             return False 
-        elif match_buffer in http_request_buffers and not pkt_to_match.http_req_in_pkt:
+        elif match_buffer in http_request_buffers and not pkt_to_match.http_req:
             return False 
         
         # Decide on the buffer to match. By default the buffer is "pkt_data"
