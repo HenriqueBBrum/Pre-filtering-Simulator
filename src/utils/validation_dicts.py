@@ -1,4 +1,4 @@
-# This file contains sets and dictionaries with the names of possible actions, protocol, options, classification, etc. for Snort rules.
+# This file contains sets and dictionaries with the names of possible actions, protocol, options, classification, etc. for Snort and Suricata rules.
 
 from typing import Any
 
@@ -22,20 +22,26 @@ class Dicts():
         else:
             raise ValueError("Invalid action specified", action)
 
-    # Validates protocols/services that are used by the Snort 3 Community and Registered rulesets
+    # Validates protocols/services that are used by the Snort 3 Community and Registered rulesets, and Suricat 8.0.0
     @staticmethod
     def proto(proto: str) -> str:
         protos = {
+            "ip",
+            "icmp",
             "tcp",
             "udp",
-            "icmp",
-            "ip", 
-            "http",
             "file",
+            "http",
+            "ftp",
+            "smb",
             "smtp",
             "ssh",
             "ssl",
-            "dcerpc"
+            "dcerpc",
+            "tls",
+            "dns",
+            "tcp-stream",
+            "tcp-pkt"
         }
 
         if proto.lower() in protos:
@@ -139,7 +145,7 @@ class Dicts():
                             "metadata",      # The metadata keyword allows a rule writer to embed additional  information about the rule, typically in a key-value format.
                             "service",
                             "rem",
-                            "file_meta"
+                            "file_meta",
                         }
         if option:
             if option in general_options:
@@ -149,7 +155,6 @@ class Dicts():
         else:
             return general_options
 
-    # As specified in Snort 3 webpage
     @staticmethod
     def payload_options(option: str = None) -> Any:
         payload_options = { "content",              # The content keyword allows the user to set rules that search for specific content in the packet payload and trigger response based on that data.
@@ -217,6 +222,7 @@ class Dicts():
                             "modbus_data",          # The modbus_data rule option is used to set the detection cursor to the start of Modbus data.
                             "modbus_func",          # The modbus_func rule option is used to check for a particular Modbus function code or function name.
                             "modbus_unit",          # The modbus_unit rule option is used to check for a particular Modbus unit identifier.
+                            "rawbytes",
                         }
         if option:
             if option in payload_options:
@@ -281,6 +287,8 @@ class Dicts():
                                 "distance",
                                 "within",
                                 "fast_pattern",
+                                "startswith",
+                                "endswith"
                             }
         if option:
             if option in content_modifiers:
@@ -289,6 +297,7 @@ class Dicts():
                 return False
         else:
             return content_modifiers
+
 
     @staticmethod
     def sticky_buffers(option: str = None) -> Any:
@@ -309,7 +318,47 @@ class Dicts():
                             "file_data",	                
                             "base64_data",
                             "json_data", 
-                            "vba_data"	 
+                            "vba_data",
+                            "ssh_proto",
+                            "ja3_hash",
+                            "ja3.hash",
+                            "ja3s.hash",
+                            "http.method",
+                            "http.uri",
+                            "http.uri.raw",
+                            "http.host",
+                            "http.start",
+                            "http.server",
+                            "http.header",
+                            "http.header.raw",
+                            "http.header_names",
+                            "http.stat_code",
+                            "http.response_body",
+                            "http.user_agent",
+                            "http.request_body",
+                            "http.content_type",
+                            "http.content_len",
+                            "http.connection",
+                            "http.cookie",
+                            "http.request_line",
+                            "http.accept_lang",
+                            "http.accept_enc",
+                            "http.accept",
+                            "http.referer",
+                            "http.location",
+                            "http_header_names",
+                            "http_user_agent",
+                            "http_referer",
+                            "dns.query",
+                            "dns_query",
+                            "file.data",
+                            "tls.cert_subject",
+                            "tls.sni",
+                            "tls_sni",
+                            "tls.cert_issuer",
+                            "tls.cert_serial",
+                            "tls.certs",
+                            "tls.version",
                         }
         if option:
             if option in sticky_buffers:
@@ -319,20 +368,118 @@ class Dicts():
         else:
             return sticky_buffers
 
-    def verify_option(self, option):
-        general_options = self.general_options()
-        payload_options = self.payload_options()
-        non_payload_detect = self.non_payload_options()
-        post_detect = self.post_detect_options()
 
-        # Check if a rule option is a valid option type 
-        if option in payload_options:
+    @staticmethod
+    def supported_snort_sticky_buffers(option: str = None) -> Any:
+        snort_sticky_buffers = {  
+                            "http_uri",
+                            "http_raw_uri",	
+                            "http_header",	
+                            "http_raw_header",	
+                            "http_cookie",	
+                            "http_raw_cookie",	
+                            "http_client_body",	
+                            "http_raw_body",	
+                            "http_method",
+                            "http_stat_code",
+                            "http_stat_msg", 
+                            "pkt_data",	            
+                            "raw_data",
+                            "file_data"               
+                        }
+        if option:
+            if option in snort_sticky_buffers:
+                return option
+            else:
+                return False
+        else:
+            return snort_sticky_buffers
+        
+    @staticmethod
+    def supported_suricata_sticky_buffers(option: str = None) -> Any:
+        suricata_sticky_buffers = {  
+                            "http.method",
+                            "http.uri",
+                            "http.uri.raw",
+                            "http.host",
+                            "http.server",
+                            "http.header",
+                            "http.header.raw",
+                            "http.header_names",
+                            "http.stat_code",
+                            "http.stat_msg",
+                            "http.response_body",
+                            "http.user_agent",
+                            "http.request_body",
+                            "http.content_type",
+                            "http.content_len",
+                            "http.connection",
+                            "http.cookie",
+                            "http.accept_lang",
+                            "http.accept_enc",
+                            "http.accept",
+                            "http.referer",
+                            "http.location", 
+                            "http_method",
+                            "http_uri",	
+                            "http_raw_uri",	
+                            "http_header",
+                            "http_raw_header",	
+                            "http_header_names",	
+                            "http_stat_code",
+                            "http_stat_msg",
+                            "http_user_agent",
+                            "http_client_body",	
+                            "http_cookie",
+                            "http_referer",
+                        }
+        if option:
+            if option in suricata_sticky_buffers:
+                return option
+            else:
+                return False
+        else:
+            return suricata_sticky_buffers
+
+
+    @staticmethod
+    def suricata_only_options(option: str = None) -> Any:
+        suricata_only_options = {  "asn1",
+                            "threshold",
+                            "bsize",
+                            "urilen",
+                            "target",
+                            "dotprefix",
+                            "xbits",
+                            "noalert",
+                            "flowint",
+                            "app-layer-event",
+                            "app-layer-protocol"     
+                        }
+        if option:
+            if option in suricata_only_options:
+                return option
+            else:
+                return False
+        else:
+            return suricata_only_options
+        
+
+    # Check if a rule option is a valid option type 
+    def is_option(self, option):
+        if option in self.payload_options():
             return "payload", True
-        if option in non_payload_detect:
+        if option in self.non_payload_options():
             return "non-payload", True
-        if option in general_options:
+        if option in self.general_options():
             return "general", True
-        if option in post_detect:
+        if option in self.post_detect_options():
             return "post_detect", True
+        if option in self.content_modifiers():
+            return "payload", True
+        if option in self.suricata_only_options():
+            return "suricata_only", True
+        if option in self.sticky_buffers():
+            return "sticky_buffers", True
         
         return "", False

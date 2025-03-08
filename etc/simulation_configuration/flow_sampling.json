@@ -1,9 +1,0 @@
-{
-    "type": "flow_sampling",
-    "pcaps_path":"/home/hbeckerbrum/NFSDatasets/CICIDS2017/",
-    "baseline_alerts_path":"etc/alerts/full_pcap/",
-    "snort_config_file": "etc/snort_configuration/snort.lua",
-    "ruleset_path":"etc/rules/snort3-registered/",
-    "flow_count_threshold":5,
-    "time_threshold":100
-}

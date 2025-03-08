@@ -1,40 +1,64 @@
-from time import time
 import sys
 import json
 import os
+from time import time
 
-from snort_parser.config_parser import SnortConfiguration
-from snort_parser.parsing_rules import parse_rules, calculate_payload_size
-from simulator.simulation import pre_filtering_simulation, flow_sampling_simulation
+from nids_parser.config_parser import NIDSConfiguration
+from nids_parser.rules_to_matches import convert_rules_to_matches
+from simulator.pre_filtering_simulator import pre_filtering_simulation 
+from simulator.flow_sampling_simulator import flow_sampling_simulation
 
-def main(simulation_config_path, sim_results_folder):
-    with open(simulation_config_path, 'r') as f:
-        simulation_config = json.load(f)
+OUTPUT_FOLDER = "simulation_results"
+
+def generate_simulation(nids_name, simulation_type):
+    simulation_config = {}
+    simulation_config["nids_name"] = nids_name
+    simulation_config["pcaps_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/split_pcaps/pcaps/"
+
+    simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/alerts/split_pcap/"
+    if nids_name == "snort":
+        simulation_config["nids_config_path"] = "etc/nids_configuration/snort/snort.lua"
+        simulation_config["ruleset_path"] = "etc/rules/snort3-registered/"
+    else:
+        simulation_config["nids_config_path"] = "etc/nids_configuration/suricata/suricata.yaml"
+        simulation_config["ruleset_path"] = "etc/rules/suricata-emerging/emerging-all.rules"
+
+    simulation_config["nids_config_path"] = ""
+    if simulation_type == "pre_filtering":
+        simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
+        simulation_config["scenario"] = "testing"
+
+
+def main(simulation_type):
+    simulation_config = generate_simulation(simulation_type)
 
     info = {}
     start = time()
-    if simulation_config["type"] == "pre_filtering":
+    if simulation_type:
         start = time()
-        config = SnortConfiguration(snort_version=2, configuration_dir=simulation_config["snort_config_path"])
+        nids_config = NIDSConfiguration(configuration_dir=simulation_config["ipvars_config_path"])
         print("*" * 80)
-        print("*" * 26 + " SNORT RULES PARSING STAGE " + "*" * 27+ "\n\n")
-        groupped_rules, info["number_of_rules"] = parse_rules(config, simulation_config["scenario"], simulation_config["ruleset_path"])
+        print("*" * 26 + " NIDS RULES PARSING STAGE " + "*" * 27+ "\n\n")
+        matches, info["number_of_rules"] = convert_rules_to_matches(simulation_config, nids_config)
         info["time_to_process_rules"] = time()-start
-        info["payload_size_MB"] = calculate_payload_size(groupped_rules)
+        info["payload_size_MB"] = calculate_payload_size(matches)
         
         print("PRE-FILTERING SIMULATION")
-        output_folder = sim_results_folder+"pre_filtering_"+simulation_config["scenario"]+"/"
+        output_folder = OUTPUT_FOLDER+"pre_filtering_"+simulation_config["nids_name"]+"_"+simulation_config["scenario"]+"/"
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        info = pre_filtering_simulation(simulation_config, groupped_rules, info, output_folder)
+        #pre_filtering_simulation(simulation_config, matches, output_folder, info)
     elif simulation_config["type"] == "flow_sampling":
-        print("FLOW SAMPLING SIMULATION")
-        output_folder = sim_results_folder+"flow_sampling_"+str(simulation_config["flow_count_threshold"])+"_"+str(simulation_config["time_threshold"])+"/"
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
+        for n in [5, 10, 25, 50, 100]:
+            for t in [5, 10, 25, 50, 100]:
+                print("FLOW SAMPLING SIMULATION")
+                output_folder = OUTPUT_FOLDER+"flow_sampling_"+simulation_config["nids_name"]+"_"+str(n)+"_"+str(t)+"/"
+                if not os.path.exists(output_folder):
+                    os.makedirs(output_folder)
 
-        info = flow_sampling_simulation(simulation_config, output_folder)
+                flow_sampling_simulation(simulation_config, output_folder, n, t, info)
+
     else:
         print("Wrong simulation type")
         exit(1)
@@ -46,7 +70,38 @@ def main(simulation_config_path, sim_results_folder):
         json.dump(info , f, ensure_ascii=False, indent=4)
 
 
+
+# Calculates the amount of bytes required by python to store the rules
+def calculate_payload_size(matches):
+
+    def get_size(content):
+        match_size = 0
+        match_size+=sys.getsizeof(content[1]) # Content string
+        if content[2]: # Modifiers
+            if type(content[2]) is str:
+                match_size+=sys.getsizeof(content[2])
+            else:
+                for modifier in content[2]:
+                    match_size+=sys.getsizeof(modifier)
+
+        return match_size
+
+
+    total_payload_size = 0
+    for protocol_key in matches:
+        for header_group in matches[protocol_key]:
+            for match in matches[protocol_key][header_group]:
+                if "content" in match.payload_fields:
+                    for content in match.payload_fields["content"]:
+                        total_payload_size+=get_size(content)
+
+                if "pcre" in match.payload_fields:
+                    for pcre in match.payload_fields["pcre"]:
+                        total_payload_size+=get_size(pcre)
+
+
+    return total_payload_size/1000000
+
+
 if __name__ == '__main__':
-    simulation_config_file = sys.argv[1]
-    sim_results_folder = "simulation_results/"
-    main(simulation_config_file, sim_results_folder)
+    main(sys.argv[1], sys.argv[2])

@@ -1,5 +1,6 @@
+import os
 from scapy.all import IP,TCP,UDP,ICMP
-from scapy.layers.http import * 
+from scapy.layers.http import HTTPResponse,HTTPRequest 
 
 import sys
 sys.path.append("..")
@@ -15,6 +16,8 @@ class PacketToMatch(object):
         self.http_req_in_pkt = HTTPRequest in pkt
 
         self.__get_header_fields(pkt) 
+
+        
         transport_layer_name = pkt[IP].getlayer(1).name if pkt[IP].getlayer(1) else None
         if transport_layer_name:
             self.payload_size = len(pkt[transport_layer_name].payload)

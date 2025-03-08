@@ -1,18 +1,4 @@
-import re
-
-tcp_flags_dict = {
-    'F': 1,
-    'S': 2,
-    'R': 4,
-    'P': 8,
-    'A': 16,
-    'U': 32,
-    'E': 64,
-    'C': 128,
-}
-
-possible_ipopts = {"RR": "rr", "EOL":"eol", "NOP":"nop", "Timestamp": "ts", "Security": "sec", "Extended Security": "esec", 
-                        "LSRR": "lsrr", "LSSRE": "lsrre", "SSRR": "ssrr", "Stream Id":"satid"}
+### Functions to match on header fuelds of a packet
 
 
 def matched_ip_and_port(pkt_to_match, rule):
@@ -141,15 +127,14 @@ def compare_field(pkt_data, number, comparator):
 
     return ops[comparator]
 
-# Compares a packet's IP options against the IP options of a rule
-def __matched_ipopts(pkt_ipopts, rule_ipopts):
+# Compares a packet's IP options against the IP options of a match
+def __matched_ipopts(pkt_ipopts, match_ipopts):
     if not pkt_ipopts:
         return False
 
-    pkt_ipopts_name = " ".join(str(pkt_ipopts[0]).split("_")[1:])
-    if rule_ipopts == "any" and pkt_ipopts_name in possible_ipopts:
+    if match_ipopts == 0xFF: # Any
         return True
-    elif pkt_ipopts_name in possible_ipopts and possible_ipopts[pkt_ipopts_name] == rule_ipopts:
+    elif pkt_ipopts == match_ipopts:
         return True
 
     return False
@@ -182,22 +167,18 @@ def __matched_ip_proto(pkt_ip_proto, rule_ip_proto, rule_comparator):
 
     return False
 
-# Compares a packet's TCP flags against the TCP flags of a rule
-def __matched_tcp_flags(pkt_tcp_flags, rule_tcp_flags):
-    pkt_tcp_flags = str(pkt_tcp_flags)
-    if rule_tcp_flags["exclude"]:
-        expression = "["+rule_tcp_flags["exclude"]+"]*"
-        pkt_tcp_flags = re.sub(expression, "", pkt_tcp_flags)
+# Compares a packet's TCP flags against the TCP flags of a match
+def __matched_tcp_flags(pkt_tcp_flags, match_tcp_flags):
+    if match_tcp_flags["exclude"]:
+        pkt_tcp_flags = pkt_tcp_flags & (match_tcp_flags["exclude"] ^ 0XFF) # Get the complement of "excluded" and zero the "excluded" values in the pkt flags
 
-    pkt_tcp_flags_num = sum(tcp_flags_dict[flag] for flag in pkt_tcp_flags) 
-
-    if rule_tcp_flags["comparator"] == "" and pkt_tcp_flags_num == rule_tcp_flags["data"]:
+    if match_tcp_flags["comparator"] == "" and pkt_tcp_flags == match_tcp_flags["data"]:
         return True
-    elif rule_tcp_flags["comparator"] == "+" and (pkt_tcp_flags_num & rule_tcp_flags["data"] == rule_tcp_flags["data"]):
+    elif match_tcp_flags["comparator"] == "+" and (pkt_tcp_flags & match_tcp_flags["data"] == match_tcp_flags["data"]):
         return True
-    elif rule_tcp_flags["comparator"] == "!" and pkt_tcp_flags_num != rule_tcp_flags["data"]:
+    elif match_tcp_flags["comparator"] == "!" and pkt_tcp_flags != match_tcp_flags["data"]:
         return True
-    elif rule_tcp_flags["comparator"] == "*" and (pkt_tcp_flags_num & rule_tcp_flags["data"] >= 1):
+    elif match_tcp_flags["comparator"] == "*" and (pkt_tcp_flags & match_tcp_flags["data"] >= 1):
         return True
     
     return False
