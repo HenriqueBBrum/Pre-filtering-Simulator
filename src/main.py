@@ -8,7 +8,7 @@ from nids_parser.rules_to_matches import convert_rules_to_matches
 from simulator.pre_filtering_simulator import pre_filtering_simulation 
 from simulator.flow_sampling_simulator import flow_sampling_simulation
 
-OUTPUT_FOLDER = "simulation_results"
+OUTPUT_FOLDER = "simulation_results/"
 
 def generate_simulation(simulation_type, nids_name):
     simulation_config = {}
@@ -23,7 +23,6 @@ def generate_simulation(simulation_type, nids_name):
         simulation_config["nids_config_path"] = "etc/nids_configuration/suricata/suricata.yaml"
         simulation_config["ruleset_path"] = "etc/rules/suricata-emerging/emerging-all.rules"
 
-    simulation_config["nids_config_path"] = ""
     if simulation_type == "pre_filtering":
         simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
         simulation_config["scenario"] = "testing"
@@ -37,7 +36,6 @@ def main(simulation_type, nids_name):
     start = time()
     if simulation_type:
         start = time()
-        print(simulation_config)
         nids_config = NIDSConfiguration(simulation_config["ipvars_config_path"])
         print("*" * 80)
         print("*" * 26 + " NIDS RULES PARSING STAGE " + "*" * 27+ "\n\n")

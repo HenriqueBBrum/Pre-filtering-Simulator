@@ -19,20 +19,6 @@ def matched_ip_and_port(pkt, match):
 
     return True
 
-# Compares the header fields of a packet against the ones for a match
-def matched_header_fields(pkt, match):
-    if not __matched_IP_fields(pkt.header, match.header_fields):
-        return False
-
-    if pkt.tcp and not __matched_TCP_fields(pkt.header, match.header_fields):
-        return False
-    
-    if pkt.icmp and not __matched_ICMP_fields(pkt.header, match.header_fields):
-        return False
-
-    # Add SSL/TLS support
-    return True
-
 # Compares a packet's ports(s) against the ports(s) of a match. Individual ports are in a dict, while ranges are in a list.
 def __matched_ports(pkt_port, match_ports):
     valid_port = False
@@ -61,6 +47,21 @@ def __matched_IP(pkt_ip, match_ips):
 
     return not match_ips[1]
 
+
+# Compares the header fields of a packet against the ones for a match
+def matched_header_fields(pkt, match):
+    if not __matched_IP_fields(pkt.header, match.header_fields):
+        return False
+
+    if pkt.tcp and not __matched_TCP_fields(pkt.header, match.header_fields):
+        return False
+    
+    if pkt.icmp and not __matched_ICMP_fields(pkt.header, match.header_fields):
+        return False
+
+    # Add SSL/TLS support
+    return True
+
 # Compares a packet's IP fields against the IP fields of a match 
 def __matched_IP_fields(pkt_header, match_fields):
     if "ip_proto" in match_fields and not __matched_ip_proto(pkt_header["ip_proto"], match_fields["ip_proto"]["data"], match_fields["ip_proto"]["comparator"]):
@@ -79,6 +80,60 @@ def __matched_IP_fields(pkt_header, match_fields):
         return False
 
     return True
+
+# Compares a packet's IP protocol field against the IP protocol field of a match
+def __matched_ip_proto(pkt_ip_proto, ip_proto, comparator):
+    if comparator == "" and pkt_ip_proto == int(ip_proto):
+        return True
+    elif comparator == "<" and pkt_ip_proto < int(ip_proto):
+        return True
+    elif comparator == ">" and pkt_ip_proto > int(ip_proto):
+        return True
+    elif comparator == "!" and pkt_ip_proto != int(ip_proto):
+        return True
+    
+    return False
+
+# Compares a packet's IP options against the IP options of a match
+def __matched_ipopts(pkt_ipopts, match_ipopts):
+    if not pkt_ipopts:
+        return False
+
+    if match_ipopts == 0xFF: # Any
+        return True
+    elif pkt_ipopts == match_ipopts:
+        return True
+
+    return False
+
+# Compares a packet's fragmentation bits against the fragmentation bits of a match
+def __matched_fragbits(pkt_fragbits, match_fragbits, comparator):
+    if comparator == "" and pkt_fragbits == match_fragbits:
+        return True
+    elif comparator == "+" and (pkt_fragbits & match_fragbits == match_fragbits):
+        return True
+    elif comparator == "!" and pkt_fragbits != match_fragbits:
+        return True
+    elif comparator == "*" and (pkt_fragbits & match_fragbits >= 1):
+        return True
+    
+    return False
+
+# Compares a packet's field against a match's field using the follwoing operators: >,<,=,!,<=,>=,<>,<=>
+def compare_field(pkt_data, number, comparator):
+    if len(number) == 1:
+        ops = {"":   pkt_data == int(number[0]),
+               "<":  pkt_data < int(number[0]),
+               ">":  pkt_data > int(number[0]),
+               "=":  pkt_data == int(number[0]),
+               "!":  pkt_data != int(number[0]),
+               "<=": pkt_data <= int(number[0]),
+               ">=": pkt_data >= int(number[0])}
+    else:
+        ops = {"<>": pkt_data > int(number[0]) and  pkt_data < int(number[1]),
+                     "<=>": pkt_data >= int(number[0]) and  pkt_data <= int(number[1])}
+
+    return ops[comparator]
 
 # Compares a packet's TCP fields against the TCP fields of a match 
 def __matched_TCP_fields(pkt_header, match_fields):
@@ -110,60 +165,6 @@ def __matched_ICMP_fields(pkt_header, match_fields):
     if "icmp_seq" in match_fields and not compare_field(pkt_header["icmp_seq"], match_fields["icmp_seq"]["data"], match_fields["icmp_seq"]["comparator"]):
         return False
     return True
-
-# Compares a packet's field against a match's field using the follwoing operators: >,<,=,!,<=,>=,<>,<=>
-def compare_field(pkt_data, number, comparator):
-    if len(number) == 1:
-        ops = {"":   pkt_data == int(number[0]),
-               "<":  pkt_data < int(number[0]),
-               ">":  pkt_data > int(number[0]),
-               "=":  pkt_data == int(number[0]),
-               "!":  pkt_data != int(number[0]),
-               "<=": pkt_data <= int(number[0]),
-               ">=": pkt_data >= int(number[0])}
-    else:
-        ops = {"<>": pkt_data > int(number[0]) and  pkt_data < int(number[1]),
-                     "<=>": pkt_data >= int(number[0]) and  pkt_data <= int(number[1])}
-
-    return ops[comparator]
-
-# Compares a packet's IP options against the IP options of a match
-def __matched_ipopts(pkt_ipopts, match_ipopts):
-    if not pkt_ipopts:
-        return False
-
-    if match_ipopts == 0xFF: # Any
-        return True
-    elif pkt_ipopts == match_ipopts:
-        return True
-
-    return False
-
-# Compares a packet's fragmentation bits against the fragmentation bits of a match
-def __matched_fragbits(pkt_fragbits, match_fragbits, comparator):
-    if comparator == "" and pkt_fragbits == match_fragbits:
-        return True
-    elif comparator == "+" and (pkt_fragbits & match_fragbits == match_fragbits):
-        return True
-    elif comparator == "!" and pkt_fragbits != match_fragbits:
-        return True
-    elif comparator == "*" and (pkt_fragbits & match_fragbits >= 1):
-        return True
-    
-    return False
-
-# Compares a packet's IP protocol field against the IP protocol field of a match
-def __matched_ip_proto(pkt_ip_proto, ip_proto, comparator):
-    if comparator == "" and pkt_ip_proto == int(ip_proto):
-        return True
-    elif comparator == "<" and pkt_ip_proto < int(ip_proto):
-        return True
-    elif comparator == ">" and pkt_ip_proto > int(ip_proto):
-        return True
-    elif comparator == "!" and pkt_ip_proto != int(ip_proto):
-        return True
-    
-    return False
 
 # Compares a packet's TCP flags against the TCP flags of a match
 def __matched_tcp_flags(pkt_tcp_flags, match_tcp_flags):

@@ -165,11 +165,8 @@ def __group_by_protocol(matches):
             match_tree.add_match(proto, match)
         elif proto == "udp" or proto == "tcp":
             if match.service:
-                if type(match.service) is list:
-                    for service in match.service:
-                        match_tree.safe_match_add(["tcp", "udp"], service, match, applayer=True) # parent, node, match
-                else:
-                    match_tree.safe_match_add(["tcp", "udp"], match.service, match, applayer=True)
+                for service in match.service:
+                    match_tree.safe_match_add(["tcp", "udp"], service, match, applayer=True) # parent, node, match
             else:
                 match_tree.add_match(proto, match) # Add match to either udp or tcp since there is not service
         elif proto == "file": # Snort file options can mean the following protocols
@@ -203,7 +200,7 @@ def __group_by_rule_header(match_tree):
 
     final_matches = {}
     for key, node in match_tree.nodes.items():
-        if node.applayer:
+        if node.applayer:                
             tcp_matches = match_tree.get_related_matches(match_tree.get_root(), "udp", key)  # Don't go by the udp path
             final_matches["tcp"+key] = group(tcp_matches)
             udp_matches = match_tree.get_related_matches(match_tree.get_root(), "tcp", key) # Don't go by the tcp path

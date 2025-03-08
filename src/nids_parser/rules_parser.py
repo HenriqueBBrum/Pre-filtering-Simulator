@@ -411,6 +411,8 @@ class RulesParser(object):
             return "http_raw_uri"
         elif buffer_name == "http_header_raw":
             return "http_raw_header"
+        elif buffer_name == "http_header_names":
+            return "http_raw_header"
         elif buffer_name == "http_response_body":
             return "http_server_body"
         elif buffer_name == "http_request_body":

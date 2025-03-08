@@ -29,8 +29,8 @@ def pre_filtering_simulation(sim_config, matches, output_folder, info):
     pcaps_path = sim_config["pcaps_path"]
 
     for pcap_file in os.listdir(pcaps_path):
-        if "Friday_start" not in pcap_file:
-            continue
+        # if "Friday_start" not in pcap_file:
+        #     continue
 
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
         print(current_trace)
@@ -44,7 +44,7 @@ def pre_filtering_simulation(sim_config, matches, output_folder, info):
 
         info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
-        #info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
+        info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
         print(json.dump(info , sys.stdout, ensure_ascii=False, indent=4))
     return info
 
@@ -63,9 +63,8 @@ def find_suspicious_packets(pcap_file, matches):
             else:
                 pkt = PacketToMatch(scapy_pkt)
                 proto, related_matches = get_related_matches(pkt, matches) 
-                suspicious_pkt = is_packet_suspicious(pkt, pkt_count, related_matches, tcp_tracker)
-            
-                if not suspicious_pkt and pkt.tcp: 
+                suspicious_pkt = None
+                if pkt.tcp: 
                     if "ftp" not in proto:  
                         suspicious_pkt = check_stream_tcp(pkt, pkt_count, tcp_tracker)
                     else:
@@ -74,13 +73,14 @@ def find_suspicious_packets(pcap_file, matches):
                             suspicious_pkt = (pkt_count, "ftp")
                             ftp_tracker.add(flow)
 
+                if not suspicious_pkt:
+                    suspicious_pkt = is_packet_suspicious(pkt, pkt_count, related_matches, tcp_tracker)
+
             if suspicious_pkt:
                 suspicious_pkts.append(suspicious_pkt)
-
+            
             ip_pkt_count+=1
             time_to_process.append(time()-start)
-            if ip_pkt_count > 5000:
-                break
         pkt_count+=1
 
     info = {}
@@ -133,7 +133,7 @@ def get_related_matches(pkt, matches):
         if applayer_proto and related_matches_key+applayer_proto in matches:
             related_matches_key+=applayer_proto
 
-    return related_matches_key, matches[pkt_proto]
+    return related_matches_key, matches[related_matches_key]
 
 change_map = {"http-alt": "http", "microsoft-ds": "netbios-ssn", "domain": "dns", "mdns":"dns", "https": None}
 def get_applayer_proto(proto_str, sport, dport):
@@ -155,10 +155,10 @@ def get_applayer_proto(proto_str, sport, dport):
 # Checks if a packet is suspicous, unsupported or is in a tcp stream
 def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
     for header_group in matches:
-        #try:
+        try:
             if not matched_ip_and_port(pkt, matches[header_group][0]): 
                 continue
-        
+            
             # Matched the groups' ip and port header, compare with the other fields of each rule in this group
             for match in matches[header_group]:
                 if not matched_header_fields(pkt, match):
@@ -175,9 +175,9 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
                         tcp_tracker[flow] = {"seq": pkt.header["seq"]+pkt.payload_size, "ack": pkt.header["ack"]}   
 
                 return (pkt_count, match.sids()[0])
-        # except Exception as e:
-        #     print("Exception: ", traceback.format_exc())
-        #     return (pkt_count, "error")
+        except Exception as e:
+            print("Exception: ", traceback.format_exc())
+            return (pkt_count, "error")
         
     return None
 

@@ -59,7 +59,7 @@ class PacketToMatch(object):
         else:
             payload_buffers["pkt_data"] = [bytes(pkt[IP].payload).decode('utf-8', errors = 'replace')]
 
-        payload_buffers["raw_data"] = payload_buffers["pkt_data"]
+        payload_buffers["raw_data"] = [payload_buffers["pkt_data"][0]]
 
         # Get the file_data buffer for the existing service in the pkt except http that has its own section
         if self.tcp or self.udp:
@@ -73,7 +73,7 @@ class PacketToMatch(object):
                 is_ftp = True if sport in FTP_PORTS else (True if dport in FTP_PORTS else False) 
                 is_smb = True if sport in SMB_PORTS else (True if dport in SMB_PORTS else False) 
                 if is_pop3 or is_smtp or is_imap or is_ftp or is_smb:
-                    payload_buffers["file_data"] = payload_buffers["pkt_data"]
+                    payload_buffers["file_data"] = [payload_buffers["pkt_data"][0]]
 
         http_type = None
         if self.http_req:
@@ -93,13 +93,12 @@ class PacketToMatch(object):
     def __get_http_buffers(self, pkt, payload_buffers, http_type):
         if http_type:
             payload_buffers["http_raw_body"] = [bytes(pkt[http_type].payload).decode('utf-8', errors = 'ignore')]
-            payload_buffers["file_data"] = payload_buffers["http_raw_body"]
+            payload_buffers["file_data"] = [payload_buffers["http_raw_body"][0]]
 
             pkt[http_type].remove_payload()
             payload_buffers["http_raw_header"] = [bytes(pkt[http_type]).decode('utf-8')]
             payload_buffers["http_header"] = [self.__normalize_http_text("http_header", bytes(pkt[http_type]).decode('utf-8'))]
-            payload_buffers["http_param"] = payload_buffers["http_raw_header"]
-            # payload_buffers["http_header_names"] =  
+            payload_buffers["http_param"] = [payload_buffers["http_raw_header"][0]]
 
             payload_buffers["http_cookie"] = [self.__get_http_cookie(pkt[http_type], True)]
             payload_buffers["http_raw_cookie"] = [self.__get_http_cookie(pkt[http_type], False)]
@@ -122,14 +121,14 @@ class PacketToMatch(object):
                 payload_buffers["http_referer"] = [self.__decode_http_field(pkt[HTTPRequest].Referer)]
                 payload_buffers["http_user_agent"] = [self.__decode_http_field(pkt[HTTPRequest].User_Agent)]
 
-                payload_buffers["http_client_body"] = payload_buffers["http_raw_body"]
+                payload_buffers["http_client_body"] = [payload_buffers["http_raw_body"][0]]
             elif self.http_res:
                 payload_buffers["http_location"] = [self.__decode_http_field(pkt[HTTPResponse].Location)]
                 payload_buffers["http_server"] =  [self.__decode_http_field(pkt[HTTPResponse].Server)]
                 payload_buffers["http_stat_code"] = [self.__decode_http_field(pkt[HTTPResponse].Status_Code)]
                 payload_buffers["http_stat_msg"] = [self.__decode_http_field(pkt[HTTPResponse].Reason_Phrase)]
 
-                payload_buffers["http_server_body"] = payload_buffers["http_raw_body"]
+                payload_buffers["http_server_body"] = [payload_buffers["http_raw_body"][0]]
 
 
     # If the HTTP field is valid return the field decoded

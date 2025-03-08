@@ -150,7 +150,7 @@ class Match(object):
         if "content" in payload_fields:
             fast_pattern_match = None
             for buffer_name, should_match, match_str, modifiers in payload_fields["content"]:
-                match_str = self.__clean_content(match_str, "nocase" in modifiers if modifiers else False)
+                match_str = self.__adjust_content(match_str, "nocase" in modifiers if modifiers else False)
                 modifiers, fast_pattern = self.__parse_content_modifiers(modifiers)
                 final_content_list.append((buffer_name, should_match, match_str, modifiers)) # buffer, negation, string, modifiers
                 if fast_pattern:
@@ -175,65 +175,42 @@ class Match(object):
 
 
     # Clean escaped chars in the string part of content, and convert the hex part to char. Also adjusts the case if needed 
-    def __clean_content(self, str_to_match, nocase):
+    def __adjust_content(self, match_str, nocase):
         clean_content = ""
         temp_content = ""
-        hex_now, escaped = False, False
-        add_to_clean_content = False
-        for char in str_to_match:
-            if hex_now or char == '|':
-                temp_content, hex_now, add_to_clean_content = self.__process_hex(char, temp_content, nocase, hex_now)
-                if add_to_clean_content: 
-                    clean_content+=temp_content
-                    temp_content=""
-            else:
-                temp_content, escaped = self.__process_non_hex_section(char, temp_content, nocase, escaped)
-        
-        if escaped:
-            temp_content+="/"
-        clean_content+=temp_content
-        return clean_content
-
-    # Process hex number of the content. Mainly checking if it is required to consider the case
-    def __process_hex(self, char, temp_content, nocase, hex_now):
-        add_to_clean_content = False
-        # Check if hex section has started or finished. Either way, add existing text to the final string
-        if char == '|' or char == ' ':  
-            if hex_now:
-                if nocase and (int(temp_content, 16) >= 65 and int(temp_content, 16) <= 90):
-                    temp_content = chr(int(temp_content, 16) + 32) # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
-                else:
-                    temp_content = chr(int(temp_content, 16))
-            elif char == '|' and not hex_now:
-                temp_content = temp_content # If hex section has started now, add the plain text in temp to the final string
-
-            hex_now = not hex_now if char == '|' else hex_now
-            add_to_clean_content = True  
-        else:
-            temp_content+=char
-
-        return temp_content, hex_now, add_to_clean_content
-
-    # Process the strings of the "content" field
-    def __process_non_hex_section(self, char, temp_content, nocase, escaped):
-        if nocase and char.isupper():
-            char = char.lower()
-
-        # Add escaped char or add '/' since it was not used to escape a char
-        if escaped and (char == ';' or char == '"' or char == '\\'):
-            temp_content+=char
-        elif escaped:
-            temp_content+='/'
-
         escaped = False
+        i = 0
+        while i < len(match_str):
+            if match_str[i] == '|' and not escaped:
+                temp_content = ""
+                i+=1
+                while match_str[i] != '|':
+                    if match_str[i] == ' ':
+                        i+=1
+                        continue
+                    
+                    temp_content+=match_str[i]
+                    if len(temp_content) == 2:
+                        if nocase and (int(temp_content, 16) >= 65 and int(temp_content, 16) <= 90):
+                            clean_content+=chr(int(temp_content, 16) + 32) # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
+                        else:
+                            clean_content+=chr(int(temp_content, 16))
+                        temp_content=""
+                    i+=1
+            else:
+                # Add escaped char or add '/' since it was not used to escape a char
+                if escaped:
+                    escaped = False
+                    if (match_str[i] == '|' or match_str[i] == ';' or match_str[i] == '"' or match_str[i] == '\\'):
+                        clean_content+=match_str[i]
+                        continue
 
-        # Check if it is the escape char : "/" otherwise just add to the string
-        if char == '/':
-            escaped = True
-        else:
-            temp_content+=char
-
-        return temp_content, escaped
+                if match_str[i] == '\\':
+                    escaped = True
+                else:
+                    clean_content+=(match_str[i].casefold() if nocase else match_str[i])
+            i+=1
+        return clean_content
 
     # Parse content modifiers
     def __parse_content_modifiers(self, modifiers):

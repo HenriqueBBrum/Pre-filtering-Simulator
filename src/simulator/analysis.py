@@ -5,14 +5,15 @@ from time import time
 from scapy.utils import PcapReader, PcapWriter 
 
 def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info): 
-    baseline_pcap = sim_config["pcaps_path"]+current_trace+".pcap"
+    suspicious_pkts_alert_file, nids_processing_time = nids_with_suspicious_pcap(sim_config, suspicious_pkts, current_trace, output_folder) # WHAT IF THERE IS NO SUSPCIIOUS PACKETS?
+    info[current_trace]["nids_processing_time"] = nids_processing_time
 
-    suspicious_pkts_pcap = get_suspicious_pkts_pcap(baseline_pcap, suspicious_pkts, output_folder, current_trace)
-    suspicious_pkts_alert_file, snort_processing_time = snort_with_suspicious_pcap(suspicious_pkts_pcap, sim_config["snort_config_file"], sim_config["ruleset_path"], output_folder, current_trace)
-    info[current_trace]["snort_processing_time"] = snort_processing_time
-
-    baseline_pkt_alerts, baseline_flow_alerts = parse_alerts(sim_config["baseline_alerts_path"]+current_trace+".txt") # Baseline alerts
-    experiment_pkt_alerts, experiment_flow_alerts = parse_alerts(suspicious_pkts_alert_file)
+    if sim_config["nids_name"] == "snort":
+        baseline_pkt_alerts, baseline_flow_alerts = parse_snort_alerts(sim_config["baseline_alerts_path"]+current_trace+".txt") # Baseline alerts
+        experiment_pkt_alerts, experiment_flow_alerts = parse_snort_alerts(suspicious_pkts_alert_file)
+    else: 
+        baseline_pkt_alerts, baseline_flow_alerts = parse_suricata_alerts(sim_config["baseline_alerts_path"]+current_trace+".log") # Baseline alerts
+        experiment_pkt_alerts, experiment_flow_alerts = parse_suricata_alerts(suspicious_pkts_alert_file)
 
     # Alert metrics for individual packets
     info[current_trace]["baseline_pkt_alerts"] = len(baseline_pkt_alerts)
@@ -53,15 +54,14 @@ def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folde
     #os.remove(suspicious_pkts_pcap)
     return info
 
-# Generate a PCAP with the suspicious pkts to find the alerts
-def get_suspicious_pkts_pcap(baseline_pcap, suspicious_pkts, output_folder, file_name):
-    suspicious_pkts_pcap = output_folder+file_name+".pcap"
-    pcap_writer = PcapWriter(suspicious_pkts_pcap)
+def nids_with_suspicious_pcap(sim_config, suspicious_pkts, current_trace, output_folder):
+    suspicious_pkts_pcap = output_folder+current_trace+".pcap"
+    pcap_writer = PcapWriter(suspicious_pkts_pcap, 1)
     sorted_suspicious_pkts = sorted(suspicious_pkts, key=lambda x: x[0])
 
     pkt_count = 0
     suspicious_pkts_list_count = 0
-    for packet in PcapReader(baseline_pcap):
+    for packet in PcapReader(sim_config["pcaps_path"]+current_trace+".pcap"):
         if suspicious_pkts_list_count == len(sorted_suspicious_pkts):
             break
 
@@ -71,22 +71,24 @@ def get_suspicious_pkts_pcap(baseline_pcap, suspicious_pkts, output_folder, file
             suspicious_pkts_list_count+=1
 
         pkt_count+=1
-    return suspicious_pkts_pcap
 
-# Run snort with the new suspicious pkts pcap
-def snort_with_suspicious_pcap(suspicious_pkts_pcap, snort_config_path, ruleset_path,  output_folder, file_name):
     start = time()
-    subprocess.run(["snort", "-c", snort_config_path, "--rule-path",ruleset_path, "-r",suspicious_pkts_pcap, "-l",output_folder, \
+    if sim_config["nids_name"] == "snort":
+        subprocess.run(["snort", "-c", sim_config["nids_config_path"], "--rule-path", sim_config["ruleset_path"], "-r",suspicious_pkts_pcap, "-l",output_folder, \
                     "-A","alert_json",  "--lua","alert_json = {file = true}"], stdout=subprocess.DEVNULL)
-    
-    snort_processing_time = time() - start
-    new_filepath = output_folder+file_name+".txt"
-    os.rename(output_folder+"alert_json.txt", new_filepath)
-    return new_filepath, snort_processing_time
+        
+        new_filepath = output_folder+current_trace+".txt"
+        os.rename(output_folder+"alert_json.txt", new_filepath)
+    else:
+        subprocess.run(["suricata", "-c", sim_config["nids_config_path"], "-S", sim_config["ruleset_path"], "-r",suspicious_pkts_pcap, "-l",output_folder], stdout=subprocess.DEVNULL)
+        new_filepath = output_folder+current_trace+".log"
+        os.rename(output_folder+"fast.log", new_filepath)
+
+    return new_filepath, time() - start
 
 # Parses an alert file and keeps only one entry for each packet (based on the 'pkt_num' entry in the alert). 
 # Saves the 'pkt_len', 'dir', 'src_ap'and 'dst_ap' fields as an identifier to compare with other alert files
-def parse_alerts(alerts_filepath):
+def parse_snort_alerts(alerts_filepath):
     pkt_alerts = {}
     flow_alerts = {}
     with open(alerts_filepath, 'r') as file:
@@ -96,6 +98,29 @@ def parse_alerts(alerts_filepath):
             pkt_key = parsed_line["timestamp"] # + "_" + parsed_line["rule"]                
             if pkt_key not in pkt_alerts:
                pkt_alerts[pkt_key] = parsed_line
+
+            flow_key = parsed_line["proto"] + "_" + parsed_line["src_ap"] + "_" + parsed_line["dst_ap"]
+            if flow_key not in flow_alerts:
+               flow_alerts[flow_key] = parsed_line
+               
+    return pkt_alerts, flow_alerts
+
+def parse_suricata_alerts(alerts_filepath):
+    pkt_alerts = {}
+    flow_alerts = {}
+    with open(alerts_filepath, 'r') as file:
+        for line in file.readlines():
+            l = line.strip().split(" ")
+           
+            parsed_line = {}
+            parsed_line["timestamp"] = l[0]
+            parsed_line["proto"] = l[-4][1:-1]
+            parsed_line["src_ap"] = l[-3]
+            parsed_line["dst_ap"] = l[-1]
+            # Timestamps is not enough for Suricata
+            pkt_key = parsed_line["timestamp"] # + "_" + parsed_line["rule"]                
+            if pkt_key not in pkt_alerts:
+               pkt_alerts[pkt_key] = l
 
             flow_key = parsed_line["proto"] + "_" + parsed_line["src_ap"] + "_" + parsed_line["dst_ap"]
             if flow_key not in flow_alerts:

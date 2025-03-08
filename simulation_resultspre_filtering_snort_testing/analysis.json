@@ -188,4 +188,130 @@
         }
     },
     "total_execution_time": 28.107728719711304
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 22.950777292251587,
+    "payload_size_MB": 91.365938,
+    "type": "pre_filtering",
+    "Friday_start": {
+        "total_time_to_process": 4.411707878112793,
+        "pcap_size": 5894,
+        "avg_pkt_processing_time": 0.0005590744529621908,
+        "pkts_processed": 5001,
+        "number_of_suspicious_pkts": 1300,
+        "suspicious_pkts_counter": {
+            "2463/10": 18,
+            "unsupported": 989,
+            "stream_tcp": 262,
+            "16350/7": 21,
+            "18487/9": 10
+        }
+    },
+    "total_execution_time": 27.973123788833618
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 22.973299741744995,
+    "payload_size_MB": 91.365938,
+    "type": "pre_filtering",
+    "Friday_start": {
+        "total_time_to_process": 4.428015232086182,
+        "pcap_size": 5894,
+        "avg_pkt_processing_time": 0.0005585398346966349,
+        "pkts_processed": 5001,
+        "number_of_suspicious_pkts": 1300,
+        "suspicious_pkts_counter": {
+            "2462/10": 18,
+            "unsupported": 989,
+            "stream_tcp": 262,
+            "16350/7": 21,
+            "18487/9": 10
+        }
+    },
+    "total_execution_time": 28.00886297225952
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 22.837576389312744,
+    "payload_size_MB": 91.365938,
+    "type": "pre_filtering",
+    "Friday_start": {
+        "total_time_to_process": 4.393940448760986,
+        "pcap_size": 5894,
+        "avg_pkt_processing_time": 0.0005555963830884946,
+        "pkts_processed": 5001,
+        "number_of_suspicious_pkts": 1300,
+        "suspicious_pkts_counter": {
+            "2462/10": 18,
+            "unsupported": 989,
+            "stream_tcp": 262,
+            "16350/7": 21,
+            "18487/9": 10
+        }
+    },
+    "total_execution_time": 27.80581521987915
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 23.186418533325195,
+    "payload_size_MB": 91.365938,
+    "type": "pre_filtering",
+    "Friday_start": {
+        "total_time_to_process": 4.384201526641846,
+        "pcap_size": 5894,
+        "avg_pkt_processing_time": 0.0005545532720085621,
+        "pkts_processed": 5001,
+        "number_of_suspicious_pkts": 1300,
+        "suspicious_pkts_counter": {
+            "2463/10": 18,
+            "unsupported": 989,
+            "stream_tcp": 262,
+            "16350/7": 21,
+            "18487/9": 10
+        }
+    },
+    "total_execution_time": 28.153932571411133
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 22.9505615234375,
+    "payload_size_MB": 91.365938,
+    "type": "pre_filtering",
+    "Friday_start": {
+        "total_time_to_process": 344.3251118659973,
+        "pcap_size": 200000,
+        "avg_pkt_processing_time": 0.0015591008969025506,
+        "pkts_processed": 195577,
+        "number_of_suspicious_pkts": 10647,
+        "suspicious_pkts_counter": {
+            "2463/10": 38,
+            "unsupported": 2471,
+            "stream_tcp": 3683,
+            "16350/7": 703,
+            "18487/9": 3126,
+            "ftp": 6,
+            "5998/8": 518,
+            "5999/8": 60,
+            "40063/5": 18,
+            "5822/6": 2,
+            "271/12": 20,
+            "7751/4": 2
+        }
+    },
+    "total_execution_time": 367.8573205471039
+}{
+    "number_of_rules": 44964,
+    "time_to_process_rules": 22.73746418952942,
+    "payload_size_MB": 91.365938,
+    "type": "pre_filtering",
+    "Friday_start": {
+        "total_time_to_process": 0.5345029830932617,
+        "pcap_size": 1001,
+        "avg_pkt_processing_time": 0.0005270584125175413,
+        "pkts_processed": 611,
+        "number_of_suspicious_pkts": 98,
+        "suspicious_pkts_counter": {
+            "2463/10": 5,
+            "unsupported": 47,
+            "stream_tcp": 26,
+            "16350/7": 20
+        }
+    },
+    "total_execution_time": 23.857179880142212
 }
