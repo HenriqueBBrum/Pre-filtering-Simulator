@@ -53,7 +53,7 @@ vars:
 # The default logging directory.  Any log or output file will be
 # placed here if it's not specified with a full path name. This can be
 # overridden with the -l command line parameter.
-default-log-dir: /home/hbeckerbrum/Pre-filtering-Simulator/etc/nids_configuration/suricata_configuration/suricata_log/
+default-log-dir: /home/hbeckerbrum/
 
 # Global stats configuration
 stats:
@@ -2175,8 +2175,8 @@ rule-files:
 ## Auxiliary configuration files.
 ##
 
-classification-file: /home/hbeckerbrum/Pre-filtering-Simulator/etc/nids_configuration/classification.config
-reference-config-file: /home/hbeckerbrum/Pre-filtering-Simulator/etc/nids_configuration/suricata/reference.config
+classification-file: ../classification.config
+reference-config-file: reference.config
 # threshold-file: /etc/suricata/threshold.config
 
 ##

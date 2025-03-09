@@ -164,6 +164,7 @@ class RulesParser(object):
             header = rule.split('(', 1)
             return header[0]
         else:
+            print(rule)
             raise SyntaxError("Error in syntax, check if rule has been closed properly ", rule)
     
     # Receives a list "[<action>, <proto>, <src_ip>, <sport>, <direction>, <dst_ip>, <dport>", parses and validates each field
@@ -359,16 +360,18 @@ class RulesParser(object):
 
             # Suricata only: Add content modifiers to the last content option
             if not snort and self.dicts.content_modifiers(key):
-                if "content" not in options_dict:
+                if "content_pcre" not in options_dict:
                     raise Exception("Content modifiers without a content")
-                
-                options_dict["content"][-1][-1].append(option_string)
+                if  options_dict["content_pcre"][-1][0] == 0:
+                    options_dict["content_pcre"][-1][-1].append(option_string)
                 continue
 
             if key == "content":
                 parsed_value = self.__parse_content(value, current_buffer, snort)
+                key = "content_pcre"
             elif key == "pcre":
                 parsed_value = self.__parse_pcre(value, current_buffer)
+                key = "content_pcre"
             else:
                 value = value.split(",")
                 parsed_value = value[0] if len(value) == 1 else value
@@ -433,9 +436,9 @@ class RulesParser(object):
             if re_search.group(0)[1:]:
                 modifiers = re_search.group(0)[1:].split(",") # Remove the first ','
             content = value[:re_search.span()[0]][1:-1]
-            parsed_value = (buffer, False if negate else True, content, modifiers)
+            parsed_value = (0, buffer, False if negate else True, content, modifiers)
         else:
-            parsed_value = (buffer, False if negate else True, value[1:-1], [])
+            parsed_value = (0, buffer, False if negate else True, value[1:-1], [])
 
         return parsed_value
 
@@ -450,4 +453,4 @@ class RulesParser(object):
         modifiers = re_search.group(0) 
         pcre = value[1:re_search.span()[0]-1] # Don't return the '/' chars and grab only the PCRE string
 
-        return (buffer, False if negate else True, pcre, modifiers)
+        return (1, buffer, False if negate else True, pcre, modifiers)

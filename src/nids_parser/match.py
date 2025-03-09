@@ -50,12 +50,6 @@ class Match(object):
         self.header_fields = self.__adjust_header(header_fields)
         self.payload_fields = self.__adjust_payload(payload_fields, pre_filtering_scenario)
 
-        # if "flags" in self.header_fields:
-        #     print(self.header_fields)
-        #     print(self.payload_fields)
-
-        #     print("\n------------------------------------------------\n")
-
     def sids(self):
         return list(set(self.sid_rev_list))
     
@@ -140,38 +134,35 @@ class Match(object):
 
     # Adjust the "dsize" and "content_pcre" rule data
     def __adjust_payload(self, payload_fields, pre_filtering_scenario):
+        final_paload_fields = {}
         if "dsize" in payload_fields:
             value = payload_fields["dsize"][0] # Options/Paylod_fields are stored as {"key": [(value), ]}
             comparator = re.search("[^\d ]+", value)
             comparator = comparator.group(0) if comparator != None else ""
-            payload_fields["dsize"] = {"data": re.findall("[\d]+", value), "comparator": comparator}
+            final_paload_fields["dsize"] = {"data": re.findall("[\d]+", value), "comparator": comparator}
 
         final_content_list = []
-        if "content" in payload_fields:
+        if "content_pcre" in payload_fields:
             fast_pattern_match = None
-            for buffer_name, should_match, match_str, modifiers in payload_fields["content"]:
-                match_str = self.__adjust_content(match_str, "nocase" in modifiers if modifiers else False)
-                modifiers, fast_pattern = self.__parse_content_modifiers(modifiers)
-                final_content_list.append((buffer_name, should_match, match_str, modifiers)) # buffer, negation, string, modifiers
-                if fast_pattern:
-                    fast_pattern_match = final_content_list[-1]
+            for type, buffer_name, should_match, match_str, modifiers in payload_fields["content_pcre"]:
+                if type == 0:
+                    match_str = self.__adjust_content(match_str, "nocase" in modifiers if modifiers else False)
+                    modifiers, fast_pattern = self.__parse_content_modifiers(modifiers)
+                    final_content_list.append((type, buffer_name, should_match, match_str, modifiers)) # buffer, negation, string, modifiers
+                    if fast_pattern:
+                        fast_pattern_match = final_content_list[-1]
+                else:
+                    final_buffer_name, parsed_pcre_str, relative_match = self.__parse_pcre_modifiers(match_str, modifiers)
+                    if not final_buffer_name:
+                        final_buffer_name == buffer_name
+
+                    final_content_list.append((type, final_buffer_name, should_match, parsed_pcre_str, relative_match))
         
-            payload_fields["content"] = final_content_list
+            final_paload_fields["content_pcre"] = final_content_list
 
             # self.__apply_pre_filtering_scenario(fast_pattern_match, pre_filtering_scenario)
 
-        pcre_list = []
-        if "pcre" in payload_fields:
-            for buffer_name, should_match, pcre, modifiers in payload_fields["pcre"]:
-                final_buffer_name, parsed_pcre_str, relative_match = self.__parse_pcre_modifiers(pcre, modifiers)
-                if not final_buffer_name:
-                    final_buffer_name == buffer_name
-
-                pcre_list.append((final_buffer_name, should_match, parsed_pcre_str, relative_match))
-    
-            payload_fields["pcre"] = pcre_list
-
-        return payload_fields                    
+        return final_paload_fields                    
 
 
     # Clean escaped chars in the string part of content, and convert the hex part to char. Also adjusts the case if needed 

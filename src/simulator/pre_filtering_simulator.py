@@ -21,21 +21,15 @@ import sys
 sys.path.append("..")
 from utils.ports import SIP_PORTS,SMB_PORTS
 
-
-
 # Simulate the pre-filtering of packets based on signature rules]
 def pre_filtering_simulation(sim_config, matches, output_folder, info):
     info["type"] = "pre_filtering"
     pcaps_path = sim_config["pcaps_path"]
 
     for pcap_file in os.listdir(pcaps_path):
-        # if "Friday_start" not in pcap_file:
-        #     continue
-
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
         print(current_trace)
         info[current_trace] = {}
-
         start = time()
         suspicious_pkts, temp_info = find_suspicious_packets(pcaps_path+pcap_file, matches)
       
@@ -84,7 +78,6 @@ def find_suspicious_packets(pcap_file, matches):
         pkt_count+=1
 
     info = {}
-
     info["pcap_size"] = pkt_count
     info["avg_pkt_processing_time"] = sum(time_to_process)/len(time_to_process)
     info["pkts_processed"] = ip_pkt_count
@@ -122,31 +115,38 @@ def unsupported_protocols(pkt):
 ip_proto = {1:"icmp", 6:"tcp", 17:"udp"}
 # Returns the rules related to the protocol and services of a packet
 def get_related_matches(pkt, matches):
-    pkt_proto = ip_proto.get(pkt.header["ip_proto"], "ip")
+    proto = pkt.header["ip_proto"]
+    pkt_proto = ip_proto[proto] if proto in ip_proto else proto
     applayer_proto =  None
     if pkt.tcp or pkt.udp:
-        applayer_proto = get_applayer_proto(pkt_proto, pkt.header["sport"], pkt.header["dport"])
+        applayer_proto = get_applayer_proto(pkt, pkt_proto)
 
     related_matches_key = "ip"
     if pkt_proto in matches:
         related_matches_key = pkt_proto
-        if applayer_proto and related_matches_key+applayer_proto in matches:
-            related_matches_key+=applayer_proto
+        if applayer_proto and related_matches_key+"_"+applayer_proto in matches:
+            related_matches_key+="_"+applayer_proto
 
     return related_matches_key, matches[related_matches_key]
 
 change_map = {"http-alt": "http", "microsoft-ds": "netbios-ssn", "domain": "dns", "mdns":"dns", "https": None}
-def get_applayer_proto(proto_str, sport, dport):
+def get_applayer_proto(pkt, proto_str):
     applayer_proto = None
     try:
-        applayer_proto = getservbyport(sport, proto_str)
+        applayer_proto = getservbyport(pkt.header["dport"], proto_str)
     except Exception as e:
         try:
-            applayer_proto = getservbyport(dport, proto_str)
+            applayer_proto = getservbyport(pkt.header["sport"], proto_str)
         except  Exception as e:
             return None
         
     if applayer_proto:
+        if pkt.payload_size == 0:
+            applayer_proto = proto_str
+
+        if applayer_proto == "http" and not (pkt.http_res or pkt.http_req):
+            applayer_proto = proto_str
+            
         if applayer_proto in change_map:
             applayer_proto = change_map[applayer_proto]
             
@@ -154,8 +154,11 @@ def get_applayer_proto(proto_str, sport, dport):
 
 # Checks if a packet is suspicous, unsupported or is in a tcp stream
 def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
+    local_compared_against_header = 0
+    comparing_with_content = 0
     for header_group in matches:
         try:
+            local_compared_against_header+=1
             if not matched_ip_and_port(pkt, matches[header_group][0]): 
                 continue
             
@@ -163,7 +166,8 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
             for match in matches[header_group]:
                 if not matched_header_fields(pkt, match):
                     continue
-
+                
+                comparing_with_content+=1
                 if not matched_payload(pkt, match):
                     continue
                 
@@ -176,9 +180,8 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
 
                 return (pkt_count, match.sids()[0])
         except Exception as e:
-            print("Exception: ", traceback.format_exc())
             return (pkt_count, "error")
-        
+   
     return None
 
 

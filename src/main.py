@@ -48,7 +48,7 @@ def main(simulation_type, nids_name):
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        pre_filtering_simulation(simulation_config, matches, output_folder, info)
+        # pre_filtering_simulation(simulation_config, matches, output_folder, info)
     elif simulation_config["type"] == "flow_sampling":
         for n in [5, 10, 25, 50, 100]:
             for t in [5, 10, 25, 50, 100]:
@@ -78,11 +78,12 @@ def calculate_payload_size(matches):
         match_size = 0
         match_size+=sys.getsizeof(content[1]) # Content string
         if content[2]: # Modifiers
-            if type(content[2]) is str:
-                match_size+=sys.getsizeof(content[2])
-            else:
+            if isinstance(content[2], list):
                 for modifier in content[2]:
                     match_size+=sys.getsizeof(modifier)
+            else:
+                match_size+=sys.getsizeof(content[2])
+
 
         return match_size
 
@@ -91,13 +92,9 @@ def calculate_payload_size(matches):
     for protocol_key in matches:
         for header_group in matches[protocol_key]:
             for match in matches[protocol_key][header_group]:
-                if "content" in match.payload_fields:
-                    for content in match.payload_fields["content"]:
+                if "content_pcre" in match.payload_fields:
+                    for content in match.payload_fields["content_pcre"]:
                         total_payload_size+=get_size(content)
-
-                if "pcre" in match.payload_fields:
-                    for pcre in match.payload_fields["pcre"]:
-                        total_payload_size+=get_size(pcre)
 
 
     return total_payload_size/1000000

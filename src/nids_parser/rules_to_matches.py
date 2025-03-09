@@ -62,11 +62,7 @@ class MatchTree:
 
         self.add_match(node_name, match)
 
-    def get_related_matches(self, start_node, wrong_transport_node, node_name):
-        if wrong_transport_node:
-            if start_node.name == wrong_transport_node:
-                return []
-                        
+    def get_related_matches(self, start_node, node_name):            
         if start_node.name == node_name: # Base case: Has found the node
             return start_node.matches
             
@@ -75,7 +71,7 @@ class MatchTree:
         
         matches = start_node.matches
         for child in start_node.children: # Checking each node
-            r = self.get_related_matches(self.nodes[child], wrong_transport_node, node_name)
+            r = self.get_related_matches(self.nodes[child], node_name)
             if r:
                 return start_node.matches + r # Has found the node, return to root
 
@@ -94,7 +90,7 @@ def convert_rules_to_matches(simulation_config, nids_config):
     
     print("---- Deduping rules based on the packet header and payload matching fields, and convert them to Match ----")
     deduped_matches = __dedup_rules_to_matches(simulation_config["scenario"], nids_config, modified_rules)
-
+    print(len(deduped_matches))
     final_matches = __group_matches(deduped_matches)
     
     print("\nResults:")
@@ -109,7 +105,9 @@ def convert_rules_to_matches(simulation_config, nids_config):
 
 # DO I need supported heade fields?????
 supported_header_fields = {"proto", "src_ip", "sport", "dst_ip", "dport", "ip_port_key"}
-supported_payload_options = {"dsize", "content", "pcre", "service"}
+supported_payload_options = {"dsize", "content_pcre", "service"}
+
+unsupported_non_payload_fields = {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}
 
 # Deduplicate rules with the same fields and extract fields for quick matching with packets.
 def __dedup_rules_to_matches(pre_filtering_scenario, nids_config, rules):
@@ -123,7 +121,7 @@ def __dedup_rules_to_matches(pre_filtering_scenario, nids_config, rules):
         for option in rule.options: 
             if option in supported_payload_options:
                 payload_fields[option] = rule.options[option]
-            elif Dicts.non_payload_options(option):
+            elif Dicts.non_payload_options(option) and option not in unsupported_non_payload_fields:
                 header_fields[option] = rule.options[option]
 
         rule_id = hash(str(header_fields)+str(payload_fields))
@@ -139,7 +137,6 @@ def __dedup_rules_to_matches(pre_filtering_scenario, nids_config, rules):
         
         deduped_matches[rule_id].priority_list.append(priority)
         deduped_matches[rule_id].sid_rev_list.append(sid_rev_string)
-
     return list(deduped_matches.values())
 
 
@@ -151,7 +148,6 @@ def __group_matches(matches):
 ### Functions to group rules based on protocols so each packet is compared against fewer rules ###   
 def __group_by_protocol(matches):
     match_tree = MatchTree("ip", [("ip", "icmp"), ("ip", "tcp"), ("ip", "udp")])
-
     for match in matches:
         proto = match.header_fields["proto"] 
         if proto == "ip":
@@ -159,28 +155,31 @@ def __group_by_protocol(matches):
                 match_tree.add_match("ip", match)
             else:
                 ip_proto = match.header_fields["ip_proto"]["data"]
-                ip_proto = "icmp" if ip_proto == 1 else "ip"
+                ip_proto = "icmp" if ip_proto == 1 else ip_proto
                 match_tree.safe_match_add(proto, ip_proto, match, applayer=False)
         elif proto == "icmp":
             match_tree.add_match(proto, match)
         elif proto == "udp" or proto == "tcp":
             if match.service:
                 for service in match.service:
-                    match_tree.safe_match_add(["tcp", "udp"], service, match, applayer=True) # parent, node, match
+                    match_tree.safe_match_add(proto, proto+"_"+service, match, applayer=True) # parent, node, match
             else:
                 match_tree.add_match(proto, match) # Add match to either udp or tcp since there is not service
         elif proto == "file": # Snort file options can mean the following protocols
-            match_tree.safe_match_add(["tcp", "udp"], "http", match, applayer=True)
-            match_tree.safe_match_add(["tcp", "udp"], "smtp", match, applayer=True)
+            match_tree.safe_match_add("tcp", "tcp_http", match, applayer=True)
+            match_tree.safe_match_add("tcp", "tcp_smtp", match, applayer=True)
+            match_tree.safe_match_add("udp", "udp_http", match, applayer=True)
+            match_tree.safe_match_add("udp", "udp_smtp", match, applayer=True)
 
-            match_tree.safe_match_add("tcp", "pop3", match, applayer=True)
-            match_tree.safe_match_add("tcp", "imap", match, applayer=True)
-            match_tree.safe_match_add("tcp", "netbios-ssn", match, applayer=True) # Instead of SMB
-            match_tree.safe_match_add("tcp", "ftp", match, applayer=True)
+            match_tree.safe_match_add("tcp", "tcp_pop3", match, applayer=True)
+            match_tree.safe_match_add("tcp", "tcp_imap", match, applayer=True)
+            match_tree.safe_match_add("tcp", "tcp_netbios-ssn", match, applayer=True) # Instead of SMB
+            match_tree.safe_match_add("tcp", "tcp_ftp", match, applayer=True)
         elif "tcp-" in proto:
              match_tree.add_match("tcp", match)
         else:
-            match_tree.safe_match_add(["tcp", "udp"], proto, match, applayer=True) 
+            match_tree.safe_match_add("tcp", "tcp_"+proto, match, applayer=True)
+            match_tree.safe_match_add("udp", "udp_"+proto, match, applayer=True)
 
     match_tree.print_nodes()
     return match_tree
@@ -188,25 +187,15 @@ def __group_by_protocol(matches):
 
 ### Returns a map of map with
 def __group_by_rule_header(match_tree):
-    def group(matches):
-        groupped_matches = {}
-        for match in matches:
-            if match.header_key in groupped_matches:
-                groupped_matches[match.header_key].append(match)
-            else:
-                groupped_matches[match.header_key] = [match]
-
-        return groupped_matches
-
     final_matches = {}
-    for key, node in match_tree.nodes.items():
-        if node.applayer:                
-            tcp_matches = match_tree.get_related_matches(match_tree.get_root(), "udp", key)  # Don't go by the udp path
-            final_matches["tcp"+key] = group(tcp_matches)
-            udp_matches = match_tree.get_related_matches(match_tree.get_root(), "tcp", key) # Don't go by the tcp path
-            final_matches["udp"+key] = group(udp_matches)
-        else:
-            final_matches[key] = group(match_tree.get_related_matches(match_tree.get_root(), None, key))
+    for proto_or_service in match_tree.nodes:
+        final_matches[proto_or_service] = {}
+        related_matches = match_tree.get_related_matches(match_tree.get_root(), proto_or_service)
+        for match in related_matches:
+            if match.header_key in final_matches[proto_or_service]:
+                final_matches[proto_or_service][match.header_key].append(match)
+            else:
+                final_matches[proto_or_service][match.header_key] = [match]
 
     return final_matches
 
