@@ -8,10 +8,10 @@ from copy import deepcopy
 
 import sys
 sys.path.append("..")
-
 from utils.validation_dicts import Dicts
-from utils.ports import MIN_PORT,MAX_PORT
 
+MIN_PORT = 0
+MAX_PORT = 65535
 
 # Class representing a NIDS rule.
 class Rule(object):
@@ -45,9 +45,12 @@ class Rule(object):
 #       The other contains only supported rules, without system variables and without bidirectional 
 #   If there are invalid option in the rule an Error is raised. 
 ###
+
+regex_unsupported_keywords = "; *(sip_|dce_|base64_|sd_pattern|cvs|md5|sha256|sha512|gtp_|dnp3_|cip_|iec104_|mms_|modbus_|s7commplus|rpc:|ja3_)"
+unsupported_rules = 0
+
 class RulesParser(object):
     def __init__(self, simulation_config, nids_config):
-        self.regex_unsupported_keywords = "; *(sip_|dce_|base64_|sd_pattern|cvs|md5|sha256|sha512|gtp_|dnp3_|cip_|iec104_|mms_|modbus_|s7commplus|rpc:|ja3_)"
         self.dicts = Dicts()
 
         self.scenario = simulation_config["scenario"]
@@ -75,6 +78,8 @@ class RulesParser(object):
             original_rules.extend(parsed_rules)
             modified_rules.extend(temp_modified_rules)
         
+        global unsupported_rules
+        print("Unsupported: ", unsupported_rules)
         return original_rules, modified_rules
 
     # Parse each rule from a rule file
@@ -91,7 +96,9 @@ class RulesParser(object):
                 parsed_rule = Rule(line, header, options, has_negation)
                 parsed_rules.append(parsed_rule)
                
-                if search(self.regex_unsupported_keywords, line):
+                if search(regex_unsupported_keywords, line):
+                    global unsupported_rules
+                    unsupported_rules+=1
                     continue
 
                 cp_rule = deepcopy(parsed_rule)
@@ -164,7 +171,6 @@ class RulesParser(object):
             header = rule.split('(', 1)
             return header[0]
         else:
-            print(rule)
             raise SyntaxError("Error in syntax, check if rule has been closed properly ", rule)
     
     # Receives a list "[<action>, <proto>, <src_ip>, <sport>, <direction>, <dst_ip>, <dport>", parses and validates each field
@@ -174,6 +180,14 @@ class RulesParser(object):
         
         header_dict["action"] = self.dicts.action(header[0])
         header_dict["proto"] = self.dicts.proto(header[1])
+        # Converts some protos to another to have the same name
+        if header_dict["proto"] == "http1":
+            header_dict["proto"] = "http"
+        elif header_dict["proto"] == "ssl":
+            header_dict["proto"] = "tls"
+        elif header_dict["proto"] == "smb":
+            header_dict["proto"] = "netbios-ssn"
+
         if len(header) == 2: # Rules like: "alert http (...)"
             header_dict["src_ip"] = self.__ip("any")
             header_dict["sport"] = self.__port("any")

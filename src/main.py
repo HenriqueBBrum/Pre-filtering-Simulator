@@ -10,28 +10,6 @@ from simulator.flow_sampling_simulator import flow_sampling_simulation
 
 OUTPUT_FOLDER = "simulation_results/"
 
-def generate_simulation(simulation_type, nids_name):
-    simulation_config = {}
-    simulation_config["nids_name"] = nids_name
-    # simulation_config["pcaps_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/split_pcaps/pcaps/"
-    # simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/alerts/split_pcap/"
-
-    simulation_config["pcaps_path"] = "/home/hbeckerbrum/NFSDatasets/CICIDS2017/"
-    if nids_name == "snort":
-        simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/snort/"
-        simulation_config["nids_config_path"] = "etc/nids_configuration/snort/snort.lua"
-        simulation_config["ruleset_path"] = "etc/rules/snort3-registered/"
-    else:
-        simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/suricata/"
-        simulation_config["nids_config_path"] = "etc/nids_configuration/suricata/suricata.yaml"
-        simulation_config["ruleset_path"] = "etc/rules/suricata-emerging/emerging-all.rules"
-
-    if simulation_type == "pre_filtering":
-        simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
-        simulation_config["scenario"] = "full"
-
-    return simulation_config
-
 def main(simulation_type, nids_name):
     simulation_config = generate_simulation(simulation_type, nids_name)
 
@@ -51,7 +29,7 @@ def main(simulation_type, nids_name):
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        #pre_filtering_simulation(simulation_config, matches, output_folder, info)
+        pre_filtering_simulation(simulation_config, matches, output_folder, info)
     elif simulation_config["type"] == "flow_sampling":
         for n in [5, 10, 25, 50, 100]:
             for t in [5, 10, 25, 50, 100]:
@@ -66,17 +44,34 @@ def main(simulation_type, nids_name):
         print("Wrong simulation type")
         exit(1)
 
-    json.dump(info, sys.stdout, indent=4)
-
     info["total_execution_time"] = time() - start
     with open(output_folder + "analysis.json", 'a') as f:
         json.dump(info , f, ensure_ascii=False, indent=4)
 
+def generate_simulation(simulation_type, nids_name):
+    simulation_config = {}
+    simulation_config["nids_name"] = nids_name
+    # simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/alerts/split_pcap/"
+    simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
+    #/home/hbeckerbrum/simulator_results/split_pcaps/pcaps/"
+    #simulation_config["pcaps_path"] = "/home/hbeckerbrum/NFSDatasets/CICIDS2017/"
+    if nids_name == "snort":
+        simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/alerts/snort/"#"/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/snort/"
+        simulation_config["nids_config_path"] = "etc/nids_configuration/snort/snort.lua"
+        simulation_config["ruleset_path"] = "etc/rules/snort3-registered/"
+    else:
+        simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
+        simulation_config["nids_config_path"] = "etc/nids_configuration/suricata/suricata.yaml"
+        simulation_config["ruleset_path"] = "etc/rules/suricata-emerging/emerging-all.rules"
 
+    if simulation_type == "pre_filtering":
+        simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
+        simulation_config["scenario"] = "test"
+
+    return simulation_config
 
 # Calculates the amount of bytes required by python to store the rules
 def calculate_payload_size(matches):
-
     def get_size(content):
         match_size = 0
         match_size+=sys.getsizeof(content[1]) # Content string
@@ -89,7 +84,6 @@ def calculate_payload_size(matches):
 
 
         return match_size
-
 
     total_payload_size = 0
     for protocol_key in matches:

@@ -4,8 +4,9 @@
 import re
 import sys
 
-sys.path.append("..")
-from utils.ports import MIN_PORT,MAX_PORT
+MIN_PORT = 0
+MAX_PORT = 65535
+
 
 class NIDSConfiguration():
     ports = {}

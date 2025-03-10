@@ -20,7 +20,7 @@ tcp_flags_dict = {
     'C': 128,
 }
 
-ipotps_to_hex = {"eol":0x00, "nop":0x01,  
+ipopts_to_dict = {"eol":0x00, "nop":0x01,  
                  "sec": 0x02, "rr": 0x07,  
                  "ts": 0x44, "lsrr": 0x83, 
                  "lsrre": 0x83,  "esec": 0x85, 
@@ -40,9 +40,18 @@ native_pcre_modifiers = {'i', 's', 'm', 'x'}
 class Match(object):
     def __init__(self, header_fields, payload_fields, pre_filtering_scenario="full"):
         self.header_key = header_fields["ip_port_key"]
-        self.service = None
+        self.service = []
+        # Adjust some services
         if "service" in payload_fields:
-            self.service = payload_fields["service"] # Get the services only 
+            for service in payload_fields["service"]:
+                if service == "ssl":
+                    self.service.append("tls")
+                elif service == "wins":
+                    self.service.append("netbios-ns")
+                elif service == "vnc-server":
+                   self.service.append("vnc")
+                else:
+                    self.service.append(service)
 
         self.priority_list = []
         self.sid_rev_list = []
@@ -71,7 +80,7 @@ class Match(object):
         
          # Determine the data and comparator for the "fragbits" keyword
         if "ipopts" in header_fields:
-            clean_header_fields["ipopts"] = ipotps_to_hex[header_fields["ipopts"][0]]
+            clean_header_fields["ipopts"] = ipopts_to_dict[header_fields["ipopts"][0]]
 
         # Determine the data and comparator for the "ttl", "id", "seq", "ack", "window", "itype", "icode", "icmp_id", "icmp_seq" keywords
         for key in ["ttl", "id", "seq", "ack", "window", "itype", "icode", "icmp_id", "icmp_seq"]:

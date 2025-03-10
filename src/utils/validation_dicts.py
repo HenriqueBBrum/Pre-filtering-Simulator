@@ -435,6 +435,8 @@ class Dicts():
                             "http_client_body",	
                             "http_cookie",
                             "http_referer",
+                            "dns.query",
+                            "dns_query"
                         }
         if option:
             if option in suricata_sticky_buffers:

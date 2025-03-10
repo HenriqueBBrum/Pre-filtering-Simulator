@@ -1,0 +1,5 @@
+********************************************************************************
+************************** NIDS RULES PARSING STAGE ***************************
+
+
+---- Parsing rules from etc/rules/suricata-emerging/emerging-all.rules ----

@@ -1,12 +1,9 @@
 import os
-from scapy.all import IP,TCP,UDP,ICMP
+from scapy.all import IP,TCP,UDP,ICMP,DNS,DNSQR
 from scapy.layers.http import HTTPResponse,HTTPRequest 
 
-import sys
-sys.path.append("..")
-from utils.ports import SMTP_PORTS,IMAP_PORTS,FTP_PORTS,SMB_PORTS
-
-import pprint
+file_data_ports = {110, 995, 25, 465, 587, 2525, 3535, 143, 220, 585, 993, 139, 445, 3020,
+                   20, 21, 69, 152, 989, 990, 2100, 2811, 3305, 3535, 3721, 5402, 6086, 6619, 6622}
 
 class PacketToMatch(object):
     def __init__(self, pkt):
@@ -67,13 +64,11 @@ class PacketToMatch(object):
                 sport = pkt[transport_layer_name].sport
                 dport = pkt[transport_layer_name].dport
                 
-                is_pop3 = True if sport == 110 or sport == 995 else ( True if dport == 110 or dport == 995 else False)
-                is_smtp = True if sport in SMTP_PORTS else (True if dport in SMTP_PORTS else False) 
-                is_imap = True if sport in IMAP_PORTS else (True if dport in IMAP_PORTS else False) 
-                is_ftp = True if sport in FTP_PORTS else (True if dport in FTP_PORTS else False) 
-                is_smb = True if sport in SMB_PORTS else (True if dport in SMB_PORTS else False) 
-                if is_pop3 or is_smtp or is_imap or is_ftp or is_smb:
+                if sport in file_data_ports or dport in file_data_ports:
                     payload_buffers["file_data"] = [payload_buffers["pkt_data"][0]]
+
+            if DNS in pkt and pkt[DNS].opcode == 0 and pkt[DNS].ancount == 0:
+                payload_buffers["dns_query"] = [pkt[DNSQR].qname.decode('utf-8', errors = 'replace')]
 
         http_type = None
         if self.http_req:

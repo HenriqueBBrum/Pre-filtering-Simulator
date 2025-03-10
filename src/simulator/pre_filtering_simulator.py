@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import traceback
 from time import time
@@ -17,16 +18,14 @@ from .packet_to_match import PacketToMatch
 
 from .analysis import compare_to_baseline
 
-import sys
-sys.path.append("..")
-from utils.ports import SIP_PORTS,SMB_PORTS
-
 # Simulate the pre-filtering of packets based on signature rules]
 def pre_filtering_simulation(sim_config, matches, output_folder, info):
     info["type"] = "pre_filtering"
     pcaps_path = sim_config["pcaps_path"]
 
     for pcap_file in os.listdir(pcaps_path):
+        if "dns.pcap" not in pcap_file:
+            continue
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
         print(current_trace)
         info[current_trace] = {}
@@ -83,6 +82,8 @@ def find_suspicious_packets(pcap_file, matches):
     
     return suspicious_pkts, info
 
+# DNP3, MMS, SMB
+unsupported_protocols_port = {135, 139, 445, 502, 651, 802, 3020, 5060, 5061, 5080, 19999, 20000}
 # CIP, IEC104 and S7Comm not here
 def unsupported_protocols(pkt):
     if TCP in pkt or UDP in pkt:
@@ -93,22 +94,7 @@ def unsupported_protocols(pkt):
         sport = pkt[transport_layer.name].sport
         dport = pkt[transport_layer.name].dport
 
-        if sport == 19999 or sport == 20000 or dport == 19999 or dport == 20000: # DNP3
-            return True
-
-        if sport == 135 or dport == 135: # DCE-RPC
-            return True 
-
-        if sport == 651 or dport == 651: # MMS
-            return True 
-
-        if sport == 502 or sport == 802 or dport == 502 or dport == 802: # DNP3
-            return True
-
-        if sport in SIP_PORTS or dport in SIP_PORTS: # SIP
-            return True 
-
-        if sport in SMB_PORTS or dport in SMB_PORTS: #SMB
+        if sport in unsupported_protocols_port or dport in unsupported_protocols_port:
             return True
 
 ip_proto = {1:"icmp", 6:"tcp", 17:"udp"}
@@ -128,7 +114,20 @@ def get_related_matches(pkt, matches):
 
     return related_matches_key, matches[related_matches_key]
 
-change_map = {"http-alt": "http", "microsoft-ds": "netbios-ssn", "domain": "dns", "mdns":"dns", "https": None}
+   
+port_to_service_map = {446: "drda", 447: "drda", 448: "drda", 1098:"java_rmi", 1099:"java_rmi",
+                    1900: "ssdp", 1935: "rtmp", 5500: "vnc",  5800: "vnc", 5900: "vnc", 5938: "teamview"}
+
+
+change_map = {"http-alt": "http", "microsoft-ds": "netbios-ssn", 
+              "domain": "dns", "mdns":"dns", "https": "tls",
+              "mysql-proxy": "mysql", "auth": "ident", "imap2": "imap",
+              "imaps": "imap", "pop3s": "pop3", "telnets": "telnet",
+              "ftps-data": "ftp-data", "ftps":"ftp", "dhcpv6-client": "dhcp",
+              "dhcpv6-server": "dhcp", "syslog-tls": "syslog",
+              "ircs-u": "irc", "radius-acct": "radius", "bgpd": "bgp",
+              "sip-tls": "sip", "ms-wbt-server": "rdp", "epmap": "dcerpc"}
+
 def get_applayer_proto(pkt, proto_str):
     applayer_proto = None
     try:
@@ -139,6 +138,12 @@ def get_applayer_proto(pkt, proto_str):
         except  Exception as e:
             return None
         
+    if not applayer_proto:
+        applayer_proto = port_to_service_map.get(pkt.header["dport"])
+
+    if not applayer_proto:
+        applayer_proto = port_to_service_map.get(pkt.header["sport"])
+
     if applayer_proto:
         if pkt.payload_size == 0:
             applayer_proto = proto_str
@@ -150,6 +155,9 @@ def get_applayer_proto(pkt, proto_str):
             applayer_proto = change_map[applayer_proto]
             
     return applayer_proto 
+
+    
+
 
 # Checks if a packet is suspicous, unsupported or is in a tcp stream
 def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
@@ -180,7 +188,6 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
                 return (pkt_count, match.sids()[0])
         except Exception as e:
             return (pkt_count, "error")
-   
     return None
 
 
@@ -189,15 +196,24 @@ def check_stream_tcp(pkt, pkt_count, tcp_tracker):
     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"])
     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) #Invert order to match flow
 
+    # print('flow ', flow)
+    # print('reverse-flow ', reversed_flow)
+    # if flow in tcp_tracker:
+    #     print(tcp_tracker[flow])
+    # if reversed_flow in tcp_tracker:
+    #     print(tcp_tracker[reversed_flow])
+
     stream_tcp = False
-    if flow in tcp_tracker and pkt.header["flags"] == "A" and pkt.header["seq"] == tcp_tracker[flow]["seq"]:
+    if flow in tcp_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_tracker[flow]["seq"]:
         stream_tcp = True
-    elif flow in tcp_tracker and "PA" in pkt.header["flags"] and pkt.header["ack"] == tcp_tracker[flow]["ack"]:
+    elif flow in tcp_tracker and pkt.header["flags"] & 24 == pkt.header["flags"] and pkt.header["ack"] == tcp_tracker[flow]["ack"]:
         stream_tcp = True
-    elif reversed_flow in tcp_tracker and pkt.header["flags"]  == "A" and pkt.header["seq"] == tcp_tracker[reversed_flow]["ack"]:
+    elif reversed_flow in tcp_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_tracker[reversed_flow]["ack"]:
         stream_tcp = True
-    elif reversed_flow in tcp_tracker and "PA" in pkt.header["flags"] and pkt.header["ack"] == tcp_tracker[reversed_flow]["seq"]:
+    elif reversed_flow in tcp_tracker and pkt.header["flags"] & 24 == pkt.header["flags"] and pkt.header["seq"] == tcp_tracker[reversed_flow]["ack"]:
         stream_tcp = True
+    # elif reversed_flow in tcp_tracker and pkt.header["flags"] & 24 == pkt.header["flags"] and pkt.header["ack"] == tcp_tracker[reversed_flow]["seq"]:
+    #     stream_tcp = True
 
     if "R" in pkt.header["flags"]:
         stream_tcp = True
