@@ -13,19 +13,22 @@ OUTPUT_FOLDER = "simulation_results/"
 def generate_simulation(simulation_type, nids_name):
     simulation_config = {}
     simulation_config["nids_name"] = nids_name
-    simulation_config["pcaps_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/split_pcaps/pcaps/"
+    # simulation_config["pcaps_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/split_pcaps/pcaps/"
+    # simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/alerts/split_pcap/"
 
-    simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/alerts/split_pcap/"
+    simulation_config["pcaps_path"] = "/home/hbeckerbrum/NFSDatasets/CICIDS2017/"
     if nids_name == "snort":
+        simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/snort/"
         simulation_config["nids_config_path"] = "etc/nids_configuration/snort/snort.lua"
         simulation_config["ruleset_path"] = "etc/rules/snort3-registered/"
     else:
+        simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/suricata/"
         simulation_config["nids_config_path"] = "etc/nids_configuration/suricata/suricata.yaml"
         simulation_config["ruleset_path"] = "etc/rules/suricata-emerging/emerging-all.rules"
 
     if simulation_type == "pre_filtering":
         simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
-        simulation_config["scenario"] = "testing"
+        simulation_config["scenario"] = "full"
 
     return simulation_config
 
@@ -48,7 +51,7 @@ def main(simulation_type, nids_name):
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        # pre_filtering_simulation(simulation_config, matches, output_folder, info)
+        #pre_filtering_simulation(simulation_config, matches, output_folder, info)
     elif simulation_config["type"] == "flow_sampling":
         for n in [5, 10, 25, 50, 100]:
             for t in [5, 10, 25, 50, 100]:

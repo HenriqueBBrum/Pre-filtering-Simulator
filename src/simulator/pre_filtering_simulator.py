@@ -72,7 +72,6 @@ def find_suspicious_packets(pcap_file, matches):
 
             if suspicious_pkt:
                 suspicious_pkts.append(suspicious_pkt)
-            
             ip_pkt_count+=1
             time_to_process.append(time()-start)
         pkt_count+=1
