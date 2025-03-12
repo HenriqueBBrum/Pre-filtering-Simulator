@@ -10,8 +10,8 @@ for pcap in $pcap_folder*.pcap; do
     name=${name%%.*}
 
     snort -c $snort_conf_file --rule-path ../rules/snort3-registered/ -r $pcap -l $log_dir -A alert_json --lua "alert_json = {file = true}"
-    mv $log_dir"alert_json.txt" $log_dir$name".txt"
+    mv $log_dir"alert_json.txt" $log_dir"snort"$name".txt"
 
-    suricata  -c $conf_file -S ../rules/suricata-emerging/emerging-all.rules -r $pcap -l $log_dir
-    mv $log_dir"fast.log" $log_dir$name".log"
+    suricata  -c $suricata_conf_file -S ../rules/suricata-emerging/emerging-all.rules -r $pcap -l $log_dir
+    mv $log_dir"fast.log" $log_dir"suricata/"$name".log"
 done

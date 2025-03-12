@@ -16,6 +16,7 @@ class PacketToMatch(object):
 
         self.__get_header_fields(pkt) 
 
+        # Check for app layer proto and set that as the payload
         transport_layer_name = pkt[IP].getlayer(1).name if pkt[IP].getlayer(1) else None
         if transport_layer_name:
             self.payload_size = len(pkt[transport_layer_name].payload)

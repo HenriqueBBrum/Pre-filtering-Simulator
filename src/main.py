@@ -51,22 +51,23 @@ def main(simulation_type, nids_name):
 def generate_simulation(simulation_type, nids_name):
     simulation_config = {}
     simulation_config["nids_name"] = nids_name
-    # simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/with_scapy/alerts/split_pcap/"
-    simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
-    #/home/hbeckerbrum/simulator_results/split_pcaps/pcaps/"
+    # simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
+    simulation_config["pcaps_path"] = "/home/hbeckerbrum/simulator_results/split_pcaps/pcaps/"
     #simulation_config["pcaps_path"] = "/home/hbeckerbrum/NFSDatasets/CICIDS2017/"
     if nids_name == "snort":
-        simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/alerts/snort/"#"/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/snort/"
+        simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/alerts/snort/"
+        #"/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/snort/"
         simulation_config["nids_config_path"] = "etc/nids_configuration/snort/snort.lua"
         simulation_config["ruleset_path"] = "etc/rules/snort3-registered/"
     else:
         simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
+        # simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/simulator_results/alerts/suricata/"
         simulation_config["nids_config_path"] = "etc/nids_configuration/suricata/suricata.yaml"
         simulation_config["ruleset_path"] = "etc/rules/suricata-emerging/emerging-all.rules"
 
     if simulation_type == "pre_filtering":
         simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
-        simulation_config["scenario"] = "test"
+        simulation_config["scenario"] = "new_test"
 
     return simulation_config
 

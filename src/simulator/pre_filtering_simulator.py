@@ -24,7 +24,7 @@ def pre_filtering_simulation(sim_config, matches, output_folder, info):
     pcaps_path = sim_config["pcaps_path"]
 
     for pcap_file in os.listdir(pcaps_path):
-        if "dns.pcap" not in pcap_file:
+        if "Friday_start" not in pcap_file:
             continue
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
         print(current_trace)
@@ -48,6 +48,7 @@ def find_suspicious_packets(pcap_file, matches):
     tcp_tracker = {}
     ftp_tracker = set()
     pkt_count, ip_pkt_count = 0, 0
+    comparisons_to_match, comparisons_to_content, comparisons_to_pcre  = 0, 0, 0
     for scapy_pkt in PcapReader(pcap_file):
         if IP in scapy_pkt:
             start = time()
@@ -67,17 +68,24 @@ def find_suspicious_packets(pcap_file, matches):
                             ftp_tracker.add(flow)
 
                 if not suspicious_pkt:
-                    suspicious_pkt = is_packet_suspicious(pkt, pkt_count, related_matches, tcp_tracker)
+                    suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, related_matches, tcp_tracker)
+                    comparisons_to_match+=cm
+                    comparisons_to_content+=cc
+                    comparisons_to_pcre+=ccpcre
 
             if suspicious_pkt:
                 suspicious_pkts.append(suspicious_pkt)
+
             ip_pkt_count+=1
             time_to_process.append(time()-start)
         pkt_count+=1
 
     info = {}
     info["pcap_size"] = pkt_count
-    info["avg_pkt_processing_time"] = sum(time_to_process)/len(time_to_process)
+    # info["avg_pkt_processing_time"] = sum(time_to_process)/len(time_to_process)
+    info["avg_num_rules_compared_to"] = comparisons_to_match/pkt_count
+    info["avg_num_contents_compared_to"] = comparisons_to_content/pkt_count
+    info["avg_num_pcre_compared_to"] = comparisons_to_pcre/pkt_count
     info["pkts_processed"] = ip_pkt_count
     
     return suspicious_pkts, info
@@ -161,21 +169,26 @@ def get_applayer_proto(pkt, proto_str):
 
 # Checks if a packet is suspicous, unsupported or is in a tcp stream
 def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
-    local_compared_against_header = 0
-    comparing_with_content = 0
+    compared_to_match_header = 0
+    comparisons_to_match = 0
+    comparisons_to_content = 0
+    comparisons_to_pcre = 0
     for header_group in matches:
         try:
-            local_compared_against_header+=1
+            compared_to_match_header+=1
             if not matched_ip_and_port(pkt, matches[header_group][0]): 
                 continue
-            
+            compared_to_match_header-=1
             # Matched the groups' ip and port header, compare with the other fields of each rule in this group
             for match in matches[header_group]:
+                comparisons_to_match+=1
                 if not matched_header_fields(pkt, match):
                     continue
                 
-                comparing_with_content+=1
-                if not matched_payload(pkt, match):
+                matched, compared_to_content, compared_to_pcre = matched_payload(pkt, match)
+                comparisons_to_content+=compared_to_content
+                comparisons_to_pcre+=compared_to_pcre
+                if not matched:
                     continue
                 
                 if pkt.tcp:
@@ -185,11 +198,11 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_tracker):
                     elif pkt.header["flags"] == "PA":
                         tcp_tracker[flow] = {"seq": pkt.header["seq"]+pkt.payload_size, "ack": pkt.header["ack"]}   
 
-                return (pkt_count, match.sids()[0])
+                return (pkt_count, match.sids()[0]), compared_to_match_header+comparisons_to_match, comparisons_to_content, comparisons_to_pcre
         except Exception as e:
-            return (pkt_count, "error")
-    return None
-
+            print("Exception: ", traceback.format_exc())
+            return (pkt_count, "error"), compared_to_match_header+comparisons_to_match, comparisons_to_content, comparisons_to_pcre
+    return None, compared_to_match_header+comparisons_to_match, comparisons_to_content, comparisons_to_pcre
 
 def check_stream_tcp(pkt, pkt_count, tcp_tracker):
     suspicious_pkt = None
@@ -203,15 +216,15 @@ def check_stream_tcp(pkt, pkt_count, tcp_tracker):
     # if reversed_flow in tcp_tracker:
     #     print(tcp_tracker[reversed_flow])
 
-    stream_tcp = False
+    stream_tcp = False 
     if flow in tcp_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_tracker[flow]["seq"]:
         stream_tcp = True
     elif flow in tcp_tracker and pkt.header["flags"] & 24 == pkt.header["flags"] and pkt.header["ack"] == tcp_tracker[flow]["ack"]:
         stream_tcp = True
-    elif reversed_flow in tcp_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_tracker[reversed_flow]["ack"]:
-        stream_tcp = True
-    elif reversed_flow in tcp_tracker and pkt.header["flags"] & 24 == pkt.header["flags"] and pkt.header["seq"] == tcp_tracker[reversed_flow]["ack"]:
-        stream_tcp = True
+    # elif reversed_flow in tcp_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_tracker[reversed_flow]["ack"]:
+    #     stream_tcp = True
+    # elif reversed_flow in tcp_tracker and pkt.header["flags"] & 24 == pkt.header["flags"] and pkt.header["seq"] == tcp_tracker[reversed_flow]["ack"]: BADD
+    #     stream_tcp = True
     # elif reversed_flow in tcp_tracker and pkt.header["flags"] & 24 == pkt.header["flags"] and pkt.header["ack"] == tcp_tracker[reversed_flow]["seq"]:
     #     stream_tcp = True
 
