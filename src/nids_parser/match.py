@@ -143,35 +143,32 @@ class Match(object):
 
     # Adjust the "dsize" and "content_pcre" rule data
     def __adjust_payload(self, payload_fields, pre_filtering_scenario):
-        final_paload_fields = {}
+        final_payload_fileds = {}
         if "dsize" in payload_fields:
             value = payload_fields["dsize"][0] # Options/Paylod_fields are stored as {"key": [(value), ]}
             comparator = re.search("[^\d ]+", value)
             comparator = comparator.group(0) if comparator != None else ""
-            final_paload_fields["dsize"] = {"data": re.findall("[\d]+", value), "comparator": comparator}
+            final_payload_fileds["dsize"] = {"data": re.findall("[\d]+", value), "comparator": comparator}
 
-        final_content_list = []
+        content_pcre_list = []
         if "content_pcre" in payload_fields:
             fast_pattern_match = None
             for type, buffer_name, should_match, match_str, modifiers in payload_fields["content_pcre"]:
                 if type == 0:
                     match_str = self.__adjust_content(match_str, "nocase" in modifiers if modifiers else False)
                     modifiers, fast_pattern = self.__parse_content_modifiers(modifiers)
-                    final_content_list.append((type, buffer_name, should_match, match_str, modifiers)) # buffer, negation, string, modifiers
+                    content_pcre_list.append((type, buffer_name, should_match, match_str, modifiers)) # buffer, negation, string, modifiers
                     if fast_pattern:
-                        fast_pattern_match = final_content_list[-1]
+                        fast_pattern_match = content_pcre_list[-1]
                 else:
                     final_buffer_name, parsed_pcre_str, relative_match = self.__parse_pcre_modifiers(match_str, modifiers)
                     if not final_buffer_name:
-                        final_buffer_name == buffer_name
-
-                    final_content_list.append((type, final_buffer_name, should_match, parsed_pcre_str, relative_match))
-        
-            final_paload_fields["content_pcre"] = final_content_list
-
-            # self.__apply_pre_filtering_scenario(fast_pattern_match, pre_filtering_scenario)
-
-        return final_paload_fields                    
+                        final_buffer_name = buffer_name
+                        
+                    content_pcre_list.append((type, final_buffer_name, should_match, parsed_pcre_str, relative_match))
+            final_payload_fileds["content_pcre"] = self.__apply_pre_filtering_scenario(content_pcre_list, fast_pattern_match, pre_filtering_scenario)
+           
+        return final_payload_fileds                    
 
 
     # Clean escaped chars in the string part of content, and convert the hex part to char. Also adjusts the case if needed 
@@ -271,34 +268,39 @@ class Match(object):
 
 
         
-    # def __apply_pre_filtering_scenario(self, content_pcre, fast_pattern_match, pre_filtering_scenario):
-    #     final_content_pcre = []
-    #     if pre_filtering_scenario == "first":
-    #         final_content_pcre = [content_pcre[0]]
-    #     elif pre_filtering_scenario =="longest":
-    #         longest, size = None, 0
-    #         for content in content_pcre:
-    #             if len(content[3]) > size:
-    #                 longest = content
-    #                 size = len(content[3])
+    def __apply_pre_filtering_scenario(self, content_pcre, fast_pattern_match, pre_filtering_scenario):
+        final_content_pcre = []
+        if pre_filtering_scenario == "first":
+            final_content_pcre = [content_pcre[0]]
+        elif pre_filtering_scenario =="longest":
+            longest, size = None, 0
+            for content in content_pcre:
+                if len(content[3]) > size:
+                    longest = content
+                    size = len(content[3])
+            final_content_pcre = [longest]
+        elif pre_filtering_scenario =="first_last":
+            final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[-1]]
+        elif pre_filtering_scenario =="first_second":
+            final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[1]]
+        elif pre_filtering_scenario == "wang_chang":
+            longest, size = None, 0   
+            if fast_pattern_match:
+                final_content_pcre = [fast_pattern_match] 
+            else:          
+                for content in content_pcre:
+                    if content[0] == 1:
+                        continue
+                    
+                    if len(content[3]) > size:
+                        longest = content
+                        size = len(content[3])
+                
+                if not longest:
+                    final_content_pcre = None
+                else:
+                    final_content_pcre = [longest]
+        else:
+            final_content_pcre = content_pcre
 
-    #         final_content_pcre = [longest]
-    #     elif pre_filtering_scenario =="first_last":
-    #         final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[-1]]
-    #     elif pre_filtering_scenario =="first_second":
-    #         final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[1]]
-    #     elif pre_filtering_scenario == "fast_pattern":
-    #         longest, size = None, 0   
-    #         if fast_pattern_match:
-    #             final_content_pcre = [fast_pattern_match] 
-    #         else:          
-    #             for content in content_pcre:
-    #                 if len(content[3]) > size:
-    #                     longest = content
-    #                     size = len(content[3])
-                        
-    #             final_content_pcre = [longest]
-    #     else:
-    #         final_content_pcre = content_pcre
-
-    #     return final_content_pcre
+        return final_content_pcre

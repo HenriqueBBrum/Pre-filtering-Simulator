@@ -26,8 +26,8 @@ class Rule(object):
         self.data = {"header": self.header, "options": self.options}
         self.all = self.data
 
-    def rule_to_string(self):    
-        return str(self.header)+str(self.options)
+    def __str__(self):
+        return "Header: " + str(self.header) + "\nPayload: " + str(self.options)
     
     # Returns value of key in rule options. Option value format: (option_index, [option_index_values])
     def get_simple_option_value(self, key, position=0, default=""):
@@ -438,7 +438,7 @@ class RulesParser(object):
         return buffer_name
 
     # Parses the "content" and "pcre" fields for the string to match and modifiers
-    def __parse_content(self, value, buffer, snort):
+    def __parse_content(self, value, buffer_name, snort):
         negate = re.search('^!', value)
         if negate:
             value = value[1:]
@@ -450,14 +450,14 @@ class RulesParser(object):
             if re_search.group(0)[1:]:
                 modifiers = re_search.group(0)[1:].split(",") # Remove the first ','
             content = value[:re_search.span()[0]][1:-1]
-            parsed_value = (0, buffer, False if negate else True, content, modifiers)
+            parsed_value = (0, buffer_name, False if negate else True, content, modifiers)
         else:
-            parsed_value = (0, buffer, False if negate else True, value[1:-1], [])
+            parsed_value = (0, buffer_name, False if negate else True, value[1:-1], [])
 
         return parsed_value
 
     # Fix PCRE parsing for suricata since it has sticky buffers on the options
-    def __parse_pcre(self, value, buffer):
+    def __parse_pcre(self, value, buffer_name):
         negate = re.search('^!', value)
         if negate:
             value = value[1:]
@@ -467,4 +467,4 @@ class RulesParser(object):
         modifiers = re_search.group(0) 
         pcre = value[1:re_search.span()[0]-1] # Don't return the '/' chars and grab only the PCRE string
 
-        return (1, buffer, False if negate else True, pcre, modifiers)
+        return (1, buffer_name, False if negate else True, pcre, modifiers)

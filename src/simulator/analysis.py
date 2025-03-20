@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import subprocess
 from time import time
@@ -31,30 +32,13 @@ def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folde
     info[current_trace]["signatures_false_negative"] = missed_signatures
     info[current_trace]["signatures_false_positive"] = aditional_signatures
 
-    # missed_signatures = 0
-    # aditional_signatures = 0
-    # for key in baseline_flow_signatures.keys() | experiment_flow_signatures.keys():
-    #     base = experiment_flow_signatures.get(key, 0)
-    #     exp = experiment_flow_signatures.get(key, 0)
-    #     if base-exp>0:
-    #         missed_signatures+=base-exp
-    #     elif base-exp:
-    #         aditional_signatures+=exp-base
-
-    # # # Alert metrics for flows
-    # info[current_trace]["baseline_flow_signatures"] = sum(baseline_flow_signatures.values())
-    # info[current_trace]["experiment_flow_signatures"] =  sum(experiment_flow_signatures.values())
-    # info[current_trace]["flow_signatures_true_positive"] = sum(baseline_flow_signatures.values()) - missed_signatures
-    # info[current_trace]["flow_signatures_false_negative"] = missed_signatures
-    # info[current_trace]["flow_signatures_false_positive"] = aditional_signatures
-
     # counter = {}
-    # for key in set(baseline_pkt_alerts.keys()) - set(experiment_pkt_alerts.keys()):
-    #     print(key, baseline_pkt_alerts[key]["rule"], baseline_pkt_alerts[key]["proto"], baseline_pkt_alerts[key]["src_ap"], baseline_pkt_alerts[key]["dst_ap"])
-    #     if baseline_pkt_alerts[key]["rule"] in counter:
-    #         counter[baseline_pkt_alerts[key]["rule"]]+=1
-    #     else:
-    #         counter[baseline_pkt_alerts[key]["rule"]]=1
+    # for key in set(baseline_flow_signatures.keys()) - set(experiment_flow_signatures.keys()):
+    #     print(key)
+        # if baseline_pkt_alerts[key]["rule"] in counter:
+        #     counter[baseline_pkt_alerts[key]["rule"]]+=1
+        # else:
+        #     counter[baseline_pkt_alerts[key]["rule"]]=1
 
     # print("\n\n")
     # print(counter)
@@ -69,8 +53,6 @@ def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folde
 
     # print("\n\n")
     # print(counter)
-
-    os.remove(suspicious_pkts_alert_file)
     return info
 
 def nids_with_suspicious_pcap(sim_config, suspicious_pkts, current_trace, output_folder):
@@ -103,6 +85,7 @@ def nids_with_suspicious_pcap(sim_config, suspicious_pkts, current_trace, output
         new_filepath = output_folder+current_trace+".log"
         os.rename(output_folder+"fast.log", new_filepath)
 
+    # os.remove(suspicious_pkts_pcap)
     return new_filepath, time() - start
 
 # Parses an alert file and keeps only one entry for each packet (based on the 'pkt_num' entry in the alert). 
@@ -129,24 +112,24 @@ def parse_snort_alerts(alerts_filepath):
     return signatures, flow_signatures
 
 def parse_suricata_alerts(alerts_filepath):
-    pkt_alerts = {}
-    flow_alerts = {}
+    signatures = {}
+    flow_signatures = {}
     with open(alerts_filepath, 'r') as file:
         for line in file.readlines():
-            l = line.strip().split(" ")
-           
-            parsed_line = {}
-            parsed_line["timestamp"] = l[0]
-            parsed_line["proto"] = l[-4][1:-1]
-            parsed_line["src_ap"] = l[-3]
-            parsed_line["dst_ap"] = l[-1]
-            # Timestamps is not enough for Suricata
-            pkt_key = parsed_line["timestamp"] # + "_" + parsed_line["rule"]                
-            if pkt_key not in pkt_alerts:
-               pkt_alerts[pkt_key] = l
+            l = line.strip()
+            signature = re.search("\[\d*:\d*:\d*]", l).group(0).split(':')[1]
+            flow = re.search("{.*$", l).group(0).replace("-> ", "").replace("<> ", "")
+            flow = flow.replace(" ", "_").replace("{", "").replace("}", "")
 
-            flow_key = parsed_line["proto"] + "_" + parsed_line["src_ap"] + "_" + parsed_line["dst_ap"]
-            if flow_key not in flow_alerts:
-               flow_alerts[flow_key] = parsed_line
+            if signature not in signatures:
+                signatures[signature]=1
+            else:
+                signatures[signature]+=1
+
+            flow_signature = signature+ "_" +flow
+            if flow_signature not in flow_signatures:
+                flow_signatures[flow_signature] = 1
+            else:
+                flow_signatures[flow_signature]+=1
                
-    return pkt_alerts, flow_alerts
+    return signatures, flow_signatures

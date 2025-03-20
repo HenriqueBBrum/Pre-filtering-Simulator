@@ -12,7 +12,6 @@ OUTPUT_FOLDER = "simulation_results/"
 
 def main(simulation_type, nids_name):
     simulation_config = generate_simulation(simulation_type, nids_name)
-
     info = {}
     start = time()
     if simulation_type:
@@ -51,23 +50,25 @@ def main(simulation_type, nids_name):
 def generate_simulation(simulation_type, nids_name):
     simulation_config = {}
     simulation_config["nids_name"] = nids_name
-    # simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
+    #simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
     simulation_config["pcaps_path"] = "/home/hbeckerbrum/simulator_results/split_pcaps/pcaps/"
-    #simulation_config["pcaps_path"] = "/home/hbeckerbrum/NFSDatasets/CICIDS2017/"
+    # simulation_config["pcaps_path"] = "/home/hbeckerbrum/NFSDatasets/CICIDS2017/"
     if nids_name == "snort":
         simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/alerts/snort/"
-        #"/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/snort/"
+        #simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/snort/"
         simulation_config["nids_config_path"] = "etc/nids_configuration/snort/snort.lua"
         simulation_config["ruleset_path"] = "etc/rules/snort3-registered/"
+        simulation_config["scenario"] = "exp_revflow_all"
     else:
-        simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
-        # simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/simulator_results/alerts/suricata/"
+        simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/simulator_results/alerts/suricata/"
+        #simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
         simulation_config["nids_config_path"] = "etc/nids_configuration/suricata/suricata.yaml"
         simulation_config["ruleset_path"] = "etc/rules/suricata-emerging/emerging-all.rules"
+        simulation_config["scenario"] = "new_test"
 
     if simulation_type == "pre_filtering":
         simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
-        simulation_config["scenario"] = "new_test"
+        # simulation_config["scenario"] = "fast_pattern"
 
     return simulation_config
 
@@ -82,8 +83,6 @@ def calculate_payload_size(matches):
                     match_size+=sys.getsizeof(modifier)
             else:
                 match_size+=sys.getsizeof(content[2])
-
-
         return match_size
 
     total_payload_size = 0
@@ -93,7 +92,6 @@ def calculate_payload_size(matches):
                 if "content_pcre" in match.payload_fields:
                     for content in match.payload_fields["content_pcre"]:
                         total_payload_size+=get_size(content)
-
 
     return total_payload_size/1000000
 

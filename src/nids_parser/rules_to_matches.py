@@ -89,7 +89,7 @@ def convert_rules_to_matches(simulation_config, nids_config):
     original_rules, modified_rules = parser.parse_rules() # Returns a list of Rules
     
     print("---- Deduping rules based on the packet header and payload matching fields, and convert them to Match ----")
-    deduped_matches = __dedup_rules_to_matches(simulation_config["scenario"], nids_config, modified_rules)
+    deduped_matches = __dedup_rules_to_matches(nids_config, modified_rules, simulation_config["scenario"])
     print(len(deduped_matches))
     final_matches = __group_matches(deduped_matches)
     
@@ -103,14 +103,13 @@ def convert_rules_to_matches(simulation_config, nids_config):
 
 ### Functions to dedup rules ###
 
-# DO I need supported heade fields?????
 supported_header_fields = {"proto", "src_ip", "sport", "dst_ip", "dport", "ip_port_key"}
 supported_payload_options = {"dsize", "content_pcre", "service"}
 
 unsupported_non_payload_fields = {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}
 
 # Deduplicate rules with the same fields and extract fields for quick matching with packets.
-def __dedup_rules_to_matches(pre_filtering_scenario, nids_config, rules):
+def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
     deduped_matches = {}
     for rule in rules:
         header_fields, payload_fields = {}, {}
@@ -126,17 +125,20 @@ def __dedup_rules_to_matches(pre_filtering_scenario, nids_config, rules):
 
         rule_id = hash(str(header_fields)+str(payload_fields))
         if rule_id not in deduped_matches:
-            deduped_matches[rule_id] = Match(header_fields, payload_fields, pre_filtering_scenario)
+            mtch = Match(header_fields, payload_fields, pre_filtering_scenario)
+            if not ("content_pcre" in mtch.payload_fields and not mtch.payload_fields["content_pcre"]):
+                deduped_matches[rule_id] = mtch
+            
+        if rule_id in deduped_matches:
+            sid = rule.get_simple_option_value("sid")
+            rev = rule.get_simple_option_value("rev")
+            sid_rev_string = f"{sid}/{rev}"
 
-        sid = rule.get_simple_option_value("sid")
-        rev = rule.get_simple_option_value("rev")
-        sid_rev_string = f"{sid}/{rev}"
-
-        classtype = rule.get_simple_option_value("classtype")
-        priority = nids_config.classification_priority.get(classtype)
-        
-        deduped_matches[rule_id].priority_list.append(priority)
-        deduped_matches[rule_id].sid_rev_list.append(sid_rev_string)
+            classtype = rule.get_simple_option_value("classtype")
+            priority = nids_config.classification_priority.get(classtype)
+            
+            deduped_matches[rule_id].priority_list.append(priority)
+            deduped_matches[rule_id].sid_rev_list.append(sid_rev_string)
     return list(deduped_matches.values())
 
 

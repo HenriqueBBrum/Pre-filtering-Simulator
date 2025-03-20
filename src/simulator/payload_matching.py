@@ -26,22 +26,22 @@ def __matched_content_pcre(pkt, match_contents):
     compared_to_content = 0
     compared_to_pcre = 0
     position_dict = {}
-    for type, buffer_name, should_match, match_str, modifiers in match_contents:
+    for match_type, buffer_name, should_match, match_str, modifiers in match_contents:
         if buffer_name not in pkt.payload_buffers or not pkt.payload_buffers[buffer_name][0]: 
             return False, compared_to_content, compared_to_pcre
         
         start = 0
         position = position_dict[buffer_name] if buffer_name in position_dict else 0
         buffer = pkt.payload_buffers[buffer_name][0]
-        if type == 0:
+        if match_type == 0:
             start, end, nocase = __process_content_modifiers(modifiers, position, len(buffer))
             match_pos = pkt.payload_buffers[buffer_name][nocase][start:end].find(match_str)
             compared_to_content+=1
         else:
             if modifiers:
                 start = position
-
-            match = search(match_str, pkt.payload_buffers[buffer][start:])
+        
+            match = search(match_str, pkt.payload_buffers[buffer_name][0][start:])
             compared_to_pcre+=1
             if match:
                 match_pos = match.start()
