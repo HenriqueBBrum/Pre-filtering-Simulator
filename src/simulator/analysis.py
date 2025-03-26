@@ -22,6 +22,7 @@ def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folde
         exp = experiment_signatures.get(key, 0)
         if base-exp>0:
             missed_signatures+=base-exp
+            print(key, base-exp)
         elif base-exp:
             aditional_signatures+=exp-base
 
@@ -32,27 +33,24 @@ def compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folde
     info[current_trace]["signatures_false_negative"] = missed_signatures
     info[current_trace]["signatures_false_positive"] = aditional_signatures
 
-    # counter = {}
-    # for key in set(baseline_flow_signatures.keys()) - set(experiment_flow_signatures.keys()):
-    #     print(key)
-        # if baseline_pkt_alerts[key]["rule"] in counter:
-        #     counter[baseline_pkt_alerts[key]["rule"]]+=1
-        # else:
-        #     counter[baseline_pkt_alerts[key]["rule"]]=1
+    missed_signatures = 0
+    aditional_signatures = 0
+    for key in baseline_flow_signatures.keys() | experiment_flow_signatures.keys():
+        base = baseline_flow_signatures.get(key, 0)
+        exp = experiment_flow_signatures.get(key, 0)
+        if base-exp>0:
+            missed_signatures+=base-exp
+            # print(key, base-exp)
+        elif base-exp:
+            aditional_signatures+=exp-base
 
-    # print("\n\n")
-    # print(counter)
+    # Alert metrics for individual packets
+    info[current_trace]["baseline_flow_signatures"] = sum(baseline_flow_signatures.values())
+    info[current_trace]["experiment_flow_signatures"] =  sum(experiment_flow_signatures.values())
+    info[current_trace]["signatures_flow_true_positive"] = sum(baseline_flow_signatures.values()) - missed_signatures
+    info[current_trace]["signatures_flow_false_negative"] = missed_signatures
+    info[current_trace]["signatures_flow_false_positive"] = aditional_signatures
 
-    # counter = {}
-    # for key in set(experiment_pkt_alerts.keys()) - set(baseline_pkt_alerts.keys()):
-    #     print(key, experiment_pkt_alerts[key]["rule"], experiment_pkt_alerts[key]["proto"], experiment_pkt_alerts[key]["src_ap"], experiment_pkt_alerts[key]["dst_ap"])
-    #     if experiment_pkt_alerts[key]["rule"] in counter:
-    #         counter[experiment_pkt_alerts[key]["rule"]]+=1
-    #     else:
-    #         counter[experiment_pkt_alerts[key]["rule"]]=1
-
-    # print("\n\n")
-    # print(counter)
     return info
 
 def nids_with_suspicious_pcap(sim_config, suspicious_pkts, current_trace, output_folder):
@@ -85,7 +83,7 @@ def nids_with_suspicious_pcap(sim_config, suspicious_pkts, current_trace, output
         new_filepath = output_folder+current_trace+".log"
         os.rename(output_folder+"fast.log", new_filepath)
 
-    # os.remove(suspicious_pkts_pcap)
+    os.remove(suspicious_pkts_pcap)
     return new_filepath, time() - start
 
 # Parses an alert file and keeps only one entry for each packet (based on the 'pkt_num' entry in the alert). 

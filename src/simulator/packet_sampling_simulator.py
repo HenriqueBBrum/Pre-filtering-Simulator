@@ -5,15 +5,16 @@ from collections import Counter
 from scapy.all import IP,UDP,TCP 
 from scapy.utils import PcapReader 
 
-from. analysis import compare_to_baseline
+from.analysis import compare_to_baseline
 
-# Flow sampling simulation to compare againast our pre-filtering proposal. time_threshold in seconds
-def flow_sampling_simulation(sim_config, output_folder, n, t):
-    info["type"] = "flow_sampling"
+# Packet sampling simulation to compare againast our pre-filtering proposal. time_threshold in seconds
+def packet_sampling_simulation(sim_config, output_folder, n, t, info):
+    info["type"] = "packet_sampling"
 
     pcaps_path = sim_config["pcaps_path"]
     for pcap_file in os.listdir(pcaps_path):
         current_trace = pcap_file.split(".")[0] # Remove .pcap to get day
+        print(current_trace)
         info[current_trace] = {}
     
         start = time()
@@ -26,8 +27,8 @@ def flow_sampling_simulation(sim_config, output_folder, n, t):
         info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
 
         info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
-
-# Run the flow sampling method over the packets in the PCAP
+    return info
+# Run the packet sampling method over the packets in the PCAP
 def sample_flows(pcap_file, flow_count_threshold, time_threshold):
     pkt_count, ip_pkt_count = 0, 0
     suspicious_pkts = []

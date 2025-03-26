@@ -6,7 +6,7 @@ from time import time
 from nids_parser.config_parser import NIDSConfiguration
 from nids_parser.rules_to_matches import convert_rules_to_matches
 from simulator.pre_filtering_simulator import pre_filtering_simulation 
-from simulator.flow_sampling_simulator import flow_sampling_simulation
+from simulator.packet_sampling_simulator import packet_sampling_simulation
 
 OUTPUT_FOLDER = "simulation_results/"
 
@@ -14,7 +14,7 @@ def main(simulation_type, nids_name):
     simulation_config = generate_simulation(simulation_type, nids_name)
     info = {}
     start = time()
-    if simulation_type:
+    if simulation_type =="pre_filtering":
         start = time()
         nids_config = NIDSConfiguration(simulation_config["ipvars_config_path"])
         print("*" * 80)
@@ -24,50 +24,55 @@ def main(simulation_type, nids_name):
         info["payload_size_MB"] = calculate_payload_size(matches)
         
         print("PRE-FILTERING SIMULATION")
-        output_folder = OUTPUT_FOLDER+"pre_filtering_"+nids_name+"_"+simulation_config["scenario"]+"/"
+        print("Scenario: ", simulation_config["scenario"])
+        output_folder = OUTPUT_FOLDER+nids_name+"/pre_filtering_"+simulation_config["scenario"]+"/"
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-        pre_filtering_simulation(simulation_config, matches, output_folder, info)
-    elif simulation_config["type"] == "flow_sampling":
+        info = pre_filtering_simulation(simulation_config, matches, output_folder, info)
+        info["total_execution_time"] = time() - start
+        with open(output_folder + "analysis.json", 'a') as f:
+            json.dump(info , f, ensure_ascii=False, indent=4)
+    elif simulation_type  == "packet_sampling":
         for n in [5, 10, 25, 50, 100]:
-            for t in [5, 10, 25, 50, 100]:
-                print("FLOW SAMPLING SIMULATION")
-                output_folder = OUTPUT_FOLDER+"flow_sampling_"+simulation_config["nids_name"]+"_"+str(n)+"_"+str(t)+"/"
+            for t in [5, 10, 25]:
+                print("PACKET SAMPLING SIMULATION")
+                output_folder = OUTPUT_FOLDER+nids_name+"/packet_sampling_"+str(n)+"_"+str(t)+"/"
                 if not os.path.exists(output_folder):
                     os.makedirs(output_folder)
 
-                flow_sampling_simulation(simulation_config, output_folder, n, t, info)
+                info = packet_sampling_simulation(simulation_config, output_folder, n, t, info)
+                info["total_execution_time"] = time() - start
+                with open(output_folder + "analysis.json", 'a') as f:
+                    json.dump(info , f, ensure_ascii=False, indent=4)
 
     else:
         print("Wrong simulation type")
-        exit(1)
+        exit(-1)
 
-    info["total_execution_time"] = time() - start
-    with open(output_folder + "analysis.json", 'a') as f:
-        json.dump(info , f, ensure_ascii=False, indent=4)
 
 def generate_simulation(simulation_type, nids_name):
     simulation_config = {}
     simulation_config["nids_name"] = nids_name
-    #simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
+    # simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
     simulation_config["pcaps_path"] = "/home/hbeckerbrum/simulator_results/split_pcaps/pcaps/"
     # simulation_config["pcaps_path"] = "/home/hbeckerbrum/NFSDatasets/CICIDS2017/"
     if nids_name == "snort":
         simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/simulator_results/alerts/snort/"
-        #simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/snort/"
+        # simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/snort/"
         simulation_config["nids_config_path"] = "etc/nids_configuration/snort/snort.lua"
         simulation_config["ruleset_path"] = "etc/rules/snort3-registered/"
-        simulation_config["scenario"] = "exp_revflow_all"
+        simulation_config["scenario"] = "split_pcaps_baseline"
     else:
-        simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/simulator_results/alerts/suricata/"
-        #simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
+        #simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/simulator_results/alerts/suricata/"
+        # simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
+        simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/suricata/"
         simulation_config["nids_config_path"] = "etc/nids_configuration/suricata/suricata.yaml"
         simulation_config["ruleset_path"] = "etc/rules/suricata-emerging/emerging-all.rules"
-        simulation_config["scenario"] = "new_test"
+        simulation_config["scenario"] = "full_no_fin"
 
-    if simulation_type == "pre_filtering":
-        simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
+    #if simulation_type == "pre_filtering":
+    simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
         # simulation_config["scenario"] = "fast_pattern"
 
     return simulation_config

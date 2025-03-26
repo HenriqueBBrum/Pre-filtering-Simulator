@@ -23,9 +23,8 @@ def pre_filtering_simulation(sim_config, matches, output_folder, info):
     info["type"] = "pre_filtering"
     pcaps_path = sim_config["pcaps_path"]
     for pcap_file in os.listdir(pcaps_path):
-        if "Friday_start.pcap"  not in pcap_file:
-            continue
-
+        # if "Tuesday_start.pcap" not in pcap_file:
+        #     continue
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
         print(current_trace)
         info[current_trace] = {}
@@ -56,26 +55,32 @@ def find_suspicious_packets(pcap_file, matches, nids_name, pre_filtering_scenari
                 pkt = PacketToMatch(scapy_pkt)
                 proto, related_matches = get_related_matches(pkt, matches) 
                 suspicious_pkt = None
-                if pkt.tcp:
+                if pkt.tcp and pre_filtering_scenario != "wang_chang":
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
                     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) #Invert order to match flow
                     if nids_name == "suricata":
-                        if pkt.header["flags"] == 2 or pkt.header["flags"] == 18: # SYN or SYN +ACK
-                            suspicious_pkt = (pkt_count, "tcp_handshake")
-
-                    if pre_filtering_scenario != "wang_chang" and not suspicious_pkt:
-                        if "ftp" not in proto:  
-                            suspicious_pkt = check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
+                        if "tls" in proto and pkt.payload_buffers["pkt_data"][0][0] == "\x16":
+                            suspicious_pkt = (pkt_count, "tls")
+                        elif "ftp" in proto and flow not in ftp_tracker and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x30 and ord(pkt.payload_buffers["pkt_data"][0][0]) <= 0x39:
+                            suspicious_pkt = (pkt_count, "ftp")
+                            ftp_tracker.add(flow)
+                        # elif "http" in proto and pkt.payload_buffers["pkt_data"][0][0] != "\x00":
+                        #     suspicious_pkt = (pkt_count, "http_res")
                         else:
-                            if flow not in ftp_tracker and "pass " in pkt.payload_buffers["pkt_data"][1]:
+                            suspicious_pkt = suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
+                    elif nids_name == "snort":
+                        if "ftp" not in proto:  
+                            suspicious_pkt = snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
+                        else:
+                            if flow not in ftp_tracker and pkt.payload_buffers["pkt_data"][1][0:4] == "pass":
                                 suspicious_pkt = (pkt_count, "ftp")
                                 ftp_tracker.add(flow)
 
                 if not suspicious_pkt:
-                    suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, related_matches, tcp_stream_tracker)
+                    suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, proto, related_matches, tcp_stream_tracker)
                     comparisons_to_match+=cm
                     comparisons_to_content+=cc
-                    comparisons_to_pcre+=ccpcre
+                    comparisons_to_pcre+=ccpcre                        
 
             if suspicious_pkt:
                 suspicious_pkts.append(suspicious_pkt)
@@ -167,50 +172,19 @@ def get_applayer_proto(pkt, proto_str):
 
 
 # Snort
-# def check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
-#     suspicious_pkt = None
-#     msg = "stream_tcp"
-#     stream_tcp = False    
-#     if flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[flow]["seq"]:
-#         stream_tcp = True
-#     elif flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[flow]["ack"]:
-#         stream_tcp = True
-#     elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[reversed_flow]["ack"]:
-#         stream_tcp = True
-#     elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[reversed_flow]["seq"]:
-#         stream_tcp = True
-
-#     if "R" in pkt.header["flags"]:
-#         stream_tcp = True
-#         msg = "reset"
-#     elif "F" in pkt.header["flags"]:
-#         stream_tcp = True
-#         msg = "fin"
-#         remove_flow(flow, reversed_flow, tcp_stream_tracker)
-
-#     if stream_tcp:
-#         suspicious_pkt = (pkt_count, msg)
-#     else:
-#         remove_flow(flow, reversed_flow, tcp_stream_tracker)
-
-#     return suspicious_pkt
-
-
-# Suricata
-def check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
+def snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
     suspicious_pkt = None
-    
+
     msg = "stream_tcp"
     stream_tcp = False    
     if flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[flow]["seq"]:
         stream_tcp = True
-    # elif flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[flow]["ack"]:
-    #     stream_tcp = True
-    #     elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[reversed_flow]["ack"]:
-    #         stream_tcp = True
-    #     elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[reversed_flow]["seq"]:
-    #         stream_tcp = True
-
+    elif flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[flow]["ack"]:
+        stream_tcp = True
+    elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[reversed_flow]["ack"]:
+        stream_tcp = True
+    elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[reversed_flow]["seq"]:
+        stream_tcp = True
 
     if "R" in pkt.header["flags"]:
         stream_tcp = True
@@ -227,6 +201,39 @@ def check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
 
     return suspicious_pkt
 
+# Suricata
+def suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
+    if pkt.header["flags"] == 2 or pkt.header["flags"] == 18: # SYN or SYN +ACK
+        return (pkt_count, "tcp_handshake")
+
+    suspicious_pkt = None
+
+    msg = "stream_tcp"
+    stream_tcp = False    
+    if flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[flow]["seq"]:
+        stream_tcp = True
+    elif flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[flow]["ack"]:
+        stream_tcp = True
+    elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[reversed_flow]["ack"]:
+        stream_tcp = True
+    elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[reversed_flow]["seq"]:
+        stream_tcp = True
+
+    if "R" in pkt.header["flags"]:
+        stream_tcp = True
+        msg = "reset"
+    # elif "F" in pkt.header["flags"]:
+    #     stream_tcp = True
+    #     msg = "fin"
+    #     remove_flow(flow, reversed_flow, tcp_stream_tracker)
+
+    if stream_tcp:
+        suspicious_pkt = (pkt_count, msg)
+    else:
+        remove_flow(flow, reversed_flow, tcp_stream_tracker)
+
+    return suspicious_pkt
+
 def remove_flow(flow, reversed_flow, tcp_stream_tracker):
     if flow in tcp_stream_tracker:
         tcp_stream_tracker.pop(flow)
@@ -235,7 +242,7 @@ def remove_flow(flow, reversed_flow, tcp_stream_tracker):
 
 
 # Checks if a packet is suspicous, unsupported or is in a tcp stream
-def is_packet_suspicious(pkt, pkt_count, matches, tcp_stream_tracker):
+def is_packet_suspicious(pkt, pkt_count, proto, matches, tcp_stream_tracker):
     comparisons_to_match, comparisons_to_content, comparisons_to_pcre = 0, 0, 0
     for header_group in matches:
         try:
@@ -260,7 +267,7 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_stream_tracker):
                     if pkt.header["flags"] == "A":
                         tcp_stream_tracker[flow] = {"seq": pkt.header["seq"], "ack": pkt.header["ack"]}    
                     elif pkt.header["flags"] == "PA":
-                        tcp_stream_tracker[flow] = {"seq": pkt.header["seq"]+pkt.payload_size, "ack": pkt.header["ack"]}   
+                        tcp_stream_tracker[flow] = {"seq": pkt.header["seq"]+pkt.payload_size, "ack": pkt.header["ack"]}
 
                 return (pkt_count, match.sids()[0]),comparisons_to_match, comparisons_to_content, comparisons_to_pcre
         except Exception as e:
