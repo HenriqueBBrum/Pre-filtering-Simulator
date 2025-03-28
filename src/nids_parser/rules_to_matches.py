@@ -90,22 +90,20 @@ def convert_rules_to_matches(simulation_config, nids_config):
     
     print("---- Deduping rules based on the packet header and payload matching fields, and convert them to Match ----")
     deduped_matches = __dedup_rules_to_matches(nids_config, modified_rules, simulation_config["scenario"])
-    print(len(deduped_matches))
-    final_matches = __group_matches(deduped_matches)
+    final_matches, no_content_matches = __group_matches(deduped_matches)
     
     print("\nResults:")
     print("Total original rules: {}".format(len(original_rules)))
     print("Total adjusted and filtered rules: {}".format(len(modified_rules)))
     print("Total deduped matches: {}".format(len(deduped_matches)))
 
-    return final_matches, len(deduped_matches)
+    return final_matches, no_content_matches, len(deduped_matches)
 
 
 ### Functions to dedup rules ###
 
 supported_header_fields = {"proto", "src_ip", "sport", "dst_ip", "dport", "ip_port_key"}
 supported_payload_options = {"dsize", "content_pcre", "service"}
-
 unsupported_non_payload_fields = {"flow", "flowbits", "file_type", "rpc", "stream_reassemble", "stream_size"}
 
 # Deduplicate rules with the same fields and extract fields for quick matching with packets.
@@ -113,10 +111,12 @@ def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
     deduped_matches = {}
     for rule in rules:
         header_fields, payload_fields = {}, {}
+        # Keep only the header fields that are of interest
         for header_field in rule.header:
             if header_field in supported_header_fields:
                 header_fields[header_field] = rule.header[header_field]
 
+        # Keep only the payload fields that are of interest and move non_payload options to the "header"
         for option in rule.options: 
             if option in supported_payload_options:
                 payload_fields[option] = rule.options[option]
@@ -126,6 +126,7 @@ def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
         rule_id = hash(str(header_fields)+str(payload_fields))
         if rule_id not in deduped_matches:
             mtch = Match(header_fields, payload_fields, pre_filtering_scenario)
+            # Only add matches if there "content_pcre" has a valid non-None value 
             if not ("content_pcre" in mtch.payload_fields and not mtch.payload_fields["content_pcre"]):
                 deduped_matches[rule_id] = mtch
             
@@ -144,7 +145,9 @@ def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
 
 def __group_matches(matches):
     match_tree = __group_by_protocol(matches)
-    return __group_by_rule_header(match_tree)
+    no_content_matches = [match for match in matches if "content_pcre" not in match.payload_fields]
+    no_content_match_tree = __group_by_protocol(no_content_matches)
+    return __group_by_rule_header(match_tree), __group_by_rule_header(no_content_match_tree)
 
 
 ### Functions to group rules based on protocols so each packet is compared against fewer rules ###   
@@ -182,8 +185,6 @@ def __group_by_protocol(matches):
         else:
             match_tree.safe_match_add("tcp", "tcp_"+proto, match, applayer=True)
             match_tree.safe_match_add("udp", "udp_"+proto, match, applayer=True)
-
-    match_tree.print_nodes()
     return match_tree
 
 
@@ -191,13 +192,17 @@ def __group_by_protocol(matches):
 def __group_by_rule_header(match_tree):
     final_matches = {}
     for proto_or_service in match_tree.nodes:
-        final_matches[proto_or_service] = {}
         related_matches = match_tree.get_related_matches(match_tree.get_root(), proto_or_service)
+        groupped_matches = {}
         for match in related_matches:
-            if match.header_key in final_matches[proto_or_service]:
-                final_matches[proto_or_service][match.header_key].append(match)
+            if match.header_key in groupped_matches:
+                groupped_matches[match.header_key].append(match)
             else:
-                final_matches[proto_or_service][match.header_key] = [match]
+                groupped_matches[match.header_key] = [match]
+
+        final_matches[proto_or_service] = {}
+        for header_group in groupped_matches:
+            final_matches[proto_or_service][header_group] = sorted(groupped_matches[header_group], key=lambda x: x.max_content_size)
 
     return final_matches
 

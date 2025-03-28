@@ -59,6 +59,16 @@ class Match(object):
         self.header_fields = self.__adjust_header(header_fields)
         self.payload_fields = self.__adjust_payload(payload_fields, pre_filtering_scenario)
 
+        max_len = 0
+        if "content_pcre" in self.payload_fields:
+            for content_pcre in self.payload_fields["content_pcre"]:
+                if content_pcre[0] == 0:
+                    content_len = len(content_pcre[3])
+                    if content_len > max_len:
+                        max_len = content_len
+            
+        self.max_content_size = max_len
+
     def sids(self):
         return list(set(self.sid_rev_list))
     

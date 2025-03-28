@@ -1,8 +1,6 @@
 from re import search
 from .header_matching import compare_field
 
-import pprint
-
 ## Compares the payload of packet against the payload-related fields of a rule
 # A "False" return value means the packet does not match the rule and is not suspicious acording to the rule
 def matched_payload(pkt, match):
@@ -10,10 +8,6 @@ def matched_payload(pkt, match):
     if "dsize" in match.payload_fields and not compare_field(pkt.payload_size, match.payload_fields["dsize"]["data"], \
                                                                                             match.payload_fields["dsize"]["comparator"]):
         return False, 0, 0
-
-    # If the packet has no payload but the rule has payload fields, return that it does not match the rule
-    if pkt.payload_size == 0 and ("content_pcre" in match.payload_fields):
-        return False, 0 ,0
     
     # Compare packets that have payload with rules that have the "content" or "pcre" keywords
     if "content_pcre" in match.payload_fields:

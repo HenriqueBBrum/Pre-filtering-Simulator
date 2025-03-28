@@ -6,7 +6,6 @@ from time import time
 from collections import Counter
 from socket import getservbyport
 
-
 from scapy.all import IP,UDP,TCP 
 from scapy.utils import PcapReader 
 from scapy.contrib.gtp import GTPHeader 
@@ -19,17 +18,17 @@ from .packet_to_match import PacketToMatch
 from .analysis import compare_to_baseline
 
 # Simulate the pre-filtering of packets based on signature rules]
-def pre_filtering_simulation(sim_config, matches, output_folder, info):
+def pre_filtering_simulation(sim_config, matches, no_content_matches, output_folder, info):
     info["type"] = "pre_filtering"
     pcaps_path = sim_config["pcaps_path"]
     for pcap_file in os.listdir(pcaps_path):
-        # if "Tuesday_start.pcap" not in pcap_file:
-        #     continue
+        if "Tuesday_start.pcap" not in pcap_file:
+            continue
         current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
         print(current_trace)
         info[current_trace] = {}
         start = time()
-        suspicious_pkts, temp_info = find_suspicious_packets(pcaps_path+pcap_file, matches, sim_config["nids_name"], sim_config["scenario"])
+        suspicious_pkts, temp_info = find_suspicious_packets(pcaps_path+pcap_file, matches, no_content_matches, sim_config["nids_name"], sim_config["scenario"])
       
         info[current_trace]["total_time_to_process"] = time() - start
         info[current_trace].update(temp_info)
@@ -41,10 +40,10 @@ def pre_filtering_simulation(sim_config, matches, output_folder, info):
     return info
 
 # Find the suspicious packets
-def find_suspicious_packets(pcap_file, matches, nids_name, pre_filtering_scenario):
+def find_suspicious_packets(pcap_file, matches, no_content_matches, nids_name, pre_filtering_scenario):
     suspicious_pkts = []
     tcp_stream_tracker = {}
-    ftp_tracker = set()
+    tls_handshake_tracker, ftp_tracker = set(), set()
     pkt_count, ip_pkt_count = 0, 0
     comparisons_to_match, comparisons_to_content, comparisons_to_pcre = 0, 0, 0
     for scapy_pkt in PcapReader(pcap_file):
@@ -53,31 +52,34 @@ def find_suspicious_packets(pcap_file, matches, nids_name, pre_filtering_scenari
                 suspicious_pkt = (pkt_count, "unsupported")
             else:
                 pkt = PacketToMatch(scapy_pkt)
-                proto, related_matches = get_related_matches(pkt, matches) 
+                matches_key = get_related_matches_key(pkt, no_content_matches.keys() if pkt.payload_size == 0 else matches.keys()) 
                 suspicious_pkt = None
                 if pkt.tcp and pre_filtering_scenario != "wang_chang":
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
-                    reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) #Invert order to match flow
-                    if nids_name == "suricata":
-                        if "tls" in proto and pkt.payload_buffers["pkt_data"][0][0] == "\x16":
-                            suspicious_pkt = (pkt_count, "tls")
-                        elif "ftp" in proto and flow not in ftp_tracker and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x30 and ord(pkt.payload_buffers["pkt_data"][0][0]) <= 0x39:
-                            suspicious_pkt = (pkt_count, "ftp")
-                            ftp_tracker.add(flow)
-                        # elif "http" in proto and pkt.payload_buffers["pkt_data"][0][0] != "\x00":
-                        #     suspicious_pkt = (pkt_count, "http_res")
-                        else:
-                            suspicious_pkt = suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
-                    elif nids_name == "snort":
-                        if "ftp" not in proto:  
-                            suspicious_pkt = snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
-                        else:
-                            if flow not in ftp_tracker and pkt.payload_buffers["pkt_data"][1][0:4] == "pass":
+                    reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) # Invert order to match flow
+                    if "tls" in matches_key and flow not in tls_handshake_tracker and reversed_flow not in tls_handshake_tracker and pkt.payload_buffers["pkt_data"][0][0] == "\x16":
+                        suspicious_pkt = (pkt_count, "tls")
+                        tls_handshake_tracker.add(flow)
+                    else:
+                        if nids_name == "suricata":
+                            if "ftp" in matches_key and flow not in ftp_tracker and ord(pkt.payload_buffers["pkt_data"][0][0]) <= 0x39:
                                 suspicious_pkt = (pkt_count, "ftp")
                                 ftp_tracker.add(flow)
+                            else:
+                                suspicious_pkt = suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
+                        elif nids_name == "snort":
+                            if "ftp" in matches_key and flow not in ftp_tracker and ord(pkt.payload_buffers["pkt_data"][0][0]) > 0x39:
+                                suspicious_pkt = (pkt_count, "ftp") 
+                                ftp_tracker.add(flow) 
+                            else:
+                                suspicious_pkt = snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
 
                 if not suspicious_pkt:
-                    suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, proto, related_matches, tcp_stream_tracker)
+                    if pkt.payload_size == 0:
+                        suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, matches_key, no_content_matches[matches_key], tcp_stream_tracker)
+                    else:
+                        suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, matches_key, matches[matches_key], tcp_stream_tracker)
+
                     comparisons_to_match+=cm
                     comparisons_to_content+=cc
                     comparisons_to_pcre+=ccpcre                        
@@ -112,8 +114,8 @@ def unsupported_protocols(pkt):
             return True
 
 ip_proto = {1:"icmp", 6:"tcp", 17:"udp"}
-# Returns the rules related to the protocol and services of a packet
-def get_related_matches(pkt, matches):
+# Returns the matches key related to the protocol and services of a packet
+def get_related_matches_key(pkt, matches_keys):
     proto = pkt.header["ip_proto"]
     pkt_proto = ip_proto[proto] if proto in ip_proto else proto
     applayer_proto =  None
@@ -121,12 +123,12 @@ def get_related_matches(pkt, matches):
         applayer_proto = get_applayer_proto(pkt, pkt_proto)
 
     related_matches_key = "ip"
-    if pkt_proto in matches:
+    if pkt_proto in matches_keys:
         related_matches_key = pkt_proto
-        if applayer_proto and related_matches_key+"_"+applayer_proto in matches:
+        if applayer_proto and related_matches_key+"_"+applayer_proto in matches_keys:
             related_matches_key+="_"+applayer_proto
 
-    return related_matches_key, matches[related_matches_key]
+    return related_matches_key
 
    
 port_to_service_map = {446: "drda", 447: "drda", 448: "drda", 1098:"java_rmi", 1099:"java_rmi",
@@ -207,13 +209,14 @@ def suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tra
         return (pkt_count, "tcp_handshake")
 
     suspicious_pkt = None
-
     msg = "stream_tcp"
     stream_tcp = False    
     if flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[flow]["seq"]:
         stream_tcp = True
     elif flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[flow]["ack"]:
         stream_tcp = True
+    # elif reversed_flow in tcp_stream_tracker and pkt.header["ack"] == tcp_stream_tracker[reversed_flow]["seq"]:
+    #     stream_tcp = True
     elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[reversed_flow]["ack"]:
         stream_tcp = True
     elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[reversed_flow]["seq"]:
@@ -227,6 +230,7 @@ def suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tra
     #     msg = "fin"
     #     remove_flow(flow, reversed_flow, tcp_stream_tracker)
 
+   
     if stream_tcp:
         suspicious_pkt = (pkt_count, msg)
     else:
@@ -252,6 +256,10 @@ def is_packet_suspicious(pkt, pkt_count, proto, matches, tcp_stream_tracker):
             comparisons_to_match-=1
             # Matched the groups' ip and port header, compare with the other fields of each rule in this group
             for match in matches[header_group]:
+                # All further matches have at least the same max_content_size as the current match
+                if match.max_content_size > pkt.payload_size:
+                    break
+                
                 comparisons_to_match+=1
                 if not matched_header_fields(pkt, match):
                     continue
@@ -262,7 +270,7 @@ def is_packet_suspicious(pkt, pkt_count, proto, matches, tcp_stream_tracker):
                 if not matched:
                     continue
                 
-                if pkt.tcp:
+                if pkt.tcp: # and ("http" in proto or "tls" in proto):
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"])
                     if pkt.header["flags"] == "A":
                         tcp_stream_tracker[flow] = {"seq": pkt.header["seq"], "ack": pkt.header["ack"]}    
@@ -273,4 +281,5 @@ def is_packet_suspicious(pkt, pkt_count, proto, matches, tcp_stream_tracker):
         except Exception as e:
             print("Exception: ", traceback.format_exc())
             return (pkt_count, "error"), comparisons_to_match, comparisons_to_content, comparisons_to_pcre
+
     return None, comparisons_to_match, comparisons_to_content, comparisons_to_pcre
