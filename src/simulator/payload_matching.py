@@ -1,21 +1,21 @@
 from re import search
 from .header_matching import compare_field
 
-## Compares the payload of packet against the payload-related fields of a rule
-# A "False" return value means the packet does not match the rule and is not suspicious acording to the rule
+## Compares the payload of packet against the payload-related fields of a match
+# A "False" return value means the packet does not match the match and is not suspicious acording to the match
 def matched_payload(pkt, match):
-    # Compare the packet's payload size against the rule's desired (payload) size
+    # Compare the packet's payload size against the match's desired (payload) size
     if "dsize" in match.payload_fields and not compare_field(pkt.payload_size, match.payload_fields["dsize"]["data"], \
                                                                                             match.payload_fields["dsize"]["comparator"]):
         return False, 0, 0
     
-    # Compare packets that have payload with rules that have the "content" or "pcre" keywords
+    # Compare packets that have payload with matches that have the "content" or "pcre" keywords
     if "content_pcre" in match.payload_fields:
         return __matched_content_pcre(pkt, match.payload_fields["content_pcre"])
 
     return True, 0, 0
 
-
+# Comapre the payload of packet with the "content" or "pcre" keyword of a match
 def __matched_content_pcre(pkt, match_contents):
     compared_to_content = 0
     compared_to_pcre = 0
@@ -27,11 +27,11 @@ def __matched_content_pcre(pkt, match_contents):
         start = 0
         position = position_dict[buffer_name] if buffer_name in position_dict else 0
         buffer = pkt.payload_buffers[buffer_name][0]
-        if match_type == 0:
+        if match_type == 0: # "content" keyword
             start, end, nocase = __process_content_modifiers(modifiers, position, len(buffer))
             match_pos = pkt.payload_buffers[buffer_name][nocase][start:end].find(match_str)
             compared_to_content+=1
-        else:
+        else: # "pcre" keyword
             if modifiers:
                 start = position
         
@@ -43,7 +43,7 @@ def __matched_content_pcre(pkt, match_contents):
             else:
                 match_pos = -1 
 
-        # Return false if no match was found but the rule required finding a match or if a match was found but the rule required not fiding the match
+        # Return false if no match was found but the match required finding a match or if a match was found but the match required not fiding the match
         if (match_pos == -1 and should_match) or (match_pos >= 0 and not should_match):
             return False, compared_to_content, compared_to_pcre
         

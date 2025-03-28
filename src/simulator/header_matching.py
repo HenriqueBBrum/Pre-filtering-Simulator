@@ -1,6 +1,5 @@
 ### Functions to match on header fuelds of a packet
 
-
 def matched_ip_and_port(pkt, match):
      # Compares the packet's port(s) against the match's port(s) 
     if pkt.tcp or pkt.udp:
@@ -46,7 +45,6 @@ def __matched_IP(pkt_ip, match_ips):
         return best_match.data["match"]
 
     return not match_ips[1]
-
 
 # Compares the header fields of a packet against the ones for a match
 def matched_header_fields(pkt, match):

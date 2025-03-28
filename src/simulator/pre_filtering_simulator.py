@@ -144,6 +144,7 @@ change_map = {"http-alt": "http", "microsoft-ds": "netbios-ssn",
               "ircs-u": "irc", "radius-acct": "radius", "bgpd": "bgp",
               "sip-tls": "sip", "ms-wbt-server": "rdp", "epmap": "dcerpc"}
 
+# Returns the applayer proto if it is a valid one and the payload for the layer4 protocol is more than 0
 def get_applayer_proto(pkt, proto_str):
     applayer_proto = None
     try:
@@ -167,13 +168,13 @@ def get_applayer_proto(pkt, proto_str):
         if applayer_proto == "http" and not (pkt.http_res or pkt.http_req):
             applayer_proto = proto_str
             
-        if applayer_proto in change_map:
+        if applayer_proto in change_map: # getservbyport and Snort and Suricata have different ideas on the app layer proto for the same port
             applayer_proto = change_map[applayer_proto]
             
     return applayer_proto 
 
 
-# Snort
+# Check Snort TCP flow requirements
 def snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
     suspicious_pkt = None
 
@@ -203,7 +204,7 @@ def snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_track
 
     return suspicious_pkt
 
-# Suricata
+# Check Suricata TCP flow requirements
 def suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
     if pkt.header["flags"] == 2 or pkt.header["flags"] == 18: # SYN or SYN +ACK
         return (pkt_count, "tcp_handshake")
@@ -256,8 +257,7 @@ def is_packet_suspicious(pkt, pkt_count, proto, matches, tcp_stream_tracker):
             comparisons_to_match-=1
             # Matched the groups' ip and port header, compare with the other fields of each rule in this group
             for match in matches[header_group]:
-                # All further matches have at least the same max_content_size as the current match
-                if match.max_content_size > pkt.payload_size:
+                if match.max_content_size > pkt.payload_size: # All further matches have at least the same max_content_size as the current match
                     break
                 
                 comparisons_to_match+=1

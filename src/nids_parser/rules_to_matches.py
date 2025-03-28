@@ -23,6 +23,7 @@ class Node:
 
         self.matches = []
 
+# Tree to find the related matches of a protocol
 class MatchTree:
     def __init__(self, root, base_node_names):
         self.nodes = {}
@@ -116,7 +117,7 @@ def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
             if header_field in supported_header_fields:
                 header_fields[header_field] = rule.header[header_field]
 
-        # Keep only the payload fields that are of interest and move non_payload options to the "header"
+        # Keep only the payload fields that are of interest and move non_payload options to the "header_field" dict
         for option in rule.options: 
             if option in supported_payload_options:
                 payload_fields[option] = rule.options[option]
@@ -126,7 +127,7 @@ def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
         rule_id = hash(str(header_fields)+str(payload_fields))
         if rule_id not in deduped_matches:
             mtch = Match(header_fields, payload_fields, pre_filtering_scenario)
-            # Only add matches if there "content_pcre" has a valid non-None value 
+            # Only add matches if the "content_pcre" has a valid non-None value 
             if not ("content_pcre" in mtch.payload_fields and not mtch.payload_fields["content_pcre"]):
                 deduped_matches[rule_id] = mtch
             
@@ -142,7 +143,7 @@ def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
             deduped_matches[rule_id].sid_rev_list.append(sid_rev_string)
     return list(deduped_matches.values())
 
-
+# Retruns the final matches and the matches for packets with no content
 def __group_matches(matches):
     match_tree = __group_by_protocol(matches)
     no_content_matches = [match for match in matches if "content_pcre" not in match.payload_fields]
@@ -150,7 +151,7 @@ def __group_matches(matches):
     return __group_by_rule_header(match_tree), __group_by_rule_header(no_content_match_tree)
 
 
-### Functions to group rules based on protocols so each packet is compared against fewer rules ###   
+### Functios to group rules based on protocols so each packet is compared against fewer rules ###   
 def __group_by_protocol(matches):
     match_tree = MatchTree("ip", [("ip", "icmp"), ("ip", "tcp"), ("ip", "udp")])
     for match in matches:
@@ -188,7 +189,7 @@ def __group_by_protocol(matches):
     return match_tree
 
 
-### Returns a map of map with
+### Returns a dict of matches based on their header. Also order them by their longest content for early stopping in the match comparison
 def __group_by_rule_header(match_tree):
     final_matches = {}
     for proto_or_service in match_tree.nodes:
@@ -200,6 +201,7 @@ def __group_by_rule_header(match_tree):
             else:
                 groupped_matches[match.header_key] = [match]
 
+        # O
         final_matches[proto_or_service] = {}
         for header_group in groupped_matches:
             final_matches[proto_or_service][header_group] = sorted(groupped_matches[header_group], key=lambda x: x.max_content_size)

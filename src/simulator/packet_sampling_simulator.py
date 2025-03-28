@@ -7,7 +7,7 @@ from scapy.utils import PcapReader
 
 from.analysis import compare_to_baseline
 
-# Packet sampling simulation to compare againast our pre-filtering proposal. time_threshold in seconds
+# Packet sampling simulation to compare against the pre-filtering proposal. time_threshold in seconds
 def packet_sampling_simulation(sim_config, output_folder, n, t, info):
     info["type"] = "packet_sampling"
 
@@ -28,6 +28,7 @@ def packet_sampling_simulation(sim_config, output_folder, n, t, info):
 
         info = compare_to_baseline(sim_config, suspicious_pkts, current_trace, output_folder, info)
     return info
+    
 # Run the packet sampling method over the packets in the PCAP
 def sample_flows(pcap_file, flow_count_threshold, time_threshold):
     pkt_count, ip_pkt_count = 0, 0

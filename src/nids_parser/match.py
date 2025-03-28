@@ -277,7 +277,8 @@ class Match(object):
         return buffer_name, pcre_string, relative_match
 
 
-        
+    # Applies one of different scenarios to reduce or tranform the rules. 
+    # wang_chang takes the fast pattern if there is or the longest content. If there is no final content the rule will be discarded
     def __apply_pre_filtering_scenario(self, content_pcre, fast_pattern_match, pre_filtering_scenario):
         final_content_pcre = []
         if pre_filtering_scenario == "first":
@@ -289,10 +290,6 @@ class Match(object):
                     longest = content
                     size = len(content[3])
             final_content_pcre = [longest]
-        elif pre_filtering_scenario =="first_last":
-            final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[-1]]
-        elif pre_filtering_scenario =="first_second":
-            final_content_pcre = [content_pcre[0]] if len(content_pcre) == 1 else [content_pcre[0],content_pcre[1]]
         elif pre_filtering_scenario == "wang_chang":
             longest, size = None, 0   
             if fast_pattern_match:

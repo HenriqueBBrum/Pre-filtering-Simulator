@@ -46,9 +46,8 @@ class PacketToMatch(object):
             self.header["sport"] = pkt[UDP].sport
             self.header["dport"] = pkt[UDP].dport
 
-
-    ## Returns the Snort buffers of a packet
-    # Buffers not supported include: "json_data", "vba_data", "base64_data"
+    ### Returns the Snort buffers of a packet
+    # Buffers not supported include: "json_data", "vba_data", "base64_data". These will point to pkt_data buffer by default
     def __get_payload_buffers(self, pkt, transport_layer_name):
         payload_buffers = {}
         # Get pkt_data and raw_data buffer for each protocol
@@ -126,7 +125,6 @@ class PacketToMatch(object):
 
                 payload_buffers["http_server_body"] = [payload_buffers["http_raw_body"][0]]
 
-
     # If the HTTP field is valid return the field decoded
     def __decode_http_field(self, http_field):
         return http_field.decode("utf-8") if http_field else ""
@@ -141,9 +139,7 @@ class PacketToMatch(object):
 
         return self.__normalize_http_text("http_cookie", cookie) if normalized else cookie
 
-    # Snort Normalization of HTTP fields (mostly) works mostly for URI
-    # Replaces hex escaped values ex: %3d -> =
-    # NOrmalizes path of uri 
+    # Snort/SUricata Normalization of HTTP fields (more or less). Replaces hex escaped (e.g. %3d) and normalizes path for uri
     def __normalize_http_text(self, header_name, raw_http_text, normalized_start=""):        
         normalized_text = ""
         uri_segment = 0 # 0 - path, 1 - query, 2 - fragment

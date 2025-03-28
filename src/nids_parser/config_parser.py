@@ -7,7 +7,6 @@ import sys
 MIN_PORT = 0
 MAX_PORT = 65535
 
-
 class NIDSConfiguration():
     ports = {}
     ip_addresses = {}
@@ -24,8 +23,6 @@ class NIDSConfiguration():
         priority_classification_file = "{}/classification.config".format(self.configuration_dir)
         self.__parse_ip_port_vars(ip_port_vars)
         self.__parse_classification_priority(priority_classification_file)
-
-
 
     # Translates the ip and port variables to their real values (e.g: $HOME_NET ->[10.0.0.1, 10.0.02, ...])
     # For more info, go to -> https://suricata.readthedocs.io/en/suricata-4.1.4/rules/intro.html#source-and-destination
@@ -105,7 +102,6 @@ class NIDSConfiguration():
         
         return [(raw_ip, bool(~(local_bool ^ parent_bool)+2))]
 
-
     # Parses one port or a list of ports
     def __parse_ports(self, raw_ports):
         if raw_ports == "any":
@@ -152,7 +148,6 @@ class NIDSConfiguration():
             return [(range(lower_bound, upper_bound+1), bool(~(local_bool ^ parent_bool)+2))]
         
         return [(raw_port, bool(~(local_bool ^ parent_bool)+2))]
-
 
     # Reads line by line and parses the lines containing classification priorities (lines starting with "config classification:")
     def __parse_classification_priority(self, priority_classification_file):    
