@@ -201,7 +201,6 @@ def __group_by_rule_header(match_tree):
             else:
                 groupped_matches[match.header_key] = [match]
 
-        # O
         final_matches[proto_or_service] = {}
         for header_group in groupped_matches:
             final_matches[proto_or_service][header_group] = sorted(groupped_matches[header_group], key=lambda x: x.max_content_size)

@@ -7,7 +7,7 @@ specify_decimal <- function(x, k) trimws(format(round(x, k), nsmall=k))
 
 pcap_names <- c("Monday-WorkingHours", "Tuesday-WorkingHours", "Wednesday-WorkingHours", "Thursday-WorkingHours", "Friday-WorkingHours")
 dirs<-list.dirs(path = paste("../simulation_results/", args[1], sep=""), full.names = TRUE, recursive = FALSE)
-rows<-(length(dirs)-3)*length(pcap_names)
+rows<-(length(dirs)-1)*length(pcap_names)
 count<-1
 
 days <- c()
@@ -23,6 +23,7 @@ nids_processing_time <- vector("double", length=rows)
 
 for (pcap_name in pcap_names){
   for (dir in dirs){
+    print(dir)
     json_file <- paste(dir, "analysis.json", sep="/")
     experiment_type<-sub(".*/", "", dir)
     if (file.exists(json_file)){
