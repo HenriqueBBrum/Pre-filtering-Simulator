@@ -20,7 +20,6 @@ def compare_to_baseline(sim_config, current_trace, suspicious_pkts, info):
         exp = experiment_signatures.get(key, 0)
         if base-exp>0:
             missed_signatures+=base-exp
-            print(key, base-exp)
         elif base-exp:
             aditional_signatures+=exp-base
 

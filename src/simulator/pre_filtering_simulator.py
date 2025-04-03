@@ -24,6 +24,8 @@ def pre_filtering_simulation(sim_config, matches, no_content_matches, info):
     shared_info = Manager().dict()
     jobs = []
     for pcap_file in os.listdir(sim_config["pcaps_path"]):
+        # if "Monday" not in pcap_file:
+        #     continue
         p = Process(target=individual_pcap_simulation, args=(sim_config, pcap_file, matches, no_content_matches, shared_info, lock))
         jobs.append(p)
         p.start()
@@ -59,10 +61,7 @@ def individual_pcap_simulation(sim_config, pcap_file, matches, no_content_matche
 def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_matches):
     suspicious_pkts = []
     pkt_count, ip_pkt_count = 0, 0
-
     tcp_stream_tracker = {}
-    tls_tracker, ftp_tracker = set(), set()
-
     comparisons_to_match, comparisons_to_content, comparisons_to_pcre = 0, 0, 0
     for scapy_pkt in PcapReader(pcap_filepath):
         if IP in scapy_pkt:
@@ -75,22 +74,15 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
                 if pkt.tcp and sim_config["scenario"] != "wang_chang":
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
                     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) # Invert order to match flow
-                    if "tls" in matches_key and flow not in tls_tracker and reversed_flow not in tls_tracker and pkt.payload_buffers["pkt_data"][0][0] == "\x16":
+                    if "tls" in matches_key and pkt.payload_buffers["pkt_data"][0][0] == "\x16":
                         suspicious_pkt = (pkt_count, "tls")
-                        tls_tracker.add(flow)
+                    elif "ftp" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x30:
+                        suspicious_pkt = (pkt_count, "ftp") 
                     else:
                         if sim_config["nids_name"] == "suricata":
-                            if "ftp" in matches_key and flow not in ftp_tracker and reversed_flow not in ftp_tracker and ord(pkt.payload_buffers["pkt_data"][0][0]) <= 0x39:
-                                suspicious_pkt = (pkt_count, "ftp")
-                                ftp_tracker.add(flow)
-                            else:
-                                suspicious_pkt = suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
+                            suspicious_pkt = suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
                         elif sim_config["nids_name"] == "snort":
-                            if "ftp" in matches_key and flow not in ftp_tracker and reversed_flow not in ftp_tracker and ord(pkt.payload_buffers["pkt_data"][0][0]) > 0x39:
-                                suspicious_pkt = (pkt_count, "ftp") 
-                                ftp_tracker.add(flow) 
-                            else:
-                                suspicious_pkt = snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
+                            suspicious_pkt = snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
 
                 if not suspicious_pkt:
                     suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, no_content_matches[matches_key] if pkt.payload_size == 0 else matches[matches_key], tcp_stream_tracker)
@@ -216,7 +208,7 @@ def snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_track
 def suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
     if pkt.header["flags"] == 2 or pkt.header["flags"] == 18: # SYN or SYN +ACK
         if pkt.header["flags"] == 18:
-            tcp_stream_tracker[flow] = {"seq": pkt.header["seq"], "ack": pkt.header["ack"], "syn": True} 
+            tcp_stream_tracker[flow] = {"seq": pkt.header["seq"]+1, "ack": pkt.header["ack"], "syn": True} 
         return (pkt_count, "tcp_handshake")
     elif "R" in pkt.header["flags"]:
         return (pkt_count, "reset")

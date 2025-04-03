@@ -19,6 +19,7 @@ avg_num_pcre_compared_to <- vector("double", length=rows)
 pkt_processing_time <- vector("double", length=rows)
 suspicious_pkts_percent <- vector("double", length=rows)
 signatures_true_positive_percent <- vector("double", length=rows)
+signatures_false_positive_percent <- vector("double", length=rows)
 nids_processing_time <- vector("double", length=rows)
 
 for (pcap_name in pcap_names){
@@ -43,6 +44,8 @@ for (pcap_name in pcap_names){
         
         suspicious_pkts_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$number_of_suspicious_pkts/json_data[[pcap_name]]$pkts_processed), 2)
         signatures_true_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_true_positive/json_data[[pcap_name]]$baseline_signatures), 2)
+        signatures_false_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_false_positive/json_data[[pcap_name]]$experiment_signatures), 2)
+
 
         nids_processing_time[count] <- json_data[[pcap_name]]$nids_processing_time 
         count<-count + 1
@@ -62,6 +65,7 @@ df <- data.frame(
   avg_num_pcre_compared_to = avg_num_pcre_compared_to,
   suspicious_pkts_percent = suspicious_pkts_percent,
   signatures_true_positive_percent = signatures_true_positive_percent,
+  signatures_false_positive_percent = signatures_false_positive_percent,
   nids_processing_time = nids_processing_time
 )
 write.csv(df,paste("new_res", "csv", sep="."))

@@ -54,7 +54,7 @@ def main(simulation_type, nids_name):
 def generate_simulation(nids_name):
     simulation_config = {}
     simulation_config["nids_name"] = nids_name
-    #simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
+    # simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
     # simulation_config["pcaps_path"] = "/home/hbeckerbrum/simulator_results/split_pcaps/pcaps/"
     simulation_config["pcaps_path"] = "/home/hbeckerbrum/NFSDatasets/CICIDS2017/"
     if nids_name == "snort":
@@ -62,14 +62,14 @@ def generate_simulation(nids_name):
         simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/snort/"
         simulation_config["nids_config_path"] = "etc/nids_configuration/snort/snort.lua"
         simulation_config["ruleset_path"] = "etc/rules/snort3-registered/"
-        simulation_config["scenario"] = "no_tls_ftp_tracking"
+        simulation_config["scenario"] = "full_utf-8"
     else:
-        #simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/simulator_results/alerts/suricata/"
+        # simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/simulator_results/alerts/suricata/"
         # simulation_config["baseline_alerts_path"] ="/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
         simulation_config["baseline_alerts_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/alerts/suricata/"
         simulation_config["nids_config_path"] = "etc/nids_configuration/suricata/suricata.yaml"
         simulation_config["ruleset_path"] = "etc/rules/suricata-emerging/emerging-all.rules"
-        simulation_config["scenario"] = "latest_with_pkt_after_synack"
+        simulation_config["scenario"] = "full_utf-8"
 
     simulation_config["ipvars_config_path"] = "etc/nids_configuration/"
     return simulation_config

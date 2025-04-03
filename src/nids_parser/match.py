@@ -188,6 +188,7 @@ class Match(object):
         escaped = False
         i = 0
         while i < len(match_str):
+            # Process hex decimal values
             if match_str[i] == '|' and not escaped:
                 temp_content = ""
                 i+=1
@@ -199,11 +200,13 @@ class Match(object):
                     temp_content+=match_str[i]
                     if len(temp_content) == 2:
                         if nocase and (int(temp_content, 16) >= 65 and int(temp_content, 16) <= 90):
-                            clean_content+=chr(int(temp_content, 16) + 32) # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
+                            new_hex = hex(int(temp_content, 16) + 32)[2:]
+                            clean_content+=bytes.fromhex(new_hex).decode('utf-8', errors='replace') # chr(int(temp_content, 16) + 32) # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
                         else:
-                            clean_content+=chr(int(temp_content, 16))
+                            clean_content+=bytes.fromhex(temp_content).decode('utf-8', errors='replace')  # chr(int(temp_content, 16))
                         temp_content=""
                     i+=1
+            # Process normal char
             else:
                 # Add escaped char or add '/' since it was not used to escape a char
                 if escaped:
