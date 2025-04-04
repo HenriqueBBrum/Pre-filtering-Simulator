@@ -36,6 +36,7 @@ class Dicts():
             "ftp",
             "ftp-data",
             "rdp",
+            "sip",
             "smb",
             "smtp",
             "ssh",

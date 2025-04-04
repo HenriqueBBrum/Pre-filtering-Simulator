@@ -52,9 +52,9 @@ class PacketToMatch(object):
         payload_buffers = {}
         # Get pkt_data and raw_data buffer for each protocol
         if transport_layer_name:
-            payload_buffers["pkt_data"] = [bytes(pkt[transport_layer_name].payload).decode('utf-8', errors = 'replace')] # The payload size changes
+            payload_buffers["pkt_data"] = [bytes(pkt[transport_layer_name].payload).decode('latin-1', errors = 'replace')] # The payload size changes
         else:
-            payload_buffers["pkt_data"] = [bytes(pkt[IP].payload).decode('utf-8', errors = 'replace')]
+            payload_buffers["pkt_data"] = [bytes(pkt[IP].payload).decode('latin-1', errors = 'replace')]
 
         payload_buffers["raw_data"] = [payload_buffers["pkt_data"][0]]
 
@@ -68,7 +68,7 @@ class PacketToMatch(object):
                     payload_buffers["file_data"] = [payload_buffers["pkt_data"][0]]
 
             if DNS in pkt and pkt[DNS].opcode == 0 and pkt[DNS].ancount == 0:
-                payload_buffers["dns_query"] = [pkt[DNSQR].qname.decode('utf-8', errors = 'replace')]
+                payload_buffers["dns_query"] = [pkt[DNSQR].qname.decode('latin-1', errors = 'replace')]
 
         http_type = None
         if self.http_req:
@@ -87,12 +87,12 @@ class PacketToMatch(object):
     # Get http_* and file_data buffers for HTTP packets
     def __get_http_buffers(self, pkt, payload_buffers, http_type):
         if http_type:
-            payload_buffers["http_raw_body"] = [bytes(pkt[http_type].payload).decode('utf-8', errors = 'replace')]
+            payload_buffers["http_raw_body"] = [bytes(pkt[http_type].payload).decode('latin-1', errors = 'replace')]
             payload_buffers["file_data"] = [payload_buffers["http_raw_body"][0]]
 
             pkt[http_type].remove_payload()
-            payload_buffers["http_raw_header"] = [bytes(pkt[http_type]).decode('utf-8', errors = 'replace')]
-            payload_buffers["http_header"] = [self.__normalize_http_text("http_header", bytes(pkt[http_type]).decode('utf-8', errors = 'replace'))]
+            payload_buffers["http_raw_header"] = [bytes(pkt[http_type]).decode('latin-1', errors = 'replace')]
+            payload_buffers["http_header"] = [self.__normalize_http_text("http_header", bytes(pkt[http_type]).decode('latin-1', errors = 'replace'))]
             payload_buffers["http_param"] = [payload_buffers["http_raw_header"][0]]
 
             payload_buffers["http_cookie"] = [self.__get_http_cookie(pkt[http_type], True)]
@@ -127,15 +127,15 @@ class PacketToMatch(object):
 
     # If the HTTP field is valid return the field decoded
     def __decode_http_field(self, http_field):
-        return http_field.decode('utf-8', errors = 'replace') if http_field else ""
+        return http_field.decode('latin-1', errors = 'replace') if http_field else ""
 
     # Returns the parsed HTTP Cookie field
     def __get_http_cookie(self, http_header, normalized):
         cookie = ""  
         if self.http_req and http_header[HTTPRequest].Cookie:
-            cookie = http_header.Cookie.decode('utf-8', errors = 'replace')
+            cookie = http_header.Cookie.decode('latin-1', errors = 'replace')
         elif self.http_res in http_header and http_header[HTTPResponse].Set_Cookie:
-            cookie = http_header.Set_Cookie.decode('utf-8', errors = 'replace')
+            cookie = http_header.Set_Cookie.decode('latin-1', errors = 'replace')
 
         return self.__normalize_http_text("http_cookie", cookie) if normalized else cookie
 
@@ -154,7 +154,7 @@ class PacketToMatch(object):
                 escape_temp+=char
                 if len(escape_temp) == 2:
                     try:
-                        normalized_text+=bytes.fromhex(escape_temp).decode('utf-8', errors = 'replace')
+                        normalized_text+=bytes.fromhex(escape_temp).decode('latin-1', errors = 'replace')
                     except:
                         normalized_text+="%"+escape_temp
                     escape_temp = ""

@@ -10,7 +10,7 @@ from scapy.utils import PcapReader, PcapWriter
 def compare_to_baseline(sim_config, current_trace, suspicious_pkts, info): 
     suspicious_pkts_alert_file, nids_processing_time = nids_with_suspicious_pcap(sim_config, current_trace, suspicious_pkts) # WHAT IF THERE IS NO SUSPCIIOUS PACKETS?
     info[current_trace]["nids_processing_time"] = nids_processing_time
-    baseline_signatures = parse_alerts(sim_config["baseline_alerts_path"]+current_trace+(".txt" if sim_config["nids_name"] == "snort" else ".log"), sim_config["nids_name"]) # Baseline alerts
+    baseline_signatures = parse_alerts(sim_config["baseline_alerts_path"]+current_trace+".log", sim_config["nids_name"]) # Baseline alerts
     experiment_signatures = parse_alerts(suspicious_pkts_alert_file, sim_config["nids_name"])
       
     missed_signatures = 0
@@ -53,7 +53,7 @@ def nids_with_suspicious_pcap(sim_config, current_trace, suspicious_pkts):
         subprocess.run(["snort", "-c", sim_config["nids_config_path"], "--rule-path", sim_config["ruleset_path"], "-r",suspicious_pkts_pcap, "-l",sim_config["output_folder"], \
                     "-A","alert_json",  "--lua","alert_json = {file = true}"], stdout=subprocess.DEVNULL)
         
-        new_filepath = sim_config["output_folder"]+current_trace+".txt"
+        new_filepath = sim_config["output_folder"]+current_trace+".log"
         os.rename(sim_config["output_folder"]+"alert_json.txt", new_filepath)
     else:
         subprocess.run(["suricata", "-c", sim_config["nids_config_path"], "-S", sim_config["ruleset_path"], "-r",suspicious_pkts_pcap, "-l",sim_config["output_folder"]], stdout=subprocess.DEVNULL)

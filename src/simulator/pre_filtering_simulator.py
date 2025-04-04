@@ -18,14 +18,15 @@ from .analysis import compare_to_baseline
 
 # Simulate the pre-filtering of packets based on signature rules]
 def pre_filtering_simulation(sim_config, matches, no_content_matches, info):
-    info["type"] = "pre_filtering"
-
     lock = Lock()
     shared_info = Manager().dict()
     jobs = []
     for pcap_file in os.listdir(sim_config["pcaps_path"]):
-        # if "Monday" not in pcap_file:
+        # if "BrowserHijacking" not in pcap_file: # BrowserHijacking
         #     continue
+        if not os.path.isfile(os.path.join(sim_config["pcaps_path"], pcap_file)):
+            continue
+        
         p = Process(target=individual_pcap_simulation, args=(sim_config, pcap_file, matches, no_content_matches, shared_info, lock))
         jobs.append(p)
         p.start()

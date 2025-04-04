@@ -5,30 +5,50 @@ from collections import Counter
 from scapy.all import IP,UDP,TCP 
 from scapy.utils import PcapReader 
 
-from.analysis import compare_to_baseline
+from multiprocessing import Process, Manager, Lock
+
+from .analysis import compare_to_baseline
+
 
 # Packet sampling simulation to compare against the pre-filtering proposal. time_threshold in seconds
 def packet_sampling_simulation(sim_config, n, t, info):
-    info["type"] = "packet_sampling"
-
-    pcaps_path = sim_config["pcaps_path"]
-    for pcap_file in os.listdir(pcaps_path):
-        current_trace = pcap_file.split(".")[0] # Remove .pcap to get day
-        print(current_trace)
-        info[current_trace] = {}
-    
-        start = time()
-        suspicious_pkts, temp_info = sample_flows(pcaps_path+pcap_file, n, t)
-
-        info[current_trace]["total_time_to_process"] = time() - start
-        info[current_trace].update(temp_info)
+    lock = Lock()
+    shared_info = Manager().dict()
+    jobs = []
+    for pcap_file in os.listdir(sim_config["pcaps_path"]):
+        if not os.path.isfile(os.path.join(sim_config["pcaps_path"], pcap_file)):
+            continue
         
-        info[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
-        info[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
+        p = Process(target=individual_pcap_simulation, args=(sim_config, pcap_file, n, t, shared_info, lock))
+        jobs.append(p)
+        p.start()
+       
+    for proc in jobs:
+        proc.join()
 
-        compare_to_baseline(sim_config, current_trace, suspicious_pkts, info)
+    info.update(shared_info)
     return info
+
+# Individual process for each pcap
+def individual_pcap_simulation(sim_config, pcap_file, n, t, shared_info, lock):
+    current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
+    print(current_trace)
+    local_dict = {current_trace:{}}
+
+    start = time()
+    suspicious_pkts, temp_info = sample_flows(sim_config["pcaps_path"]+pcap_file, n, t)
     
+    local_dict[current_trace]["total_time_to_process"] = time() - start
+    local_dict[current_trace].update(temp_info)
+
+    local_dict[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
+    local_dict[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
+    
+    lock.acquire()
+    compare_to_baseline(sim_config, current_trace, suspicious_pkts, local_dict)
+    lock.release()
+
+    shared_info[current_trace] = local_dict[current_trace]  
 # Run the packet sampling method over the packets in the PCAP
 def sample_flows(pcap_file, flow_count_threshold, time_threshold):
     pkt_count, ip_pkt_count = 0, 0

@@ -60,7 +60,7 @@ class Match(object):
         self.payload_fields = self.__adjust_payload(payload_fields, pre_filtering_scenario)
 
         max_len = 0
-        if "content_pcre" in self.payload_fields:
+        if "content_pcre" in self.payload_fields and self.payload_fields["content_pcre"]:
             for content_pcre in self.payload_fields["content_pcre"]:
                 if content_pcre[0] == 0:
                     content_len = len(content_pcre[3])
@@ -201,9 +201,9 @@ class Match(object):
                     if len(temp_content) == 2:
                         if nocase and (int(temp_content, 16) >= 65 and int(temp_content, 16) <= 90):
                             new_hex = hex(int(temp_content, 16) + 32)[2:]
-                            clean_content+=bytes.fromhex(new_hex).decode('utf-8', errors='replace') # chr(int(temp_content, 16) + 32) # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
+                            clean_content+=bytes.fromhex(new_hex).decode('latin-1', errors='replace') # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
                         else:
-                            clean_content+=bytes.fromhex(temp_content).decode('utf-8', errors='replace')  # chr(int(temp_content, 16))
+                            clean_content+=bytes.fromhex(temp_content).decode('latin-1', errors='replace')
                         temp_content=""
                     i+=1
             # Process normal char
