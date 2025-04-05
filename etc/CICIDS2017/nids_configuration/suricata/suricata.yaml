@@ -2175,8 +2175,8 @@ rule-files:
 ## Auxiliary configuration files.
 ##
 
-classification-file: /home/hbeckerbrum/Pre-filtering-Simulator/etc/nids_configuration/classification.config
-reference-config-file: /home/hbeckerbrum/Pre-filtering-Simulator/etc/nids_configuration/suricata/reference.config
+classification-file:  /home/hbeckerbrum/Pre-filtering-Simulator/etc/CICIDS2017/nids_configuration/classification.config
+reference-config-file: /home/hbeckerbrum/Pre-filtering-Simulator/etc/CICIDS2017/nids_configuration/suricata/reference.config
 # threshold-file: /etc/suricata/threshold.config
 
 ##
