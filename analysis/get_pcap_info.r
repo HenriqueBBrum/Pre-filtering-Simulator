@@ -2,14 +2,26 @@ library("rjson")
 options(error = traceback)
 
 args <- commandArgs(trailingOnly = TRUE)
-
+if (length(args) != 2 || !(args[1] %in% c("snort", "suricata")) || !(args[2] %in% c("CICIDS2017", "CICIoT2023"))) {
+  stop("Usage: Rscript get_pcap_info.r <nids_name: nsort|suricat> <dataset: CICIDS2017|CICIoT2023>")
+}
 specify_decimal <- function(x, k) trimws(format(round(x, k), nsmall=k))
 
-pcap_names <- c("Monday-WorkingHours", "Tuesday-WorkingHours", "Wednesday-WorkingHours", "Thursday-WorkingHours", "Friday-WorkingHours")
-dirs<-list.dirs(path = paste("../simulation_results/", args[1], sep=""), full.names = TRUE, recursive = FALSE)
+exp_folder_path = paste("../simulation_results/", args[2], "/", args[1], sep="")
+if (!dir.exists(exp_folder_path)) {
+  stop(paste("The directory", exp_folder_path, "does not exist."))
+}
+dirs <- list.dirs(path = exp_folder_path, full.names = TRUE, recursive = FALSE)
+
+if (length(dirs) > 0) {
+  pcap_names <- list.files(path = dirs[1], pattern = "\\.log$", full.names = FALSE)
+} else {
+  exit("No directories found.")
+}
+pcap_names <- sub("\\.log$", "", pcap_names)
+
 rows<-(length(dirs)-1)*length(pcap_names)
 count<-1
-
 days <- c()
 experiment <- c()
 
@@ -23,6 +35,7 @@ signatures_false_positive_percent <- vector("double", length=rows)
 nids_processing_time <- vector("double", length=rows)
 
 for (pcap_name in pcap_names){
+  print(pcap_name)
   for (dir in dirs){
     print(dir)
     json_file <- paste(dir, "analysis.json", sep="/")
@@ -42,10 +55,19 @@ for (pcap_name in pcap_names){
           avg_num_pcre_compared_to[count] <- 0
         }
         
+        print(pcap_name)
+        print(json_data[[pcap_name]]$pkts_processed)
         suspicious_pkts_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$number_of_suspicious_pkts/json_data[[pcap_name]]$pkts_processed), 2)
-        signatures_true_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_true_positive/json_data[[pcap_name]]$baseline_signatures), 2)
-        signatures_false_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_false_positive/json_data[[pcap_name]]$experiment_signatures), 2)
-
+        if (json_data[[pcap_name]]$baseline_signatures == 0) {
+          signatures_true_positive_percent[count] <- 100
+        } else {
+          signatures_true_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_true_positive/json_data[[pcap_name]]$baseline_signatures), 2)
+        }
+        if (json_data[[pcap_name]]$experiment_signatures == 0) {
+          signatures_false_positive_percent[count] <- 0
+        } else {
+          signatures_false_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_false_positive/json_data[[pcap_name]]$experiment_signatures), 2)
+        }
 
         nids_processing_time[count] <- json_data[[pcap_name]]$nids_processing_time 
         count<-count + 1
@@ -68,5 +90,5 @@ df <- data.frame(
   signatures_false_positive_percent = signatures_false_positive_percent,
   nids_processing_time = nids_processing_time
 )
-write.csv(df,paste("new_res", "csv", sep="."))
+write.csv(df,paste(args[2],"_",args[1], ".csv", sep=""))
 

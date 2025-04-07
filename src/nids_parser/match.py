@@ -41,7 +41,7 @@ class Match(object):
     def __init__(self, header_fields, payload_fields, pre_filtering_scenario="full"):
         self.header_key = header_fields["ip_port_key"]
         self.service = []
-        # Adjust some services
+        # Adjust some services based on Snort, suricata and getservbyport 
         if "service" in payload_fields:
             for service in payload_fields["service"]:
                 if service == "ssl":
@@ -68,7 +68,7 @@ class Match(object):
                         max_len = content_len
             
         self.max_content_size = max_len
-
+        
     def sids(self):
         return list(set(self.sid_rev_list))
     
@@ -174,7 +174,7 @@ class Match(object):
                     final_buffer_name, parsed_pcre_str, relative_match = self.__parse_pcre_modifiers(match_str, modifiers)
                     if not final_buffer_name:
                         final_buffer_name = buffer_name
-                        
+                    
                     content_pcre_list.append((type, final_buffer_name, should_match, parsed_pcre_str, relative_match))
             final_payload_fileds["content_pcre"] = self.__apply_pre_filtering_scenario(content_pcre_list, fast_pattern_match, pre_filtering_scenario)
            
@@ -203,7 +203,7 @@ class Match(object):
                             new_hex = hex(int(temp_content, 16) + 32)[2:]
                             clean_content+=bytes.fromhex(new_hex).decode('latin-1', errors='replace') # Turn hex alpha to lower case: (hex, dec, char) - (0x41, 65, A) -> (0x61, 97, a)
                         else:
-                            clean_content+=bytes.fromhex(temp_content).decode('latin-1', errors='replace')
+                            clean_content+=bytes.fromhex(temp_content).decode('latin-1', errors='replace')# chr(int(temp_content, 16))
                         temp_content=""
                     i+=1
             # Process normal char
@@ -284,16 +284,7 @@ class Match(object):
     # wang_chang takes the fast pattern if there is or the longest content. If there is no final content the rule will be discarded
     def __apply_pre_filtering_scenario(self, content_pcre, fast_pattern_match, pre_filtering_scenario):
         final_content_pcre = []
-        if pre_filtering_scenario == "first":
-            final_content_pcre = [content_pcre[0]]
-        elif pre_filtering_scenario =="longest":
-            longest, size = None, 0
-            for content in content_pcre:
-                if len(content[3]) > size:
-                    longest = content
-                    size = len(content[3])
-            final_content_pcre = [longest]
-        elif pre_filtering_scenario == "wang_chang":
+        if pre_filtering_scenario == "wang_chang":
             longest, size = None, 0   
             if fast_pattern_match:
                 final_content_pcre = [fast_pattern_match] 

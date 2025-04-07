@@ -1,22 +1,25 @@
 import os
-from scapy.all import IP,TCP,UDP,ICMP,DNS,DNSQR
-from scapy.layers.http import HTTPResponse,HTTPRequest 
+from scapy.all import IP,TCP,UDP,ICMP,DNS,DNSQR,Padding
+from scapy.layers.http import HTTPResponse,HTTPRequest  
 
-file_data_ports = {110, 995, 25, 465, 587, 2525, 3535, 143, 220, 585, 993, 139, 445, 3020,
-                   20, 21, 69, 152, 989, 990, 2100, 2811, 3305, 3535, 3721, 5402, 6086, 6619, 6622}
+import sys
+sys.path.insert(0,'../utils')
+from utils.port_services import file_data_ports
 
 class PacketToMatch(object):
     def __init__(self, pkt):
         self.icmp = ICMP in pkt
         self.tcp = TCP in pkt
         self.udp = UDP in pkt
-
         self.http_res = HTTPResponse in pkt
         self.http_req = HTTPRequest in pkt
 
         self.__get_header_fields(pkt) 
 
         # Check for app layer proto and set that as the payload
+        if Padding in pkt:
+            pkt[pkt.layers()[-2]].remove_payload()
+            
         transport_layer_name = pkt[IP].getlayer(1).name if pkt[IP].getlayer(1) else None
         if transport_layer_name:
             self.payload_size = len(pkt[transport_layer_name].payload)
@@ -57,17 +60,16 @@ class PacketToMatch(object):
             payload_buffers["pkt_data"] = [bytes(pkt[IP].payload).decode('latin-1', errors = 'replace')]
 
         payload_buffers["raw_data"] = [payload_buffers["pkt_data"][0]]
-
         # Get the file_data buffer for the existing service in the pkt except http that has its own section
         if self.tcp or self.udp:
-            if pkt[transport_layer_name].payload:
+            if self.payload_size > 0:
                 sport = pkt[transport_layer_name].sport
                 dport = pkt[transport_layer_name].dport
                 
                 if sport in file_data_ports or dport in file_data_ports:
                     payload_buffers["file_data"] = [payload_buffers["pkt_data"][0]]
 
-            if DNS in pkt and pkt[DNS].opcode == 0 and pkt[DNS].ancount == 0:
+            if DNS in pkt and pkt[DNS].opcode == 0 and pkt[DNS].ancount == 0 and DNSQR in pkt:
                 payload_buffers["dns_query"] = [pkt[DNSQR].qname.decode('latin-1', errors = 'replace')]
 
         http_type = None
@@ -92,7 +94,7 @@ class PacketToMatch(object):
 
             pkt[http_type].remove_payload()
             payload_buffers["http_raw_header"] = [bytes(pkt[http_type]).decode('latin-1', errors = 'replace')]
-            payload_buffers["http_header"] = [self.__normalize_http_text("http_header", bytes(pkt[http_type]).decode('latin-1', errors = 'replace'))]
+            payload_buffers["http_header"] = [self.__normalize_http_text("http_header", bytes(pkt[http_type]).decode('latin-1', errors = 'replace').split('\r\n', 1)[1])]
             payload_buffers["http_param"] = [payload_buffers["http_raw_header"][0]]
 
             payload_buffers["http_cookie"] = [self.__get_http_cookie(pkt[http_type], True)]

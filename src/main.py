@@ -9,6 +9,12 @@ from simulator.pre_filtering_simulator import pre_filtering_simulation
 from simulator.packet_sampling_simulator import packet_sampling_simulation
 import argparse
 
+from scapy.all import TCP
+from scapy.packet import bind_layers
+from scapy.layers.http import HTTP  
+
+from utils.port_services import file_data_ports, port_to_service_map
+
 OUTPUT_FOLDER = "simulation_results/"
 
 def main(simulation_name, simulation_type, target_nids, dataset_name):
@@ -17,11 +23,18 @@ def main(simulation_name, simulation_type, target_nids, dataset_name):
     info["type"] = simulation_type
     start = time()
     if simulation_type =="pre_filtering":
-        start = time()
         nids_config = NIDSConfiguration(simulation_config["ipvars_config_path"])
         print("*" * 80)
         print("*" * 26 + " NIDS RULES PARSING STAGE " + "*" * 27+ "\n\n")
         matches, no_content_matches, info["number_of_rules"] = convert_rules_to_matches(simulation_config, nids_config)
+        for port_group in nids_config.ports:
+            if "HTTP" in port_group:
+                for port in nids_config.ports[port_group]:
+                    bind_layers(TCP, HTTP, sport=int(port[0]))
+                    bind_layers(TCP, HTTP, dport=int(port[0]))
+                    port_to_service_map[int(port[0])] = "http"
+                    file_data_ports.add(int(port[0]))
+
         info["time_to_process_rules"] = time()-start
         info["payload_size_MB"] = calculate_payload_size(matches)
         
@@ -65,6 +78,7 @@ def generate_simulation(simulation_name, target_nids, dataset_name):
     simulation_config["pcaps_path"] = f"/home/hbeckerbrum/NFSDatasets/{dataset_name}/"
 
     file_ending = "lua" if target_nids == "snort" else "yaml"
+    # simulation_config["baseline_alerts_path"] = simulation_config["pcaps_path"]
     simulation_config["baseline_alerts_path"] = os.path.join(base_path, f"../etc/{dataset_name}/alerts/{target_nids}/")
     simulation_config["nids_config_path"] = os.path.join(base_path, f"../etc/{dataset_name}/nids_configuration/{target_nids}/{target_nids}.{file_ending}")
     if target_nids == "snort":
