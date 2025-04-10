@@ -11,8 +11,8 @@ import pprint
 
 import sys
 sys.path.append("..")
-
 from utils.validation_dicts import Dicts
+from utils.port_services import ip_proto_num_to_str
 
 # Class represeting the matches of a protocol
 class Node:
@@ -161,7 +161,7 @@ def __group_by_protocol(matches):
                 match_tree.add_match("ip", match)
             else:
                 ip_proto = match.header_fields["ip_proto"]["data"]
-                ip_proto = "icmp" if ip_proto == 1 else ip_proto
+                ip_proto = ip_proto_num_to_str[ip_proto] if ip_proto in ip_proto_num_to_str else ip_proto # Either return icmp, tcp, udp or the actual ip_proto num
                 match_tree.safe_match_add(proto, ip_proto, match)
         elif proto == "icmp":
             match_tree.add_match(proto, match)

@@ -5,7 +5,7 @@ from collections import Counter
 from socket import getservbyport
 from multiprocessing import Process, Manager, Lock
 
-from scapy.all import IP,UDP,TCP 
+from scapy.all import IP,UDP,TCP,DNSQR, DNS 
 from scapy.utils import PcapReader 
 from scapy.contrib.gtp import GTPHeader 
 from scapy.contrib.gtp_v2 import GTPHeader as GTPHeader_v2 
@@ -16,17 +16,21 @@ from .packet_to_match import PacketToMatch
 
 from .analysis import compare_to_baseline
 
+import sys
+sys.path.insert(0,'../utils')
+from utils.port_services import ip_proto_num_to_str, port_to_service_map, change_map
+
 # Simulate the pre-filtering of packets based on signature rules]
 def pre_filtering_simulation(sim_config, matches, no_content_matches, info):
     lock = Lock()
     shared_info = Manager().dict()
     jobs = []
     for pcap_file in os.listdir(sim_config["pcaps_path"]):
-        # if "BrowserHijacking" not in pcap_file: # BrowserHijacking
+        # if 'Monday' not in pcap_file:
         #     continue
         if not os.path.isfile(os.path.join(sim_config["pcaps_path"], pcap_file)):
             continue
-        
+
         p = Process(target=individual_pcap_simulation, args=(sim_config, pcap_file, matches, no_content_matches, shared_info, lock))
         jobs.append(p)
         p.start()
@@ -69,10 +73,16 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
             if unsupported_protocols(scapy_pkt):
                 suspicious_pkt = (pkt_count, "unsupported")
             else:
-                pkt = PacketToMatch(scapy_pkt)
+                try:
+                    pkt = PacketToMatch(scapy_pkt)
+                except Exception as e:
+                    print("Could not parse packet properly from pcap:", pcap_filepath, ". Exception: ", traceback.format_exc())
+                    suspicious_pkts.append((pkt_count, "error"))
+                    continue
+
                 matches_key = get_related_matches_key(pkt, no_content_matches.keys() if pkt.payload_size == 0 else matches.keys()) 
                 suspicious_pkt = None
-                if pkt.tcp and sim_config["scenario"] != "wang_chang":
+                if sim_config["scenario"] != "wang_chang" and (pkt.tcp or pkt.udp):
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
                     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) # Invert order to match flow
                     if "tls" in matches_key and pkt.payload_buffers["pkt_data"][0][0] == "\x16":
@@ -80,16 +90,19 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
                     elif "ftp" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x30:
                         suspicious_pkt = (pkt_count, "ftp") 
                     else:
-                        if sim_config["nids_name"] == "suricata":
+                        if sim_config["nids_name"] == "suricata" and pkt.tcp:
                             suspicious_pkt = suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
                         elif sim_config["nids_name"] == "snort":
-                            suspicious_pkt = snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
+                            if DNS in scapy_pkt and scapy_pkt[DNS].opcode == 0 and scapy_pkt[DNS].ancount == 0 and DNSQR in scapy_pkt:
+                                suspicious_pkt = (pkt_count, "dns")
+                            elif pkt.tcp:
+                                suspicious_pkt = snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
 
                 if not suspicious_pkt:
                     suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, no_content_matches[matches_key] if pkt.payload_size == 0 else matches[matches_key], tcp_stream_tracker)
                     comparisons_to_match+=cm
                     comparisons_to_content+=cc
-                    comparisons_to_pcre+=ccpcre                        
+                    comparisons_to_pcre+=ccpcre  
 
             if suspicious_pkt:
                 suspicious_pkts.append(suspicious_pkt)
@@ -120,36 +133,22 @@ def unsupported_protocols(pkt):
         if sport in unsupported_protocols_port or dport in unsupported_protocols_port:
             return True
 
-ip_proto = {1:"icmp", 6:"tcp", 17:"udp"}
-# Returns the matches key related to the protocol and services of a packet
+# Returns the key indicating the transport layer protocol and (if there is) the application layer service
+#  to reduce the number of rules this packet is compared to
 def get_related_matches_key(pkt, matches_keys):
     proto = pkt.header["ip_proto"]
-    pkt_proto = ip_proto[proto] if proto in ip_proto else proto
+    pkt_proto = ip_proto_num_to_str[proto] if proto in ip_proto_num_to_str else proto
     applayer_proto =  None
     if pkt.tcp or pkt.udp:
         applayer_proto = get_applayer_proto(pkt, pkt_proto)
 
-    related_matches_key = "ip"
+    key = "ip"
     if pkt_proto in matches_keys:
-        related_matches_key = pkt_proto
-        if applayer_proto and related_matches_key+"_"+applayer_proto in matches_keys:
-            related_matches_key+="_"+applayer_proto
+        key = pkt_proto
+        if applayer_proto and key+"_"+applayer_proto in matches_keys:
+            key+="_"+applayer_proto
 
-    return related_matches_key
-
-   
-port_to_service_map = {446: "drda", 447: "drda", 448: "drda", 1098:"java_rmi", 1099:"java_rmi",
-                    1900: "ssdp", 1935: "rtmp", 5500: "vnc",  5800: "vnc", 5900: "vnc", 5938: "teamview"}
-
-
-change_map = {"http-alt": "http", "microsoft-ds": "netbios-ssn", 
-              "domain": "dns", "mdns":"dns", "https": "tls",
-              "mysql-proxy": "mysql", "auth": "ident", "imap2": "imap",
-              "imaps": "imap", "pop3s": "pop3", "telnets": "telnet",
-              "ftps-data": "ftp-data", "ftps":"ftp", "dhcpv6-client": "dhcp",
-              "dhcpv6-server": "dhcp", "syslog-tls": "syslog",
-              "ircs-u": "irc", "radius-acct": "radius", "bgpd": "bgp",
-              "sip-tls": "sip", "ms-wbt-server": "rdp", "epmap": "dcerpc"}
+    return key
 
 # Returns the applayer proto if it is a valid one and the payload for the layer4 protocol is more than 0
 def get_applayer_proto(pkt, proto_str):
@@ -160,8 +159,9 @@ def get_applayer_proto(pkt, proto_str):
         try:
             applayer_proto = getservbyport(pkt.header["sport"], proto_str)
         except  Exception as e:
-            return None
-        
+            pass
+
+    # Check if port is related to some app that getservbyport does not know. Use the NIDS configuration as well     
     if not applayer_proto:
         applayer_proto = port_to_service_map.get(pkt.header["dport"])
 
@@ -190,20 +190,14 @@ def snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_track
         return (pkt_count, "fin")
 
     stream_tcp = False    
-    if flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[flow]["seq"]:
+    if (flow in tcp_stream_tracker or reversed_flow in tcp_stream_tracker) and (pkt.header["flags"] == 16 or pkt.header["flags"] & 24 == 24):
         stream_tcp = True
-    elif flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[flow]["ack"]:
-        stream_tcp = True
-    elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[reversed_flow]["ack"]:
-        stream_tcp = True
-    elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[reversed_flow]["seq"]:
-        stream_tcp = True
-
-    if not stream_tcp:
         remove_flow(flow, reversed_flow, tcp_stream_tracker)
-        return None
+
+    if stream_tcp:
+        return (pkt_count, "stream_tcp")
     
-    return (pkt_count, "stream_tcp")
+    return None
 
 # Check Suricata TCP flow requirements
 def suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
@@ -217,26 +211,13 @@ def suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tra
         remove_flow(flow, reversed_flow, tcp_stream_tracker)
         return (pkt_count, "fin")
 
-    stream_tcp = False
     if pkt.payload_size > 0 and \
                 ((flow in tcp_stream_tracker and "syn" in tcp_stream_tracker[flow]) or \
                      (reversed_flow in tcp_stream_tracker and "syn" in tcp_stream_tracker[reversed_flow])):
-        stream_tcp = True
         remove_flow(flow, reversed_flow, tcp_stream_tracker)
-
-    if flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[flow]["seq"]:
-        stream_tcp = True
-    elif flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[flow]["ack"]:
-        stream_tcp = True
-    elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] == 16 and pkt.header["seq"] == tcp_stream_tracker[reversed_flow]["ack"]:
-        stream_tcp = True
-    elif reversed_flow in tcp_stream_tracker and pkt.header["flags"] & 24 == 24 and pkt.header["ack"] == tcp_stream_tracker[reversed_flow]["seq"]:
-        stream_tcp = True
-
-    if not stream_tcp:
-        remove_flow(flow, reversed_flow, tcp_stream_tracker)
-        return None
-    return (pkt_count, "stream_tcp")
+        return (pkt_count, "initial")
+    
+    return None
 
 def remove_flow(flow, reversed_flow, tcp_stream_tracker):
     if flow in tcp_stream_tracker:
@@ -245,7 +226,7 @@ def remove_flow(flow, reversed_flow, tcp_stream_tracker):
         tcp_stream_tracker.pop(reversed_flow)
 
 
-# Checks if a packet is suspicous, unsupported or is in a tcp stream
+# Compare a packet agaianst the related rules depeding on the packets transport protocol and app layer service
 def is_packet_suspicious(pkt, pkt_count, matches, tcp_stream_tracker):
     comparisons_to_match, comparisons_to_content, comparisons_to_pcre = 0, 0, 0
     for header_group in matches:

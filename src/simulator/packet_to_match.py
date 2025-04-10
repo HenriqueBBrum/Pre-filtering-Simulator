@@ -108,7 +108,7 @@ class PacketToMatch(object):
                 uri_host = self.__decode_http_field(pkt[HTTPRequest].Host)
 
                 payload_buffers["http_raw_uri"] = ["http://"+uri_host+uri_path]
-                payload_buffers["http_uri"] = [self.__normalize_http_text("http_uri", uri_path, "http://"+uri_host)]
+                payload_buffers["http_uri"] = [self.__normalize_http_text("http_uri", uri_path, uri_host)]
 
                 payload_buffers["http_accept"] = [self.__decode_http_field(pkt[HTTPRequest].Accept)]
                 payload_buffers["http_accept_enc"] = [self.__decode_http_field(pkt[HTTPRequest].Accept_Encoding)]

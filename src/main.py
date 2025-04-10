@@ -17,8 +17,8 @@ from utils.port_services import file_data_ports, port_to_service_map
 
 OUTPUT_FOLDER = "simulation_results/"
 
-def main(simulation_name, simulation_type, target_nids, dataset_name):
-    simulation_config = generate_simulation(simulation_name, target_nids, dataset_name)
+def main(simulation_name, simulation_type, dataset_name, target_nids):
+    simulation_config = generate_simulation(simulation_name, dataset_name, target_nids)
     info = {}
     info["type"] = simulation_type
     start = time()
@@ -67,18 +67,17 @@ def main(simulation_name, simulation_type, target_nids, dataset_name):
         exit(-1)
 
 
-def generate_simulation(simulation_name, target_nids, dataset_name):
+def generate_simulation(simulation_name, dataset_name, target_nids):
     simulation_config = {}
     simulation_config["scenario"] = simulation_name
-    simulation_config["nids_name"] = target_nids
-
     base_path = os.path.dirname(os.path.abspath(__file__))
-    # simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
-    # simulation_config["pcaps_path"] = "/home/hbeckerbrum/simulator_results/split_pcaps/pcaps/"
+    #simulation_config["pcaps_path"] = "/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
     simulation_config["pcaps_path"] = f"/home/hbeckerbrum/NFSDatasets/{dataset_name}/"
 
+    simulation_config["nids_name"] = target_nids
+
     file_ending = "lua" if target_nids == "snort" else "yaml"
-    # simulation_config["baseline_alerts_path"] = simulation_config["pcaps_path"]
+    #simulation_config["baseline_alerts_path"] = simulation_config["pcaps_path"]
     simulation_config["baseline_alerts_path"] = os.path.join(base_path, f"../etc/{dataset_name}/alerts/{target_nids}/")
     simulation_config["nids_config_path"] = os.path.join(base_path, f"../etc/{dataset_name}/nids_configuration/{target_nids}/{target_nids}.{file_ending}")
     if target_nids == "snort":
@@ -116,15 +115,16 @@ def calculate_payload_size(matches):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run a simulation for pre-filtering or packet sampling.")
     parser.add_argument("simulation_type", choices=["packet_sampling", "pre_filtering"], help="Type of simulation to run.")
-    parser.add_argument("target_nids", choices=["snort", "suricata"], help="Target NIDS (snort or suricata).")
     parser.add_argument("dataset_name", choices=["CICIDS2017", "CICIoT2023"], help="Dataset name (CICIDS2017 or CICIoT2023).")
+    parser.add_argument("target_nids", choices=["snort", "suricata"], help="Target NIDS (snort or suricata).")
     parser.add_argument("simulation_name", type=str, help="Name of the simulation.", nargs='?', default="")
 
     args = parser.parse_args()
 
     simulation_name = args.simulation_name
     simulation_type = args.simulation_type
-    target_nids = args.target_nids
     dataset_name = args.dataset_name
+    target_nids = args.target_nids
 
-    main(simulation_name, simulation_type, target_nids, dataset_name)
+
+    main(simulation_name, simulation_type, dataset_name, target_nids)
