@@ -7,12 +7,13 @@ import argparse
 def line_graphs(dataset_name, nids_name, csv_filepath):
     # Load data from the specified CSV file
     data = pd.read_csv(csv_filepath)
-    df = data[data['experiment'].isin(["packet_sampling_10_25", "packet_sampling_50_5", "pre_filtering_wang_chang", "pre_filtering_full"])]
+    df = data[data['experiment'].isin(["packet_sampling_10_25", "packet_sampling_50_5", "pre_filtering_wang_chang", "pre_filtering_old", "pre_filtering_full"])]
     # Update the experiment column with new names
     experiment_mapping = {
         "packet_sampling_10_25": "PS N=10 T=25s",
         "packet_sampling_50_5": "PS N=50 T=5s",
         "pre_filtering_wang_chang": "Fast pattern",
+        "pre_filtering_old": "Old work",
         "pre_filtering_full": "Our work"
     }
     df['experiment'] = df['experiment'].map(experiment_mapping)
@@ -22,8 +23,8 @@ def line_graphs(dataset_name, nids_name, csv_filepath):
     total_baseline_signatures_unique = df.groupby("pcap")["total_baseline_signatures"].unique()
 
     metrics_name = [("suspicious_pkts_percent", "Packets forwarded to NIDS", "% of packets forwarded", pkts_processed_unique, "# packets"), 
-                    ("signatures_true_positive_percent", "Signatures correctly identified", "% of signatures correctly identified", total_baseline_signatures_unique, "# baseline signatures"),
-                     ("signatures_false_positive_percent", "Signatures only in the experiments", "% of new signatures", total_baseline_signatures_unique, "# experiments signatures"),]
+                    ("signatures_true_positive_percent", "Signatures correctly identified", "% of signatures correctly identified", total_baseline_signatures_unique, "# baseline signatures"),]
+                     #("signatures_false_positive_percent", "Signatures only in the experiments", "% of new signatures", total_baseline_signatures_unique, "# experiments signatures"),]
                     #("pkt_processing_time", "Simulator avg. pkt. processing time", "seconds"), ("snort_processing_time", "Snort processing time", "seconds")]
 
 
@@ -49,7 +50,7 @@ def line_graphs(dataset_name, nids_name, csv_filepath):
                 secax.set_xlabel(top_x_legend, size=7)
 
             handles, labels = plt.gca().get_legend_handles_labels()
-            sorted_experiments = ["PS N=10 T=25s", "PS N=50 T=5s", "Fast pattern", "Our work"]
+            sorted_experiments = ["PS N=10 T=25s", "PS N=50 T=5s", "Fast pattern", "Old work", "Our work"]
             sorted_handles_labels = sorted(zip(handles, labels), key=lambda x: sorted_experiments.index(x[1]))
             handles, labels = zip(*sorted_handles_labels)
 
@@ -76,12 +77,13 @@ def line_graphs(dataset_name, nids_name, csv_filepath):
 def bar_graphs(dataset_name, nids_name, csv_filepath):
     # Load data from the specified CSV file
     data = pd.read_csv(csv_filepath)
-    df = data[data['experiment'].isin(["packet_sampling_10_25", "packet_sampling_50_5", "pre_filtering_wang_chang", "pre_filtering_full"])]
+    df = data[data['experiment'].isin(["packet_sampling_10_25", "packet_sampling_50_5", "pre_filtering_wang_chang", "pre_filtering_old", "pre_filtering_full"])]
     # Update the experiment column with new names
     experiment_mapping = {
         "packet_sampling_10_25": "PS N=10 T=25s",
         "packet_sampling_50_5": "PS N=50 T=5s",
         "pre_filtering_wang_chang": "Fast pattern",
+        "pre_filtering_old": "Old work",
         "pre_filtering_full": "Our work"
     }
     df['experiment'] = df['experiment'].map(experiment_mapping)
@@ -100,13 +102,13 @@ def bar_graphs(dataset_name, nids_name, csv_filepath):
         x = range(len(group["experiment"]))
 
         # Sort the group by the specified experiment order
-        experiment_order = ["PS N=10 T=25s", "PS N=50 T=5s", "Fast pattern", "Our work"]
+        experiment_order = ["PS N=10 T=25s", "PS N=50 T=5s", "Fast pattern", "Old work", "Our work"]
         group = group.set_index("experiment").reindex(experiment_order).reset_index()
 
         # Bar graph for suspicious_pkts_absolute
         ax1.bar([i - bar_width / 2 for i in x], group["suspicious_pkts_absolute"], width=bar_width, color='coral', alpha=0.5, hatch='//', label="# suspicious packets")
         ax1.set_xlabel("Experiment name")
-        ax1.set_ylabel("# suspicious packets", color='coral')
+        ax1.set_ylabel("# packets fowarded", color='coral')
         ax1.tick_params(axis='y', labelcolor='coral')
         ax1.set_xticks(x)
         ax1.set_xticklabels(group["experiment"], size=8)
@@ -134,7 +136,7 @@ def bar_graphs(dataset_name, nids_name, csv_filepath):
         # Add a horizontal line delimiting the max value for the secondary Y-axis
         if len(total_baseline_signatures_unique[pcap]) > 0:
             ax2.axhline(y=total_baseline_signatures_unique[pcap][0], color='royalblue', linestyle='--', linewidth=1)
-            ax2.text(len(x) - 1, total_baseline_signatures_unique[pcap][0], "# baseline signatures", color='royalblue', fontsize=8, ha='right', va='bottom')
+            ax2.text(len(x) - 1, total_baseline_signatures_unique[pcap][0], "# correct signatures", color='royalblue', fontsize=8, ha='right', va='bottom')
 
         # Title and layout
         plt.title(f"{pcap} ({nids_name.title()}, {dataset_name})")

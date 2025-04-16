@@ -1,6 +1,6 @@
 import os
 from scapy.all import IP,TCP,UDP,ICMP,DNS,DNSQR,Padding
-from scapy.layers.http import HTTPResponse,HTTPRequest  
+from scapy.layers.http import HTTP,HTTPResponse,HTTPRequest  
 
 import sys
 sys.path.insert(0,'../utils')
@@ -11,6 +11,7 @@ class PacketToMatch(object):
         self.icmp = ICMP in pkt
         self.tcp = TCP in pkt
         self.udp = UDP in pkt
+        self.http = HTTP in pkt
         self.http_res = HTTPResponse in pkt
         self.http_req = HTTPRequest in pkt
 

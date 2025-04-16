@@ -26,8 +26,6 @@ def pre_filtering_simulation(sim_config, matches, no_content_matches, info):
     shared_info = Manager().dict()
     jobs = []
     for pcap_file in os.listdir(sim_config["pcaps_path"]):
-        # if 'Monday' not in pcap_file:
-        #     continue
         if not os.path.isfile(os.path.join(sim_config["pcaps_path"], pcap_file)):
             continue
 
@@ -89,16 +87,12 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
                         suspicious_pkt = (pkt_count, "tls")
                     elif "ftp" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x30:
                         suspicious_pkt = (pkt_count, "ftp") 
-                    else:
-                        if sim_config["nids_name"] == "suricata" and pkt.tcp:
-                            suspicious_pkt = suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
-                        elif sim_config["nids_name"] == "snort":
-                            if DNS in scapy_pkt and scapy_pkt[DNS].opcode == 0 and scapy_pkt[DNS].ancount == 0 and DNSQR in scapy_pkt:
-                                suspicious_pkt = (pkt_count, "dns")
-                            elif pkt.tcp:
-                                suspicious_pkt = snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
+                    elif DNS in scapy_pkt and scapy_pkt[DNS].opcode == 0 and scapy_pkt[DNS].ancount == 0 and DNSQR in scapy_pkt:
+                        suspicious_pkt = (pkt_count, "dns")
+                    elif pkt.tcp:
+                        suspicious_pkt = tcp_tracker(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
 
-                if not suspicious_pkt:
+                if not suspicious_pkt:                       
                     suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, no_content_matches[matches_key] if pkt.payload_size == 0 else matches[matches_key], tcp_stream_tracker)
                     comparisons_to_match+=cm
                     comparisons_to_content+=cc
@@ -112,9 +106,9 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
 
     info = {}
     info["pcap_size"] = pkt_count
-    info["avg_num_rules_compared_to"] = comparisons_to_match/pkt_count
-    info["avg_num_contents_compared_to"] = comparisons_to_content/pkt_count
-    info["avg_num_pcre_compared_to"] = comparisons_to_pcre/pkt_count
+    info["avg_num_rules_compared_to"] = comparisons_to_match/ip_pkt_count
+    info["avg_num_contents_compared_to"] = comparisons_to_content/ip_pkt_count
+    info["avg_num_pcre_compared_to"] = comparisons_to_pcre/ip_pkt_count
     info["pkts_processed"] = ip_pkt_count
     return suspicious_pkts, info
 
@@ -171,12 +165,12 @@ def get_applayer_proto(pkt, proto_str):
     if applayer_proto:
         if pkt.payload_size == 0:
             applayer_proto = proto_str
-
-        if applayer_proto == "http" and not (pkt.http_res or pkt.http_req):
-            applayer_proto = proto_str
             
         if applayer_proto in change_map: # getservbyport and Snort and Suricata have different ideas on the app layer proto for the same port
             applayer_proto = change_map[applayer_proto]
+
+        if applayer_proto == "http" and not (pkt.http_res or pkt.http_req):
+            applayer_proto = proto_str
             
     return applayer_proto 
 
@@ -200,11 +194,11 @@ def snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_track
     return None
 
 # Check Suricata TCP flow requirements
-def suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
-    if pkt.header["flags"] == 2 or pkt.header["flags"] == 18: # SYN or SYN +ACK
-        if pkt.header["flags"] == 18:
+def tcp_tracker(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
+    if pkt.header["flags"] & 2 == 2: # SYN or SYN +ACK
+        if pkt.header["flags"] & 18 == 18:
             tcp_stream_tracker[flow] = {"seq": pkt.header["seq"]+1, "ack": pkt.header["ack"], "syn": True} 
-        return (pkt_count, "tcp_handshake")
+        return (pkt_count, "syn")
     elif "R" in pkt.header["flags"]:
         return (pkt_count, "reset")
     elif "F" in pkt.header["flags"]:
@@ -216,6 +210,14 @@ def suricata_packet_sampling(pkt, pkt_count, flow, reversed_flow, tcp_stream_tra
                      (reversed_flow in tcp_stream_tracker and "syn" in tcp_stream_tracker[reversed_flow])):
         remove_flow(flow, reversed_flow, tcp_stream_tracker)
         return (pkt_count, "initial")
+    
+    stream_tcp = False    
+    if (flow in tcp_stream_tracker or reversed_flow in tcp_stream_tracker) and (pkt.header["flags"] == 16 or pkt.header["flags"] & 24 == 24):
+        stream_tcp = True
+        remove_flow(flow, reversed_flow, tcp_stream_tracker)
+
+    if stream_tcp:
+        return (pkt_count, "stream_tcp")
     
     return None
 

@@ -45,7 +45,6 @@ def nids_with_suspicious_pcap(sim_config, current_trace, suspicious_pkts):
             pcap_writer.write(packet)
             pcap_writer.flush()
             suspicious_pkts_list_count+=1
-
         pkt_count+=1
 
     start = time()
