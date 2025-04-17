@@ -88,7 +88,6 @@ def bar_graphs(dataset_name, nids_name, csv_filepath):
     }
     df['experiment'] = df['experiment'].map(experiment_mapping)
 
-
     # Get unique values for "pkts_processed" and "total_baseline_signatures" for each "pcap"
     pkts_processed_unique = df.groupby("pcap")["pkts_processed"].unique()
     total_baseline_signatures_unique = df.groupby("pcap")["total_baseline_signatures"].unique()
@@ -115,14 +114,13 @@ def bar_graphs(dataset_name, nids_name, csv_filepath):
         # ax1.set_ylim([0, pkts_processed_unique[pcap][0] * 1.1 if len(pkts_processed_unique[pcap]) > 0 else 0])
         max_value = pkts_processed_unique[pcap][0] if len(pkts_processed_unique[pcap]) > 0 else 0
         ax1.set_ylim([0, max_value * 1.05])
-        ax1.set_yticks(range(0, int(max_value * 1.05) + 1, max(1, int(max_value / 5))))
+        #ax1.set_yticks(range(0, int(max_value * 1.05) + 1, max(1, int(max_value / 5))))
 
 
         # Add a horizontal line delimiting the max value for the primary Y-axis
         if len(pkts_processed_unique[pcap]) > 0:
             ax1.axhline(y=pkts_processed_unique[pcap][0], color='coral', linestyle='--', linewidth=1, label="Max suspicious packets")
-            ax1.text(len(x) - 1, pkts_processed_unique[pcap][0], "# packets processed", color='coral', fontsize=8, ha='right', va='bottom')
-
+            ax1.text(len(x) - 1, pkts_processed_unique[pcap][0], "baseline n. packets", color='coral', fontsize=8, ha='right', va='bottom')
 
         # Secondary y-axis for signatures_true_positive_absolute
         ax2 = ax1.twinx()
@@ -131,12 +129,12 @@ def bar_graphs(dataset_name, nids_name, csv_filepath):
         ax2.tick_params(axis='y', labelcolor='royalblue')
         max_value = total_baseline_signatures_unique[pcap][0] if len(total_baseline_signatures_unique[pcap]) > 0 else 0
         ax2.set_ylim([0, max_value * 1.1])
-        ax2.set_yticks(range(0, int(max_value * 1.1) + 1, max(1, int(max_value / 5))))
+        #ax2.set_yticks(range(0, int(max_value * 1.1) + 1, max(1, int(max_value / 5))))
 
         # Add a horizontal line delimiting the max value for the secondary Y-axis
         if len(total_baseline_signatures_unique[pcap]) > 0:
             ax2.axhline(y=total_baseline_signatures_unique[pcap][0], color='royalblue', linestyle='--', linewidth=1)
-            ax2.text(len(x) - 1, total_baseline_signatures_unique[pcap][0], "# correct signatures", color='royalblue', fontsize=8, ha='right', va='bottom')
+            ax2.text(len(x) - 1, total_baseline_signatures_unique[pcap][0], "baseline n. signatures", color='royalblue', fontsize=8, ha='right', va='bottom')
 
         # Title and layout
         plt.title(f"{pcap} ({nids_name.title()}, {dataset_name})")
