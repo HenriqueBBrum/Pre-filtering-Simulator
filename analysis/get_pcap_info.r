@@ -28,6 +28,9 @@ pkts_processed <- c()
 total_baseline_signatures <- c()
 total_experiment_signatures <- c()
 
+total_baseline_signatures_flow <- c()
+total_experiment_signatures_flow <- c()
+
 experiment <- c()
 
 avg_num_rules_compared_to <- vector("double", length=rows)
@@ -44,6 +47,12 @@ signatures_true_positive_absolute <- vector("double", length=rows)
 signatures_false_positive_percent <- vector("double", length=rows)
 signatures_false_positive_absolute <- vector("double", length=rows)
 
+signatures_flow_true_positive_percent <- vector("double", length=rows)
+signatures_flow_true_positive_absolute <- vector("double", length=rows)
+
+signatures_flow_false_positive_percent <- vector("double", length=rows)
+signatures_flow_false_positive_absolute <- vector("double", length=rows)
+
 nids_processing_time <- vector("double", length=rows)
 
 for (pcap_name in pcap_names){
@@ -58,6 +67,9 @@ for (pcap_name in pcap_names){
         pkts_processed <- append(pkts_processed, json_data[[pcap_name]]$pkts_processed)
         total_baseline_signatures <- append(total_baseline_signatures, json_data[[pcap_name]]$baseline_signatures)
         total_experiment_signatures <- append(total_experiment_signatures, json_data[[pcap_name]]$experiment_signatures)
+
+        total_baseline_signatures_flow <- append(total_baseline_signatures_flow, json_data[[pcap_name]]$baseline_signatures_flow)
+        total_experiment_signatures_flow <- append(total_experiment_signatures_flow, json_data[[pcap_name]]$experiment_signatures_flow)
 
         experiment <- append(experiment, experiment_type)
         if ("avg_num_rules_compared_to" %in% names(json_data[[pcap_name]])){
@@ -87,6 +99,22 @@ for (pcap_name in pcap_names){
           signatures_false_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_false_positive/json_data[[pcap_name]]$experiment_signatures), 2)
         }
 
+
+        signatures_flow_true_positive_absolute[count] <-json_data[[pcap_name]]$signatures_flow_true_positive
+        if (json_data[[pcap_name]]$baseline_signatures_flow == 0) {
+          signatures_flow_true_positive_percent[count] <- 100
+        } else {
+          signatures_flow_true_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_flow_true_positive/json_data[[pcap_name]]$baseline_signatures_flow), 2)
+        }
+
+        signatures_flow_false_positive_absolute[count] <-json_data[[pcap_name]]$signatures_flow_false_positive
+        if (json_data[[pcap_name]]$experiment_signatures_flow == 0) {
+          signatures_flow_false_positive_percent[count] <- 0
+        } else {
+          signatures_flow_false_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_flow_false_positive/json_data[[pcap_name]]$experiment_signatures_flow), 2)
+        }
+
+
         nids_processing_time[count] <- json_data[[pcap_name]]$nids_processing_time 
         count<-count + 1
     }
@@ -96,10 +124,12 @@ for (pcap_name in pcap_names){
 
 df <- data.frame( 
   pcap = pcaps,
+  experiment = experiment,
   pkts_processed = pkts_processed,
   total_baseline_signatures = total_baseline_signatures,
   total_experiment_signatures = total_experiment_signatures,
-  experiment = experiment,
+  total_baseline_signatures_flow = total_baseline_signatures_flow,
+  total_experiment_signatures_flow = total_experiment_signatures_flow,
   avg_num_rules_compared_to = avg_num_rules_compared_to,
   avg_num_contents_compared_to = avg_num_contents_compared_to,
   avg_num_pcre_compared_to = avg_num_pcre_compared_to,
@@ -109,6 +139,10 @@ df <- data.frame(
   signatures_true_positive_absolute = signatures_true_positive_absolute,
   signatures_false_positive_percent = signatures_false_positive_percent,
   signatures_false_positive_absolute = signatures_false_positive_absolute,
+  signatures_flow_true_positive_percent = signatures_flow_true_positive_percent,
+  signatures_flow_true_positive_absolute = signatures_flow_true_positive_absolute,
+  signatures_flow_false_positive_percent = signatures_flow_false_positive_percent,
+  signatures_flow_false_positive_absolute = signatures_flow_false_positive_absolute,
   nids_processing_time = nids_processing_time
 )
 write.csv(df,paste("csv/",args[1],"_",args[2], ".csv", sep=""))

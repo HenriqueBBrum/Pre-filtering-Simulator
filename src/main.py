@@ -71,10 +71,12 @@ def generate_simulation(simulation_name, dataset_name, target_nids):
     simulation_config = {}
     simulation_config["scenario"] = simulation_name
     base_path = os.path.dirname(os.path.abspath(__file__))
+    #simulation_config["pcaps_path"] = f"/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
     simulation_config["pcaps_path"] = f"/home/hbeckerbrum/NFSDatasets/{dataset_name}/"
     simulation_config["nids_name"] = target_nids
 
     file_ending = "lua" if target_nids == "snort" else "yaml"
+    #simulation_config["baseline_alerts_path"] = simulation_config["pcaps_path"]
     simulation_config["baseline_alerts_path"] = os.path.join(base_path, f"../etc/{dataset_name}/alerts/{target_nids}/")
     simulation_config["nids_config_path"] = os.path.join(base_path, f"../etc/{dataset_name}/nids_configuration/{target_nids}/{target_nids}.{file_ending}")
     if target_nids == "snort":
@@ -122,6 +124,5 @@ if __name__ == '__main__':
     simulation_type = args.simulation_type
     dataset_name = args.dataset_name
     target_nids = args.target_nids
-
 
     main(simulation_name, simulation_type, dataset_name, target_nids)

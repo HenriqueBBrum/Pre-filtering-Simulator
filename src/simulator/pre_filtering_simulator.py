@@ -106,9 +106,9 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
 
     info = {}
     info["pcap_size"] = pkt_count
-    info["avg_num_rules_compared_to"] = comparisons_to_match/ip_pkt_count
-    info["avg_num_contents_compared_to"] = comparisons_to_content/ip_pkt_count
-    info["avg_num_pcre_compared_to"] = comparisons_to_pcre/ip_pkt_count
+    info["avg_num_rules_compared_to"] = comparisons_to_match/ip_pkt_count if ip_pkt_count > 0 else 0
+    info["avg_num_contents_compared_to"] = comparisons_to_content/ip_pkt_count if ip_pkt_count > 0 else 0
+    info["avg_num_pcre_compared_to"] = comparisons_to_pcre/ip_pkt_count if ip_pkt_count > 0 else 0
     info["pkts_processed"] = ip_pkt_count
     return suspicious_pkts, info
 
@@ -195,21 +195,13 @@ def snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_track
 
 # Check Suricata TCP flow requirements
 def tcp_tracker(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
-    if pkt.header["flags"] & 2 == 2: # SYN or SYN +ACK
-        if pkt.header["flags"] & 18 == 18:
-            tcp_stream_tracker[flow] = {"seq": pkt.header["seq"]+1, "ack": pkt.header["ack"], "syn": True} 
+    if pkt.header["flags"] & 2 == 2: # SYN in flags
         return (pkt_count, "syn")
     elif "R" in pkt.header["flags"]:
         return (pkt_count, "reset")
     elif "F" in pkt.header["flags"]:
         remove_flow(flow, reversed_flow, tcp_stream_tracker)
         return (pkt_count, "fin")
-
-    if pkt.payload_size > 0 and \
-                ((flow in tcp_stream_tracker and "syn" in tcp_stream_tracker[flow]) or \
-                     (reversed_flow in tcp_stream_tracker and "syn" in tcp_stream_tracker[reversed_flow])):
-        remove_flow(flow, reversed_flow, tcp_stream_tracker)
-        return (pkt_count, "initial")
     
     stream_tcp = False    
     if (flow in tcp_stream_tracker or reversed_flow in tcp_stream_tracker) and (pkt.header["flags"] == 16 or pkt.header["flags"] & 24 == 24):
