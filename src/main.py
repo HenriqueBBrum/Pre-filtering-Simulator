@@ -5,7 +5,7 @@ from time import time
 
 from nids_parser.config_parser import NIDSConfiguration
 from nids_parser.rules_to_matches import convert_rules_to_matches
-from simulator.pre_filtering_simulator import pre_filtering_simulation 
+from simulator.rule_based_simulator import rule_based_simulation 
 from simulator.packet_sampling_simulator import packet_sampling_simulation
 import argparse
 
@@ -22,7 +22,7 @@ def main(simulation_name, simulation_type, dataset_name, target_nids):
     info = {}
     info["type"] = simulation_type
     start = time()
-    if simulation_type =="pre_filtering":
+    if simulation_type =="rule_based":
         nids_config = NIDSConfiguration(simulation_config["ipvars_config_path"])
         print("*" * 80)
         print("*" * 26 + " NIDS RULES PARSING STAGE " + "*" * 27+ "\n\n")
@@ -40,12 +40,12 @@ def main(simulation_name, simulation_type, dataset_name, target_nids):
         
         print("PRE-FILTERING SIMULATION")
         print("Scenario: ", simulation_config["scenario"])
-        simulation_config["output_folder"] = os.path.join(OUTPUT_FOLDER, f"{dataset_name}/{target_nids}/pre_filtering_{simulation_name}/")
+        simulation_config["output_folder"] = os.path.join(OUTPUT_FOLDER, f"{dataset_name}/{target_nids}/rule_based_{simulation_name}/")
         print("Output folder: ", simulation_config["output_folder"])
         if not os.path.exists(simulation_config["output_folder"]):
             os.makedirs(simulation_config["output_folder"])
 
-        info = pre_filtering_simulation(simulation_config, matches, no_content_matches, info)
+        info = rule_based_simulation(simulation_config, matches, no_content_matches, info)
         info["total_execution_time"] = time() - start
         with open(simulation_config["output_folder"] + "analysis.json", 'a') as f:
             json.dump(info , f, ensure_ascii=False, indent=4)
@@ -71,12 +71,10 @@ def generate_simulation(simulation_name, dataset_name, target_nids):
     simulation_config = {}
     simulation_config["scenario"] = simulation_name
     base_path = os.path.dirname(os.path.abspath(__file__))
-    #simulation_config["pcaps_path"] = f"/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
     simulation_config["pcaps_path"] = f"/home/hbeckerbrum/NFSDatasets/{dataset_name}/"
     simulation_config["nids_name"] = target_nids
 
     file_ending = "lua" if target_nids == "snort" else "yaml"
-    #simulation_config["baseline_alerts_path"] = simulation_config["pcaps_path"]
     simulation_config["baseline_alerts_path"] = os.path.join(base_path, f"../etc/{dataset_name}/alerts/{target_nids}/")
     simulation_config["nids_config_path"] = os.path.join(base_path, f"../etc/{dataset_name}/nids_configuration/{target_nids}/{target_nids}.{file_ending}")
     if target_nids == "snort":
@@ -113,7 +111,7 @@ def calculate_payload_size(matches):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run a simulation for pre-filtering or packet sampling.")
-    parser.add_argument("simulation_type", choices=["packet_sampling", "pre_filtering"], help="Type of simulation to run.")
+    parser.add_argument("simulation_type", choices=["packet_sampling", "rule_based"], help="Type of simulation to run.")
     parser.add_argument("dataset_name", choices=["CICIDS2017", "CICIoT2023"], help="Dataset name (CICIDS2017 or CICIoT2023).")
     parser.add_argument("target_nids", choices=["snort", "suricata"], help="Target NIDS (snort or suricata).")
     parser.add_argument("simulation_name", type=str, help="Name of the simulation.", nargs='?', default="")

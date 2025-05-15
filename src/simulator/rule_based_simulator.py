@@ -21,7 +21,7 @@ sys.path.insert(0,'../utils')
 from utils.port_services import ip_proto_num_to_str, port_to_service_map, change_map
 
 # Simulate the pre-filtering of packets based on signature rules]
-def pre_filtering_simulation(sim_config, matches, no_content_matches, info):
+def rule_based_simulation(sim_config, matches, no_content_matches, info):
     lock = Lock()
     shared_info = Manager().dict()
     jobs = []
@@ -52,6 +52,7 @@ def individual_pcap_simulation(sim_config, pcap_file, matches, no_content_matche
     local_dict[current_trace].update(temp_info)
 
     local_dict[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
+    local_dict[current_trace]["pkts_filtered"] = local_dict[current_trace]["pkts_processed"] - local_dict[current_trace]["number_of_suspicious_pkts"]
     local_dict[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
     
     lock.acquire()
@@ -83,7 +84,7 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
                 if sim_config["scenario"] != "wang_chang" and (pkt.tcp or pkt.udp):
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
                     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) # Invert order to match flow
-                    if "tls" in matches_key and pkt.payload_buffers["pkt_data"][0][0] == "\x16":
+                    if "tls" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x14:
                         suspicious_pkt = (pkt_count, "tls")
                     elif "ftp" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x30:
                         suspicious_pkt = (pkt_count, "ftp") 

@@ -25,11 +25,9 @@ count<-1
 pcaps <- c()
 
 pkts_processed <- c()
-total_baseline_signatures <- c()
-total_experiment_signatures <- c()
 
-total_baseline_signatures_flow <- c()
-total_experiment_signatures_flow <- c()
+total_baseline_alerts <- c()
+total_experiment_alerts <- c()
 
 experiment <- c()
 
@@ -38,20 +36,14 @@ avg_num_contents_compared_to <- vector("double", length=rows)
 avg_num_pcre_compared_to <- vector("double", length=rows)
 pkt_processing_time <- vector("double", length=rows)
 
-suspicious_pkts_percent <- vector("double", length=rows)
-suspicious_pkts_absolute <- vector("double", length=rows)
+pkts_filtered_percent <- vector("double", length=rows)
+pkts_filtered_absolute <- vector("double", length=rows)
 
-signatures_true_positive_percent <- vector("double", length=rows)
-signatures_true_positive_absolute <- vector("double", length=rows)
+alerts_true_positive_percent <- vector("double", length=rows)
+alerts_true_positive_absolute <- vector("double", length=rows)
 
-signatures_false_positive_percent <- vector("double", length=rows)
-signatures_false_positive_absolute <- vector("double", length=rows)
-
-signatures_flow_true_positive_percent <- vector("double", length=rows)
-signatures_flow_true_positive_absolute <- vector("double", length=rows)
-
-signatures_flow_false_positive_percent <- vector("double", length=rows)
-signatures_flow_false_positive_absolute <- vector("double", length=rows)
+alerts_false_positive_percent <- vector("double", length=rows)
+alerts_false_positive_absolute <- vector("double", length=rows)
 
 nids_processing_time <- vector("double", length=rows)
 
@@ -65,11 +57,8 @@ for (pcap_name in pcap_names){
         json_data <- fromJSON(file=json_file)
         pcaps <- append(pcaps, pcap_cleaned_name)
         pkts_processed <- append(pkts_processed, json_data[[pcap_name]]$pkts_processed)
-        total_baseline_signatures <- append(total_baseline_signatures, json_data[[pcap_name]]$baseline_signatures)
-        total_experiment_signatures <- append(total_experiment_signatures, json_data[[pcap_name]]$experiment_signatures)
-
-        total_baseline_signatures_flow <- append(total_baseline_signatures_flow, json_data[[pcap_name]]$baseline_signatures_flow)
-        total_experiment_signatures_flow <- append(total_experiment_signatures_flow, json_data[[pcap_name]]$experiment_signatures_flow)
+        total_baseline_alerts <- append(total_baseline_alerts, json_data[[pcap_name]]$baseline_alerts)
+        total_experiment_alerts <- append(total_experiment_alerts, json_data[[pcap_name]]$experiment_alerts)
 
         experiment <- append(experiment, experiment_type)
         if ("avg_num_rules_compared_to" %in% names(json_data[[pcap_name]])){
@@ -82,38 +71,22 @@ for (pcap_name in pcap_names){
           avg_num_pcre_compared_to[count] <- 0
         }
         
-        suspicious_pkts_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$number_of_suspicious_pkts/json_data[[pcap_name]]$pkts_processed), 2)
-        suspicious_pkts_absolute[count] <- json_data[[pcap_name]]$number_of_suspicious_pkts
+        pkts_filtered_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$pkts_filtered/json_data[[pcap_name]]$pkts_processed), 2)
+        pkts_filtered_absolute[count] <- json_data[[pcap_name]]$pkts_filtered
 
-        signatures_true_positive_absolute[count] <-json_data[[pcap_name]]$signatures_true_positive
-        if (json_data[[pcap_name]]$baseline_signatures == 0) {
-          signatures_true_positive_percent[count] <- 100
+        alerts_true_positive_absolute[count] <-json_data[[pcap_name]]$alerts_true_positive
+        if (json_data[[pcap_name]]$baseline_alerts == 0) {
+          alerts_true_positive_percent[count] <- 100
         } else {
-          signatures_true_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_true_positive/json_data[[pcap_name]]$baseline_signatures), 2)
+          alerts_true_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$alerts_true_positive/json_data[[pcap_name]]$baseline_alerts), 2)
         }
 
-        signatures_false_positive_absolute[count] <-json_data[[pcap_name]]$signatures_false_positive
-        if (json_data[[pcap_name]]$experiment_signatures == 0) {
-          signatures_false_positive_percent[count] <- 0
+        alerts_false_positive_absolute[count] <-json_data[[pcap_name]]$alerts_false_positive
+        if (json_data[[pcap_name]]$experiment_alerts == 0) {
+          alerts_false_positive_percent[count] <- 0
         } else {
-          signatures_false_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_false_positive/json_data[[pcap_name]]$experiment_signatures), 2)
+          alerts_false_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$alerts_false_positive/json_data[[pcap_name]]$experiment_alerts), 2)
         }
-
-
-        signatures_flow_true_positive_absolute[count] <-json_data[[pcap_name]]$signatures_flow_true_positive
-        if (json_data[[pcap_name]]$baseline_signatures_flow == 0) {
-          signatures_flow_true_positive_percent[count] <- 100
-        } else {
-          signatures_flow_true_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_flow_true_positive/json_data[[pcap_name]]$baseline_signatures_flow), 2)
-        }
-
-        signatures_flow_false_positive_absolute[count] <-json_data[[pcap_name]]$signatures_flow_false_positive
-        if (json_data[[pcap_name]]$experiment_signatures_flow == 0) {
-          signatures_flow_false_positive_percent[count] <- 0
-        } else {
-          signatures_flow_false_positive_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$signatures_flow_false_positive/json_data[[pcap_name]]$experiment_signatures_flow), 2)
-        }
-
 
         nids_processing_time[count] <- json_data[[pcap_name]]$nids_processing_time 
         count<-count + 1
@@ -126,23 +99,19 @@ df <- data.frame(
   pcap = pcaps,
   experiment = experiment,
   pkts_processed = pkts_processed,
-  total_baseline_signatures = total_baseline_signatures,
-  total_experiment_signatures = total_experiment_signatures,
-  total_baseline_signatures_flow = total_baseline_signatures_flow,
-  total_experiment_signatures_flow = total_experiment_signatures_flow,
+  total_baseline_alerts = total_baseline_alerts,
+  total_experiment_alerts = total_experiment_alerts,
+  total_baseline_alerts = total_baseline_alerts,
+  total_experiment_alerts = total_experiment_alerts,
   avg_num_rules_compared_to = avg_num_rules_compared_to,
   avg_num_contents_compared_to = avg_num_contents_compared_to,
   avg_num_pcre_compared_to = avg_num_pcre_compared_to,
-  suspicious_pkts_percent = suspicious_pkts_percent,
-  suspicious_pkts_absolute = suspicious_pkts_absolute,
-  signatures_true_positive_percent = signatures_true_positive_percent,
-  signatures_true_positive_absolute = signatures_true_positive_absolute,
-  signatures_false_positive_percent = signatures_false_positive_percent,
-  signatures_false_positive_absolute = signatures_false_positive_absolute,
-  signatures_flow_true_positive_percent = signatures_flow_true_positive_percent,
-  signatures_flow_true_positive_absolute = signatures_flow_true_positive_absolute,
-  signatures_flow_false_positive_percent = signatures_flow_false_positive_percent,
-  signatures_flow_false_positive_absolute = signatures_flow_false_positive_absolute,
+  pkts_filtered_percent = pkts_filtered_percent,
+  pkts_filtered_absolute = pkts_filtered_absolute,
+  alerts_true_positive_percent = alerts_true_positive_percent,
+  alerts_true_positive_absolute = alerts_true_positive_absolute,
+  alerts_false_positive_percent = alerts_false_positive_percent,
+  alerts_false_positive_absolute = alerts_false_positive_absolute,
   nids_processing_time = nids_processing_time
 )
 write.csv(df,paste("csv/",args[1],"_",args[2], ".csv", sep=""))
