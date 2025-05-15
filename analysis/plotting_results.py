@@ -1,9 +1,7 @@
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
-import os
-import argparse
-
 from matplotlib.ticker import MaxNLocator
 
 def experiments_new_alerts(df, dataset_name, nids_name, nids_dataset_output_dir):
@@ -35,11 +33,11 @@ def experiments_new_alerts(df, dataset_name, nids_name, nids_dataset_output_dir)
             if dataset_name == "CICIoT2023":
                 plt.xticks(rotation=8, fontsize=9)
 
-            plt.title(f"Signatures only in the experiments ({nids_name.title()}, {dataset_name})")
+            plt.title(f"Alerts only in the experiments ({nids_name.title()}, {dataset_name})")
             metric_sign = "#"
             if "percent" in metric:
                 metric_sign = "%"
-            plt.ylabel(f"{metric_sign} new alerts")
+            plt.ylabel(f"{metric_sign} of new alerts")
             plt.legend(title=None, handles=handles, labels=labels)
             plt.tight_layout()
 
@@ -67,7 +65,7 @@ def filteredXalerts(df, dataset_name, nids_name, nids_dataset_output_dir, ):
 
         # Bar graph for pkts_filtered_absolute
         ax.bar([i - bar_width / 2 for i in x], group["pkts_filtered_absolute"], width=bar_width, color='coral', alpha=0.5, hatch='//', label="# suspicious packets")
-        ax.set_ylabel("# packets filtered", color='coral')
+        ax.set_ylabel("# of packets filtered", color='coral')
         ax.tick_params(axis='y', labelcolor='coral')
         ax.set_xticks(x)
         ax.set_xticklabels(group["experiment"], size=8)
@@ -83,7 +81,7 @@ def filteredXalerts(df, dataset_name, nids_name, nids_dataset_output_dir, ):
         # Secondary y-axis for alerts_true_positive_absolute
         ax2 = ax.twinx()
         ax2.bar([i + bar_width / 2 for i in x], group[f"alerts_true_positive_absolute"], width=bar_width, color='royalblue', alpha=0.6, hatch='\\', label="# alerts correctly identified")
-        ax2.set_ylabel(f"# alerts correctly identified", color='royalblue')
+        ax2.set_ylabel(f"# of alerts correctly identified", color='royalblue')
         ax2.tick_params(axis='y', labelcolor='royalblue')
         ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
         max_value = total_baseline_alerts_unique[pcap][0]
@@ -196,8 +194,8 @@ if __name__ == "__main__":
         )
 
     # Add labels, legend, and title
-    ax.set_xlabel("% alerts correctly identified")
-    ax.set_ylabel("% packets filtered")
+    ax.set_xlabel("% of alerts correctly identified")
+    ax.set_ylabel("% of packets filtered")
     ax.set_xlim([0, 102])
     ax.xaxis.set_major_formatter(mtick.PercentFormatter())
     ax.set_ylim([0, 102])
