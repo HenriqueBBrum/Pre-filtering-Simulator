@@ -3,6 +3,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 from matplotlib.ticker import MaxNLocator
+import numpy as np
+
+
+experiments_name = ["PS N=5 T=25s", "PS N=50 T=5s", "Fast Pattern","Extended"]
 
 def experiments_new_alerts(df, dataset_name, nids_name, nids_dataset_output_dir):
     for metric in ["alerts_false_positive_percent", "alerts_false_positive_absolute"]:
@@ -26,14 +30,13 @@ def experiments_new_alerts(df, dataset_name, nids_name, nids_dataset_output_dir)
                     ax.set_ylim([-0.05, 1])
 
             handles, labels = plt.gca().get_legend_handles_labels()
-            sorted_experiments = ["PS N=5 T=25s", "PS N=50 T=5s", "Fast Pattern","Extended"]
-            sorted_handles_labels = sorted(zip(handles, labels), key=lambda x: sorted_experiments.index(x[1]))
+            sorted_handles_labels = sorted(zip(handles, labels), key=lambda x: experiments_name.index(x[1]))
             handles, labels = zip(*sorted_handles_labels)
 
             if dataset_name == "CICIoT2023":
                 plt.xticks(rotation=8, fontsize=9)
 
-            plt.title(f"Alerts only in the experiments ({nids_name.title()}, {dataset_name})")
+            plt.title(f"Alerts only in the experiments ({dataset_name}, {nids_name.title()})")
             metric_sign = "#"
             if "percent" in metric:
                 metric_sign = "%"
@@ -60,11 +63,10 @@ def filteredXalerts(df, dataset_name, nids_name, nids_dataset_output_dir, ):
         x = range(len(group["experiment"]))
 
         # Sort the group by the specified experiment order
-        experiment_order = ["PS N=5 T=25s", "PS N=50 T=5s", "Fast Pattern", "Extended"]
-        group = group.set_index("experiment").reindex(experiment_order).reset_index()
+        group = group.set_index("experiment").reindex(experiments_name).reset_index()
 
         # Bar graph for pkts_filtered_absolute
-        ax.bar([i - bar_width / 2 for i in x], group["pkts_filtered_absolute"], width=bar_width, color='coral', alpha=0.5, hatch='//', label="# suspicious packets")
+        ax.bar([i - bar_width / 2 for i in x], group["pkts_filtered_absolute"], width=bar_width, color='coral', alpha=0.3, hatch='//', label="# suspicious packets")
         ax.set_ylabel("# of packets filtered", color='coral')
         ax.tick_params(axis='y', labelcolor='coral')
         ax.set_xticks(x)
@@ -94,8 +96,8 @@ def filteredXalerts(df, dataset_name, nids_name, nids_dataset_output_dir, ):
             ax2.set_yticks(range(0, int(max_value) + 1, max(1, int(max_value // 5))))
             ax2.set_ylim([0, max_value*1.1])
 
+        plt.title(f"{pcap} ({dataset_name}, {nids_name.title()})")
         plt.tight_layout()
-        plt.title(f"{pcap} ({nids_name.title()}, {dataset_name})")
         plt.savefig(f"{nids_dataset_output_dir}/{pcap}.png", dpi=300)
         plt.close()
 
@@ -174,7 +176,8 @@ if __name__ == "__main__":
         "CICIoT2023-Suricata": "plum"
     }
     experiment_markers = {"PS N=5 T=25s": "P", "PS N=50 T=5s": "X", "Fast Pattern": "s", "Extended": "^"}
-    ax.axvspan(60, 100, ymin=0.587, ymax=0.98, facecolor='lightgreen', alpha=0.2, linestyle=':')
+
+    # ax.imshow([[0.3, 0.3, 0.3], [0.1, 0.3, 0.3], [0.1, 0.1, 0.3]], cmap=plt.cm.Greens, interpolation='bicubic', extent=[60, 100, 60, 100], aspect='auto', vmin=0, vmax=1)  
 
     for key, values in data_for_global_plot.items():
         dataset, nids, experiment = key.split("-")
@@ -194,8 +197,8 @@ if __name__ == "__main__":
         )
 
     # Add labels, legend, and title
-    ax.set_xlabel("% of alerts correctly identified")
-    ax.set_ylabel("% of packets filtered")
+    ax.set_xlabel("% of alerts correctly identified (higher is better)")
+    ax.set_ylabel("% of packets filtered (higher is better)")
     ax.set_xlim([0, 102])
     ax.xaxis.set_major_formatter(mtick.PercentFormatter())
     ax.set_ylim([0, 102])
@@ -206,7 +209,7 @@ if __name__ == "__main__":
         plt.Line2D([0], [0], marker=marker, color="white", markeredgecolor='black', linestyle='None', markersize=10, label=key)
         for key, marker in experiment_markers.items()
     ]
-    legend1 = ax.legend(handles=experiment_legend, loc="upper left", bbox_to_anchor=(1, 0.8), title="Experiments", fontsize=8)
+    legend1 = ax.legend(handles=experiment_legend, loc="upper left", bbox_to_anchor=(1, 0.8), title="Method", fontsize=8)
     # Add the first legend to the plot
     ax.add_artist(legend1)
 
