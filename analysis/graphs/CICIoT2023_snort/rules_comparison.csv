@@ -1,3 +1,0 @@
-experiment,avg_num_rules_compared_to (avg),avg_num_rules_compared_to (std),avg_num_contents_compared_to (avg),avg_num_contents_compared_to (std),avg_num_pcre_compared_to (avg),avg_num_pcre_compared_to (std)
-Extended,549.55,169.35,187.69,80.55,0.18,0.10
-Fast Pattern,434.72,139.24,143.27,62.11,0.00,0.00

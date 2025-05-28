@@ -12,6 +12,7 @@ if (!dir.exists(exp_folder_path)) {
   stop(paste("The directory", exp_folder_path, "does not exist."))
 }
 dirs <- list.dirs(path = exp_folder_path, full.names = TRUE, recursive = FALSE)
+dirs <- dirs[sapply(dirs, function(d) any(grepl("\\.json$", list.files(d, full.names = TRUE))))]
 
 if (length(dirs) > 0) {
   pcap_names <- list.files(path = dirs[1], pattern = "\\.log$", full.names = FALSE)
@@ -39,6 +40,9 @@ pkt_processing_time <- vector("double", length=rows)
 pkts_filtered_percent <- vector("double", length=rows)
 pkts_filtered_absolute <- vector("double", length=rows)
 
+pkts_fowarded_percent <- vector("double", length=rows)
+pkts_fowarded_absolute <- vector("double", length=rows)
+
 alerts_true_positive_percent <- vector("double", length=rows)
 alerts_true_positive_absolute <- vector("double", length=rows)
 
@@ -49,7 +53,6 @@ nids_processing_time <- vector("double", length=rows)
 
 for (pcap_name in pcap_names){
   pcap_cleaned_name <- sub("-WorkingHours", "", pcap_name)
-  print(pcap_name)
   for (dir in dirs){
     json_file <- paste(dir, "analysis.json", sep="/")
     experiment_type<-sub(".*/", "", dir)
@@ -70,9 +73,9 @@ for (pcap_name in pcap_names){
           avg_num_contents_compared_to[count] <- 0
           avg_num_pcre_compared_to[count] <- 0
         }
-        
-        pkts_filtered_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$pkts_filtered/json_data[[pcap_name]]$pkts_processed), 2)
-        pkts_filtered_absolute[count] <- json_data[[pcap_name]]$pkts_filtered
+
+        pkts_fowarded_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$pkts_fowarded/json_data[[pcap_name]]$pkts_processed), 2)
+        pkts_fowarded_absolute[count] <- json_data[[pcap_name]]$pkts_fowarded
 
         alerts_true_positive_absolute[count] <-json_data[[pcap_name]]$alerts_true_positive
         if (json_data[[pcap_name]]$baseline_alerts == 0) {
@@ -92,7 +95,6 @@ for (pcap_name in pcap_names){
         count<-count + 1
     }
   }
-  print(nids_processing_time)
 }
 
 df <- data.frame( 
@@ -106,8 +108,8 @@ df <- data.frame(
   avg_num_rules_compared_to = avg_num_rules_compared_to,
   avg_num_contents_compared_to = avg_num_contents_compared_to,
   avg_num_pcre_compared_to = avg_num_pcre_compared_to,
-  pkts_filtered_percent = pkts_filtered_percent,
-  pkts_filtered_absolute = pkts_filtered_absolute,
+  pkts_fowarded_percent = pkts_fowarded_percent,
+  pkts_fowarded_absolute = pkts_fowarded_absolute,
   alerts_true_positive_percent = alerts_true_positive_percent,
   alerts_true_positive_absolute = alerts_true_positive_absolute,
   alerts_false_positive_percent = alerts_false_positive_percent,

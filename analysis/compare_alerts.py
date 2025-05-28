@@ -1,7 +1,6 @@
 import json
 import os
 import re
-import sys
 
 import pprint
 import argparse
