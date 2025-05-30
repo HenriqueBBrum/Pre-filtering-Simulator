@@ -6,8 +6,6 @@
 
 from .rules_parser import RulesParser
 from .match import Match
-import pprint
-
 
 import sys
 sys.path.append("..")
@@ -124,12 +122,19 @@ def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
             elif Dicts.non_payload_options(option) and option not in unsupported_non_payload_fields:
                 header_fields[option] = rule.options[option]
 
-        rule_id = hash(str(header_fields)+str(payload_fields))
+        if pre_filtering_scenario == "header_only":
+            rule_id = hash(str(header_fields)+str(payload_fields["dsize"] if "dsize" in payload_fields else ""))
+        else:
+            rule_id = hash(str(header_fields)+str(payload_fields))
+
         if rule_id not in deduped_matches:
             match = Match(header_fields, payload_fields, pre_filtering_scenario)
             # Only add matches if the "content_pcre" has a valid non-None value 
-            if not ("content_pcre" in  match.payload_fields and not match.payload_fields["content_pcre"]):
-                deduped_matches[rule_id] =  match
+            if pre_filtering_scenario != "header_only":
+                if not ("content_pcre" in match.payload_fields and not match.payload_fields["content_pcre"]):
+                    deduped_matches[rule_id] =  match
+            else:
+                deduped_matches[rule_id] = match
             
         if rule_id in deduped_matches:
             sid = rule.get_simple_option_value("sid")

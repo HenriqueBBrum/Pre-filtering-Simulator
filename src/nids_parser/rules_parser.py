@@ -53,9 +53,7 @@ class RulesParser(object):
     def __init__(self, simulation_config, nids_config):
         self.dicts = Dicts()
 
-        self.scenario = simulation_config["scenario"]
         self.ruleset_path = simulation_config["ruleset_path"]
-
         self.nids_name = simulation_config["nids_name"]
         self.nids_config = nids_config
 

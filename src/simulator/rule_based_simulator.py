@@ -29,6 +29,9 @@ def rule_based_simulation(sim_config, matches, no_content_matches, info):
         if not os.path.isfile(os.path.join(sim_config["pcaps_path"], pcap_file)):
             continue
 
+        if not pcap_file.endswith(".pcap"):
+            continue
+
         p = Process(target=individual_pcap_simulation, args=(sim_config, pcap_file, matches, no_content_matches, shared_info, lock))
         jobs.append(p)
         p.start()
@@ -51,8 +54,8 @@ def individual_pcap_simulation(sim_config, pcap_file, matches, no_content_matche
     local_dict[current_trace]["total_time_to_process"] = time() - start
     local_dict[current_trace].update(temp_info)
 
-    local_dict[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
-    local_dict[current_trace]["pkts_filtered"] = local_dict[current_trace]["pkts_processed"] - local_dict[current_trace]["number_of_suspicious_pkts"]
+    local_dict[current_trace]["pkts_fowarded"] = len(suspicious_pkts)
+    local_dict[current_trace]["pkts_filtered"] = local_dict[current_trace]["pkts_processed"] - local_dict[current_trace]["pkts_fowarded"]
     local_dict[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
     
     lock.acquire()
@@ -81,10 +84,10 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
 
                 matches_key = get_related_matches_key(pkt, no_content_matches.keys() if pkt.payload_size == 0 else matches.keys()) 
                 suspicious_pkt = None
-                if sim_config["scenario"] != "wang_chang" and (pkt.tcp or pkt.udp):
+                if sim_config["scenario"] != "header_only" and sim_config["scenario"] != "wang_chang" and (pkt.tcp or pkt.udp):
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
                     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) # Invert order to match flow
-                    if "tls" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x14:
+                    if "tls" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0])>= 0x14:
                         suspicious_pkt = (pkt_count, "tls")
                     elif "ftp" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x30:
                         suspicious_pkt = (pkt_count, "ftp") 
@@ -92,9 +95,10 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
                         suspicious_pkt = (pkt_count, "dns")
                     elif pkt.tcp:
                         suspicious_pkt = tcp_tracker(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
-
-                if not suspicious_pkt:                       
-                    suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, no_content_matches[matches_key] if pkt.payload_size == 0 else matches[matches_key], tcp_stream_tracker)
+            
+                if not suspicious_pkt:  
+                    final_matches = no_content_matches[matches_key] if pkt.payload_size == 0 else matches[matches_key]                
+                    suspicious_pkt, cm, cc, ccpcre = is_packet_suspicious(pkt, pkt_count, final_matches, tcp_stream_tracker, sim_config["scenario"])
                     comparisons_to_match+=cm
                     comparisons_to_content+=cc
                     comparisons_to_pcre+=ccpcre  
@@ -176,24 +180,6 @@ def get_applayer_proto(pkt, proto_str):
     return applayer_proto 
 
 
-# Check Snort TCP flow requirements
-def snort_check_stream_tcp(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
-    if "R" in pkt.header["flags"]:
-        return (pkt_count, "reset")
-    elif "F" in pkt.header["flags"]:
-        remove_flow(flow, reversed_flow, tcp_stream_tracker)
-        return (pkt_count, "fin")
-
-    stream_tcp = False    
-    if (flow in tcp_stream_tracker or reversed_flow in tcp_stream_tracker) and (pkt.header["flags"] == 16 or pkt.header["flags"] & 24 == 24):
-        stream_tcp = True
-        remove_flow(flow, reversed_flow, tcp_stream_tracker)
-
-    if stream_tcp:
-        return (pkt_count, "stream_tcp")
-    
-    return None
-
 # Check Suricata TCP flow requirements
 def tcp_tracker(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
     if pkt.header["flags"] & 2 == 2: # SYN in flags
@@ -222,7 +208,7 @@ def remove_flow(flow, reversed_flow, tcp_stream_tracker):
 
 
 # Compare a packet agaianst the related rules depeding on the packets transport protocol and app layer service
-def is_packet_suspicious(pkt, pkt_count, matches, tcp_stream_tracker):
+def is_packet_suspicious(pkt, pkt_count, matches, tcp_stream_tracker, scenario):
     comparisons_to_match, comparisons_to_content, comparisons_to_pcre = 0, 0, 0
     for header_group in matches:
         try:
@@ -237,20 +223,23 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_stream_tracker):
                 
                 comparisons_to_match+=1
                 if not matched_header_fields(pkt, match):
-                    continue
+                    continue                    
 
-                matched, compared_to_content, compared_to_pcre = matched_payload(pkt, match)
-                comparisons_to_content+=compared_to_content
-                comparisons_to_pcre+=compared_to_pcre
-                if not matched:
-                    continue
-                
-                if pkt.tcp:
-                    flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"])
-                    if pkt.header["flags"] == "A":
-                        tcp_stream_tracker[flow] = {"seq": pkt.header["seq"], "ack": pkt.header["ack"]}    
-                    elif pkt.header["flags"] == "PA":
-                        tcp_stream_tracker[flow] = {"seq": pkt.header["seq"]+pkt.payload_size, "ack": pkt.header["ack"]}
+                if scenario != "header_only":
+                    matched, compared_to_content, compared_to_pcre = matched_payload(pkt, match)
+                    comparisons_to_content+=compared_to_content
+                    comparisons_to_pcre+=compared_to_pcre
+                    if not matched:
+                        continue
+                    
+                    if scenario != "wang_chang" and pkt.tcp:
+                        flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"])
+                        if pkt.header["flags"] == "A":
+                            tcp_stream_tracker[flow] = {"seq": pkt.header["seq"], "ack": pkt.header["ack"]}    
+                        elif pkt.header["flags"] == "PA":
+                            tcp_stream_tracker[flow] = {"seq": pkt.header["seq"]+pkt.payload_size, "ack": pkt.header["ack"]}
+
+                        
 
                 return (pkt_count, match.sids()[0]), comparisons_to_match, comparisons_to_content, comparisons_to_pcre
         except Exception as e:

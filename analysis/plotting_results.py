@@ -67,7 +67,7 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
         group = group.set_index("experiment").reindex(experiments_name).reset_index()
 
         # Bar graph for pkts_fowarded_absolute
-        ax.bar([i - bar_width / 2 for i in x], group["pkts_fowarded_absolute"], width=bar_width, color='coral', alpha=0.3, hatch='//', label="# suspicious packets")
+        ax.bar([i - bar_width / 2 for i in x], group["pkts_fowarded_absolute"], width=bar_width, color='coral', alpha=0.8, hatch='//', label="# suspicious packets")
         ax.set_ylabel("# of packets fowarded", color='coral')
         ax.tick_params(axis='y', labelcolor='coral')
         ax.set_xticks(x)
@@ -83,7 +83,7 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
 
         # Secondary y-axis for alerts_true_positive_absolute
         ax2 = ax.twinx()
-        ax2.bar([i + bar_width / 2 for i in x], group[f"alerts_true_positive_absolute"], width=bar_width, color='royalblue', alpha=0.6, hatch='\\', label="# alerts correctly identified")
+        ax2.bar([i + bar_width / 2 for i in x], group[f"alerts_true_positive_absolute"], width=bar_width, color='royalblue', alpha=0.8, hatch='\\', label="# alerts correctly identified")
         ax2.set_ylabel(f"# of alerts correctly identified", color='royalblue')
         ax2.tick_params(axis='y', labelcolor='royalblue')
         ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
@@ -105,13 +105,12 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
 def rules_comparison_graphs(df, graph_output_dir):
     # Calculate the average and standard deviation for each metric grouped by experiment
     metrics = ["avg_num_rules_compared_to", "avg_num_contents_compared_to", "avg_num_pcre_compared_to"]
-    metric_labels = ["Rules", "Content", "PCRE"]
-    means, stds = [], []
+    metric_labels = ["Header", "Content", "PCRE"]
+    means, stds= [], []
     experiments = []
-
-    for experiment, group in df.groupby("experiment"):
-        exp_means = []
-        exp_stds = []
+    for experiment in ["Header Only", "Fast Pattern", "Extended"]:
+        group = df[df["experiment"] == experiment]
+        exp_means, exp_stds = [], []
         for metric in metrics:
             avg = group[metric].mean()
             std = group[metric].std()
@@ -127,20 +126,21 @@ def rules_comparison_graphs(df, graph_output_dir):
     bar_width = 0.25
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    for i, (label, color) in enumerate(zip(metric_labels, ['royalblue', 'coral', 'seagreen'])):
-        bars = ax.bar(x + i * bar_width, means[:, i], yerr=stds[:, i], width=bar_width, label=label, ecolor="gray", capsize=5, alpha=0.8, zorder=1)
-        for bar in bars:
+    for i, (label, color, hatch) in enumerate(zip(metric_labels, ['coral', 'royalblue', 'seagreen'], ['//', '\\', '||'])):
+        bars = ax.bar(x + i * bar_width, means[:, i], yerr=stds[:, i], width=bar_width, label=label, color=color, hatch=hatch, capsize=5, alpha=0.8, zorder=1)
+        for bar, std in zip(bars, stds[:, i]):
             height = bar.get_height()
+            # Place the text on top of the error bar
             ax.annotate(f'{height:.1f}',
-                        xy=(bar.get_x() + bar.get_width() / 2, height),
-                        xytext=(0, 3),
-                        textcoords="offset points",
-                        ha='center', va='bottom', fontsize=8, zorder=3)
+                xy=(bar.get_x() + bar.get_width() / 2, height + std),
+                xytext=(0, 3),
+                textcoords="offset points",
+                ha='center', va='bottom', fontsize=8, zorder=3)
 
     ax.set_xticks(x + bar_width)
-    ax.set_xticklabels(experiments, rotation=10)
+    ax.set_xticklabels(experiments)
     ax.set_ylabel("# of comparisons")
-    ax.set_title("Average number of rules compared against a packet")
+    ax.set_title("Average number of comparisons by type for a packet")
     ax.legend()
     plt.tight_layout()
     plt.savefig(f"{graph_output_dir}/rules_compared.png", dpi=300)
@@ -237,7 +237,7 @@ if __name__ == "__main__":
 
                 data_for_global_plot[dataset_name+"-"+target_nids+"-"+experiment] = {"pkts_fowarded": pkts_fowarded_percentage, "experiment_alerts": alerts_percentage}
         
-            experiments_new_alerts(df, dataset_name, target_nids, graph_output_dir)
+            # experiments_new_alerts(df, dataset_name, target_nids, graph_output_dir)
             fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
 
             df = data[data['experiment'].isin(["rule_based_header_only", "rule_based_fast_pattern", "rule_based_extended"])]

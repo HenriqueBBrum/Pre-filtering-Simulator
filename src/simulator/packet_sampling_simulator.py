@@ -41,7 +41,7 @@ def individual_pcap_simulation(sim_config, pcap_file, n, t, shared_info, lock):
     local_dict[current_trace]["total_time_to_process"] = time() - start
     local_dict[current_trace].update(temp_info)
 
-    local_dict[current_trace]["number_of_suspicious_pkts"] = len(suspicious_pkts)
+    local_dict[current_trace]["pkts_fowarded"] = len(suspicious_pkts)
     local_dict[current_trace]["suspicious_pkts_counter"] = Counter(elem[1] for elem in suspicious_pkts)
     
     lock.acquire()

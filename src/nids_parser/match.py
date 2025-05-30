@@ -38,7 +38,7 @@ native_pcre_modifiers = {'i', 's', 'm', 'x'}
 
 # Class that contains all the fields required to match against networking packets 
 class Match(object):
-    def __init__(self, header_fields, payload_fields, pre_filtering_scenario="full"):
+    def __init__(self, header_fields, payload_fields, pre_filtering_scenario):
         self.header_key = header_fields["ip_port_key"]
         self.service = []
         # Adjust some services based on Snort, suricata and getservbyport 
@@ -301,6 +301,8 @@ class Match(object):
                     final_content_pcre = None
                 else:
                     final_content_pcre = [longest]
+        elif pre_filtering_scenario == "header_only":
+            final_content_pcre = []
         else:
             final_content_pcre = content_pcre
 

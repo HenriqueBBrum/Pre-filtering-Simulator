@@ -61,7 +61,7 @@ def nids_with_suspicious_pcap(sim_config, current_trace, suspicious_pkts):
         new_filepath = sim_config["output_folder"]+current_trace+".log"
         os.rename(sim_config["output_folder"]+"fast.log", new_filepath)
 
-    # os.remove(suspicious_pkts_pcap)
+    os.remove(suspicious_pkts_pcap)
     return new_filepath, time() - start
 
 # Parses an alert file and calculate the amount of detected alerts. 
@@ -137,7 +137,7 @@ if __name__ == '__main__':
                 "alerts_true_positive": len(baseline_alerts) - missed_alerts,
                 "alerts_false_negative": missed_alerts,
                 "alerts_false_positive": aditional_alerts,
-                "pkts_filtered": analysis_data[alert_file_key]["pkts_processed"] - analysis_data[alert_file_key]["number_of_suspicious_pkts"],
+                "pkts_fowarded": analysis_data[alert_file_key]["pkts_fowarded"],
             }
 
             for key in list(analysis_data[alert_file_key].keys()):
@@ -148,7 +148,7 @@ if __name__ == '__main__':
             
             with open(analysis_file, "w") as f:
                 json.dump(analysis_data , f, indent=4)
-
+            
 
 
 
