@@ -13,12 +13,17 @@ def main(baseline_folder, exps_folder, nids_name):
         if ".log" not in alert_file:
             continue
 
-        baseline_signatures, baseline_flow_singatures = parse_alerts(baseline_folder+alert_file, nids_name) # Baseline alerts
-        experiment_signatures, experiment_flow_singatures = parse_alerts(exps_folder+alert_file, nids_name)
+        baseline_flow_singatures = parse_alerts(baseline_folder+alert_file, nids_name) # Baseline alerts
+        experiment_flow_singatures = parse_alerts(exps_folder+alert_file, nids_name)
         print(alert_file)
-        for key in baseline_flow_singatures.keys() | experiment_flow_singatures.keys():
+        for key in baseline_flow_singatures | experiment_flow_singatures:
             if key not in experiment_flow_singatures:
-                print(key)
+                print("Missing signature in experiment: ", key)
+
+            if key not in baseline_flow_singatures:
+                print("Additional signature in experiment: ", key)
+
+
 
         
         print("end of trace, ", alert_file)
@@ -26,30 +31,24 @@ def main(baseline_folder, exps_folder, nids_name):
 
 # Parses an alert file and calculate the amount of detected signatures. 
 def parse_alerts(alerts_filepath, nids_name):
-    signatures = {}
-    flow_signatures = {}
+    alerts = set()
     with open(alerts_filepath, 'r') as file:
         for line in file.readlines():
             if nids_name == "snort":
                 parsed_line = json.loads(line)
                 signature = parsed_line["rule"].split(':')[1]
-                flow_signature = parsed_line["proto"]+" - "+parsed_line["src_ap"]+" - "+parsed_line["dst_ap"]+" - "+signature
+                alert_id = parsed_line["proto"]+" - "+parsed_line["src_ap"]+" - "+parsed_line["dst_ap"]+" - "+signature
             elif nids_name == "suricata":
                 l = line.strip()
                 signature = re.search("\[\d*:\d*:\d*]", l).group(0).split(':')[1]   
                 proto = re.search(r"\{([a-zA-Z]+)\}", l).group(1)
                 src_ap, dst_ap = re.search(r"(\d+\.\d+\.\d+\.\d+:\d+) -> (\d+\.\d+\.\d+\.\d+:\d+)", l).groups()
-                flow_signature = proto+" - "+src_ap+" - "+dst_ap+" - "+signature
+                alert_id = proto+" - "+src_ap+" - "+dst_ap+" - "+signature
 
-            if signature not in signatures:
-                signatures[signature]=1
-            else:
-                signatures[signature]+=1
-
-            if flow_signature not in flow_signatures:
-                flow_signatures[flow_signature]=1
+            if alert_id not in alerts:
+                alerts.add(alert_id)
       
-    return signatures, flow_signatures
+    return alerts
 
 
 

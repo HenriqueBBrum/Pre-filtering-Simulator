@@ -1,13 +1,14 @@
-import sys
 import json
 import os
+import h5py
+import argparse
+
 from time import time
 
 from nids_parser.config_parser import NIDSConfiguration
 from nids_parser.rules_to_matches import convert_rules_to_matches
 from simulator.rule_based_simulator import rule_based_simulation 
 from simulator.packet_sampling_simulator import packet_sampling_simulation
-import argparse
 
 from scapy.all import TCP
 from scapy.packet import bind_layers
@@ -35,6 +36,7 @@ def main(simulation_name, simulation_type, dataset_name, target_nids):
                     port_to_service_map[int(port[0])] = "http"
                     file_data_ports.add(int(port[0]))
 
+        info["number_offloaded_rules"] = len(matches)
         info["time_to_process_rules"] = time()-start
         
         print("PRE-FILTERING SIMULATION")
@@ -44,10 +46,18 @@ def main(simulation_name, simulation_type, dataset_name, target_nids):
         if not os.path.exists(simulation_config["output_folder"]):
             os.makedirs(simulation_config["output_folder"])
 
-        info = rule_based_simulation(simulation_config, matches, no_content_matches, info)
+        info, comparisons_info = rule_based_simulation(simulation_config, matches, no_content_matches, info)
         info["total_execution_time"] = time() - start
         with open(simulation_config["output_folder"] + "analysis.json", 'a') as f:
             json.dump(info , f, ensure_ascii=False, indent=4)
+
+        with h5py.File(simulation_config["output_folder"] + "num_comparsions.hdf5", "w") as f:
+            for trace in comparisons_info:
+                group = f.create_group(trace)
+                for metric in comparisons_info[trace]:
+                    dset = group.create_dataset(metric, data = comparisons_info[trace][metric])
+        
+
     elif simulation_type  == "packet_sampling":
         for n in [5, 10, 25, 50]:
             for t in [5, 10, 25]:
@@ -71,11 +81,8 @@ def generate_simulation(simulation_name, dataset_name, target_nids):
     simulation_config["scenario"] = simulation_name
     base_path = os.path.dirname(os.path.abspath(__file__))
     simulation_config["pcaps_path"] = f"/home/hbeckerbrum/NFSDatasets/{dataset_name}/"
-    # simulation_config["pcaps_path"] = f"/home/hbeckerbrum/Pre-filtering-Simulator/test_pcaps/"
     simulation_config["nids_name"] = target_nids
-
     file_ending = "lua" if target_nids == "snort" else "yaml"
-    # simulation_config["baseline_alerts_path"] = simulation_config["pcaps_path"]
     simulation_config["baseline_alerts_path"] = os.path.join(base_path, f"../etc/{dataset_name}/alerts/{target_nids}/")
     simulation_config["nids_config_path"] = os.path.join(base_path, f"../etc/{dataset_name}/nids_configuration/{target_nids}/{target_nids}.{file_ending}")
     if target_nids == "snort":

@@ -1,12 +1,23 @@
 import os
+import h5py
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 from matplotlib.ticker import MaxNLocator
 import numpy as np
+import argparse
 
 
-experiments_folder_name = ["packet_sampling_5_25", "packet_sampling_50_5", "rule_based_header_only", "rule_based_fast_pattern","rule_based_extended"]
+experiment_mapping = {
+                # "packet_sampling_5_25": "PS N=5 T=25s",
+                # "packet_sampling_50_5": "PS N=50 T=5s",
+                # "rule_based_header_only": "Header Only",
+                # "rule_based_fast_pattern": "Fast Pattern",
+                # "rule_based_extended": "Extended"
+                "rule_based_new_counting": "New",
+                "rule_based_new_counting_2": "New_2"
+            }
+
 experiments_name = ["PS N=5 T=25s", "PS N=50 T=5s", "Header Only", "Fast Pattern","Extended"]
 
 def experiments_new_alerts(df, dataset_name, nids_name, graph_output_dir):
@@ -146,7 +157,7 @@ def rules_comparison_graphs(df, graph_output_dir):
     plt.savefig(f"{graph_output_dir}/rules_compared.png", dpi=300)
     plt.close()
 
-def overview_of_fowardedXalerts(data_for_global_plot, graph_output_dir):
+def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
     fig, ax = plt.subplots(figsize=(10, 6))
     dataset_nids_colors = {
         "CICIDS2017-Snort": "darkorange",
@@ -157,6 +168,8 @@ def overview_of_fowardedXalerts(data_for_global_plot, graph_output_dir):
     experiment_markers = {"PS N=5 T=25s": "P", "PS N=50 T=5s": "X", "Header Only": "^", "Fast Pattern": "s", "Extended": "p"}
 
     for key, values in data_for_global_plot.items():
+        print(f"Processing key: {key}")
+        print(values)
         dataset, nids, experiment = key.split("-")
         final_key = f"{dataset}-{nids.capitalize()} {experiment}"
         color = dataset_nids_colors.get(f"{dataset}-{nids.capitalize()}", "black")
@@ -198,33 +211,64 @@ def overview_of_fowardedXalerts(data_for_global_plot, graph_output_dir):
     ax.grid(True, linestyle="--", alpha=0.6)
 
     plt.tight_layout()
-    plt.savefig(f"{graph_output_dir}/overview_fowardedXalerts.png", dpi=300)
+    plt.savefig(f"{graph_output_dir}/overview_forwardedXalerts.png", dpi=300)
     plt.show()
+
+def performance_cost(performance_cost_data, graph_output_dir):
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=False)
+    metric_keys = ["header", "content", "pcre"]
+    metric_labels = ["Header comparisons", "Content comparisons", "PCRE comparisons"]
+    metric_colors = ["coral", "royalblue", "seagreen"]
+
+    for idx, (metric, label, color) in enumerate(zip(metric_keys, metric_labels, metric_colors)):
+        ax = axes[idx]
+        data = [performance_cost_data[exp][metric] for exp in performance_cost_data]
+        ax.boxplot(data, patch_artist=True,
+                    boxprops=dict(facecolor=color, color=color, alpha=0.7),
+                    medianprops=dict(color='black'),
+                    whiskerprops=dict(color=color),
+                    capprops=dict(color=color),
+                    flierprops=dict(markerfacecolor=color, marker='o', markersize=5, alpha=0.5))
+        ax.set_title(label)
+        ax.set_xticks(range(1, len(performance_cost_data) + 1))
+        ax.set_xticklabels(performance_cost_data.keys(), rotation=15, fontsize=10)
+        ax.set_yscale('linear')
+        if idx == 0:
+            ax.set_ylabel(f"# of comparisons")
+
+    # Global legend
+    handles = [plt.Line2D([0], [0], color=color, lw=8, label=label) for color, label in zip(metric_colors, metric_labels)]
+    fig.legend(handles=handles, loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.05), fontsize=12)
+    plt.tight_layout()
+    plt.savefig(f"{graph_output_dir}/performance_cost.png", dpi=300)
+    plt.close()
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Plotting results for pre-filtering simulator.")
+    parser.add_argument(
+        "--simulation_results_dir",
+        type=str,
+        default="../simulation_results/",
+        help="Directory containing simulation results files."
+    )
+    args = parser.parse_args()
+
     data_for_global_plot = {}
     output_dir = "graphs"
     os.makedirs(output_dir, exist_ok=True)
     for dataset_name in ["CICIDS2017", "CICIoT2023"]:
         for target_nids in ["snort", "suricata"]:
-            
             graph_output_dir = f"{output_dir}/{dataset_name}_{target_nids}"
             os.makedirs(graph_output_dir, exist_ok=True)
 
             print(f"Generating graphs for {dataset_name} with {target_nids}...")
             data = pd.read_csv(f"csv/{dataset_name}_{target_nids}.csv")
-            df = data[data['experiment'].isin(experiments_folder_name)]
+            df = data[data['experiment'].isin(experiment_mapping)]
             # Update the experiment column with new names
-            experiment_mapping = {
-                "packet_sampling_5_25": "PS N=5 T=25s",
-                "packet_sampling_50_5": "PS N=50 T=5s",
-                "rule_based_header_only": "Header Only",
-                "rule_based_fast_pattern": "Fast Pattern",
-                "rule_based_extended": "Extended"
-            }
+            
             df.loc[:, 'experiment'] = df['experiment'].map(experiment_mapping)
-
+            performance_cost_data = {}
             for experiment, group in df.groupby("experiment"):
                 total_pkts_processed = group["pkts_processed"].sum().item()
                 total_baseline_alerts = group["total_baseline_alerts"].sum().item()
@@ -236,21 +280,35 @@ if __name__ == "__main__":
                 alerts_percentage = (total_experiment_alerts/total_baseline_alerts) * 100
 
                 data_for_global_plot[dataset_name+"-"+target_nids+"-"+experiment] = {"pkts_fowarded": pkts_fowarded_percentage, "experiment_alerts": alerts_percentage}
-        
-            # experiments_new_alerts(df, dataset_name, target_nids, graph_output_dir)
+                if "rule_based" in experiment:
+                    filepath = f"{args.simulation_results_dir}{dataset_name}/{target_nids}/{experiment}/num_comparsions.hdf5"                    
+                    key = experiment_mapping[experiment]
+                    performance_cost_data[key] = {"header": np.array([]), "content": np.array([]), "pcre": np.array([])}
+                    with h5py.File(filepath, 'r') as f:
+                        for trace in f.keys():
+                            for metric in f[trace].keys():
+                                if "header" in metric:
+                                    performance_cost_data[key]["header"] = np.concatenate((performance_cost_data[key]["header"], f[trace][metric][:]))
+                                elif "content" in metric:
+                                    performance_cost_data[key]["content"] = np.concatenate((performance_cost_data[key]["content"], f[trace][metric][:]))
+                                elif "pcre" in metric:
+                                    performance_cost_data[key]["pcre"] = np.concatenate((performance_cost_data[key]["pcre"], f[trace][metric][:]))
+                    
+            # # # experiments_new_alerts(df, dataset_name, target_nids, graph_output_dir)
             fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
 
-            df = data[data['experiment'].isin(["rule_based_header_only", "rule_based_fast_pattern", "rule_based_extended"])]
-            experiment_mapping = {
-                "rule_based_header_only": "Header Only",
-                "rule_based_fast_pattern": "Fast Pattern",
-                "rule_based_extended": "Extended"
-            }
-            df.loc[:, 'experiment'] = df['experiment'].map(experiment_mapping)
+            # df = data[data['experiment'].isin(["rule_based_header_only", "rule_based_fast_pattern", "rule_based_extended"])]
+            # experiment_mapping = {
+            #     "rule_based_header_only": "Header Only",
+            #     "rule_based_fast_pattern": "Fast Pattern",
+            #     "rule_based_extended": "Extended"
+            # }
+            # df.loc[:, 'experiment'] = df['experiment'].map(experiment_mapping)
 
-            rules_comparison_graphs(df, graph_output_dir)
+            # rules_comparison_graphs(df, graph_output_dir)
+            performance_cost(performance_cost_data, graph_output_dir)
     
     # Generate the overview of fowardedXalerts
-    overview_of_fowardedXalerts(data_for_global_plot, output_dir)
+    overview_of_forwardedXalerts(data_for_global_plot, output_dir)
 
    
