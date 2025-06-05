@@ -90,7 +90,7 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
 
                 matches_key = get_related_matches_key(pkt, no_content_matches.keys() if pkt.payload_size == 0 else matches.keys()) 
                 suspicious_pkt = None
-                if sim_config["scenario"] != "header_only" and sim_config["scenario"] != "wang_chang" and (pkt.tcp or pkt.udp):
+                if sim_config["scenario"] != "header_only" and sim_config["scenario"] != "fast_pattern" and (pkt.tcp or pkt.udp):
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
                     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) # Invert order to match flow
                     if "tls" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) == 0x16:
@@ -250,7 +250,7 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_stream_tracker, scenario):
                     if not matched:
                         continue
                     
-                    if scenario != "wang_chang" and pkt.tcp:
+                    if scenario != "fast_pattern" and pkt.tcp:
                         flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"])
                         if (pkt.header["flags"] == 16 or pkt.header["flags"] & 24 == 24):
                             tcp_stream_tracker.add(flow) 

@@ -7,61 +7,15 @@ from matplotlib.ticker import MaxNLocator
 import numpy as np
 import argparse
 
-
 experiment_mapping = {
-                # "packet_sampling_5_25": "PS N=5 T=25s",
-                # "packet_sampling_50_5": "PS N=50 T=5s",
-                # "rule_based_header_only": "Header Only",
-                # "rule_based_fast_pattern": "Fast Pattern",
-                # "rule_based_extended": "Extended"
-                "rule_based_new_counting": "New",
-                "rule_based_new_counting_2": "New_2"
+                "packet_sampling_5_25": "FS N=5 T=25s",
+                "packet_sampling_50_5": "FS N=50 T=5s",
+                "rule_based_header_only": "Header Only",
+                "rule_based_fast_pattern": "Fast Pattern",
+                "rule_based_extended": "Extended"
             }
 
-experiments_name = ["PS N=5 T=25s", "PS N=50 T=5s", "Header Only", "Fast Pattern","Extended"]
-
-def experiments_new_alerts(df, dataset_name, nids_name, graph_output_dir):
-    for metric in ["alerts_false_positive_percent", "alerts_false_positive_absolute"]:
-        metric_df = df[["pcap", "experiment", metric]]
-        plot_df = metric_df.pivot_table(index='pcap', columns='experiment', values=metric, sort=False)
-        # Group the PCAPs into chunks of 5 and plot each group
-        for i in range(0, len(plot_df), 5):
-            group_df = plot_df.iloc[i:i+5]
-            if dataset_name == "CICIDS2017":
-                group_df.index = pd.Categorical(plot_df.index, categories=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], ordered=True)
-                group_df = group_df.sort_index()
-
-            group_plot = group_df.plot(kind='line', style=['o--', 'v--', 's-', 'x-', 'p-'], xlabel='')
-            ax = plt.gca()
-            if "percent" in metric:
-                plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(xmax=100))
-                ax.set_ylim([-5, 105])
-            else:
-                ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-                if group_df.to_numpy().sum() == 0:
-                    ax.set_ylim([-0.05, 1])
-
-            handles, labels = plt.gca().get_legend_handles_labels()
-            sorted_handles_labels = sorted(zip(handles, labels), key=lambda x: experiments_name.index(x[1]))
-            handles, labels = zip(*sorted_handles_labels)
-
-            if dataset_name == "CICIoT2023":
-                plt.xticks(rotation=8, fontsize=9)
-
-            plt.title(f"Alerts only in the experiments ({dataset_name}, {nids_name.title()})")
-            metric_sign = "#"
-            if "percent" in metric:
-                metric_sign = "%"
-            plt.ylabel(f"{metric_sign} of new alerts")
-            plt.legend(title=None, handles=handles, labels=labels)
-            plt.tight_layout()
-
-            # Save the graph for the current group
-            if dataset_name == "CICIDS2017": 
-                plt.savefig(f"{graph_output_dir}/experiment_only_alerts_{metric_sign}.png", dpi=300)
-            else:
-                plt.savefig(f"{graph_output_dir}/experiment_only_alerts__{metric_sign}_{int(i/5)}.png", dpi=300)
-            plt.close()
+experiments_name = ["FS N=5 T=25s", "FS N=50 T=5s", "Header Only", "Fast Pattern","Extended"]
 
 
 def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
@@ -113,72 +67,25 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
         plt.savefig(f"{graph_output_dir}/{pcap}.png", dpi=300)
         plt.close()
 
-def rules_comparison_graphs(df, graph_output_dir):
-    # Calculate the average and standard deviation for each metric grouped by experiment
-    metrics = ["avg_num_rules_compared_to", "avg_num_contents_compared_to", "avg_num_pcre_compared_to"]
-    metric_labels = ["Header", "Content", "PCRE"]
-    means, stds= [], []
-    experiments = []
-    for experiment in ["Header Only", "Fast Pattern", "Extended"]:
-        group = df[df["experiment"] == experiment]
-        exp_means, exp_stds = [], []
-        for metric in metrics:
-            avg = group[metric].mean()
-            std = group[metric].std()
-            exp_means.append(avg)
-            exp_stds.append(std)
-        means.append(exp_means)
-        stds.append(exp_stds)
-        experiments.append(experiment)
-
-    means = np.array(means)
-    stds = np.array(stds)
-    x = np.arange(len(experiments))
-    bar_width = 0.25
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    for i, (label, color, hatch) in enumerate(zip(metric_labels, ['coral', 'royalblue', 'seagreen'], ['//', '\\', '||'])):
-        bars = ax.bar(x + i * bar_width, means[:, i], yerr=stds[:, i], width=bar_width, label=label, color=color, hatch=hatch, capsize=5, alpha=0.8, zorder=1)
-        for bar, std in zip(bars, stds[:, i]):
-            height = bar.get_height()
-            # Place the text on top of the error bar
-            ax.annotate(f'{height:.1f}',
-                xy=(bar.get_x() + bar.get_width() / 2, height + std),
-                xytext=(0, 3),
-                textcoords="offset points",
-                ha='center', va='bottom', fontsize=8, zorder=3)
-
-    ax.set_xticks(x + bar_width)
-    ax.set_xticklabels(experiments)
-    ax.set_ylabel("# of comparisons")
-    ax.set_title("Average number of comparisons by type for a packet")
-    ax.legend()
-    plt.tight_layout()
-    plt.savefig(f"{graph_output_dir}/rules_compared.png", dpi=300)
-    plt.close()
 
 def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
     fig, ax = plt.subplots(figsize=(10, 6))
-    dataset_nids_colors = {
-        "CICIDS2017-Snort": "darkorange",
-        "CICIDS2017-Suricata": "peachpuff",
-        "CICIoT2023-Snort": "darkmagenta",
-        "CICIoT2023-Suricata": "plum"
+    nids_colors = {
+        "Snort": "#9c1412",
+        "Suricata": "#f5aa32"
     }
-    experiment_markers = {"PS N=5 T=25s": "P", "PS N=50 T=5s": "X", "Header Only": "^", "Fast Pattern": "s", "Extended": "p"}
+    experiment_markers = {"FS N=5 T=25s": "P", "FS N=50 T=5s": "X", "Header Only": "^", "Fast Pattern": "s", "Extended": "p"}
 
     for key, values in data_for_global_plot.items():
-        print(f"Processing key: {key}")
-        print(values)
-        dataset, nids, experiment = key.split("-")
-        final_key = f"{dataset}-{nids.capitalize()} {experiment}"
-        color = dataset_nids_colors.get(f"{dataset}-{nids.capitalize()}", "black")
+        experiment, nids = key.split("-")
+        label = f"{nids.capitalize()} {experiment}"
+        color = nids_colors.get(f"{nids.capitalize()}", "black")
         marker = experiment_markers.get(experiment, "")
         
         ax.scatter(
             values["experiment_alerts"], 
             values["pkts_fowarded"], 
-            label=final_key, 
+            label=label, 
             color=color, 
             edgecolor="black", 
             linewidth=0.8, 
@@ -195,53 +102,72 @@ def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
     ax.set_ylabel("% of packets fowarded " +  r"($\bf{lower}$ is better)")
 
     ax.set_title("Packets Fowarded vs Alerts Correctly Identified")    
+  
+    nids_legend = [
+        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=color, markersize=10, label=key)
+        for key, color in nids_colors.items()
+    ]
+    legend1 =  ax.legend(handles=nids_legend, loc="upper left", bbox_to_anchor=(1.025, 1), title="NIDS", fontsize=10)
+    ax.add_artist(legend1)
     experiment_legend = [
         plt.Line2D([0], [0], marker=marker, color="white", markeredgecolor='black', linestyle='None', markersize=10, label=key)
         for key, marker in experiment_markers.items()
     ]
-    legend1 = ax.legend(handles=experiment_legend, loc="upper left", bbox_to_anchor=(1, 0.8), title="Method", fontsize=8)
-    # Add the first legend to the plot
-    ax.add_artist(legend1)
-
-    dataset_nids_legend = [
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=color, markersize=10, label=key)
-        for key, color in dataset_nids_colors.items()
-    ]
-    ax.legend(handles=dataset_nids_legend, loc="upper left", bbox_to_anchor=(1, 1), title="Dataset-NIDS", fontsize=8)
+    ax.legend(handles=experiment_legend, loc="upper left", bbox_to_anchor=(1, 0.85), title="Method", fontsize=10)
     ax.grid(True, linestyle="--", alpha=0.6)
 
     plt.tight_layout()
     plt.savefig(f"{graph_output_dir}/overview_forwardedXalerts.png", dpi=300)
     plt.show()
 
-def performance_cost(performance_cost_data, graph_output_dir):
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=False)
+
+def performance(performance_data, graph_output_dir):
     metric_keys = ["header", "content", "pcre"]
-    metric_labels = ["Header comparisons", "Content comparisons", "PCRE comparisons"]
+    metric_labels = ["Header", "Content", "PCRE"]
     metric_colors = ["coral", "royalblue", "seagreen"]
+    mean_color = "red"
+    for nids, data in performance_data.items():
+        fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=False)
+        for idx, (metric, label, color) in enumerate(zip(metric_keys, metric_labels, metric_colors)):
+            ax = axes[idx]
+            boxplot_data = [data[exp][metric] for exp in data]
+            box = ax.boxplot(boxplot_data, patch_artist=True,
+                        boxprops=dict(facecolor=color, color=color),
+                        medianprops=dict(color='black'),
+                        whiskerprops=dict(color=color),
+                        capprops=dict(color=color),
+                        showmeans=True,
+                        meanline=True,
+                        flierprops=dict(markerfacecolor=color, marker='o', markersize=5, alpha=0.5))
+            
+            for mean in box["means"]:
+                mean.set_color(mean_color)
+            
+            ax.set_title(label)
+            ax.set_xticks(range(1, len(data) + 1))
+            ax.set_xticklabels(data.keys(), fontsize=12)
+            if idx == 0:
+                ax.set_ylabel(f"# of comparisons", fontsize=12)
 
-    for idx, (metric, label, color) in enumerate(zip(metric_keys, metric_labels, metric_colors)):
-        ax = axes[idx]
-        data = [performance_cost_data[exp][metric] for exp in performance_cost_data]
-        ax.boxplot(data, patch_artist=True,
-                    boxprops=dict(facecolor=color, color=color, alpha=0.7),
-                    medianprops=dict(color='black'),
-                    whiskerprops=dict(color=color),
-                    capprops=dict(color=color),
-                    flierprops=dict(markerfacecolor=color, marker='o', markersize=5, alpha=0.5))
-        ax.set_title(label)
-        ax.set_xticks(range(1, len(performance_cost_data) + 1))
-        ax.set_xticklabels(performance_cost_data.keys(), rotation=15, fontsize=10)
-        ax.set_yscale('linear')
-        if idx == 0:
-            ax.set_ylabel(f"# of comparisons")
+            medians = [np.median(data[exp][metric]) for exp in data]
+            for i, median in enumerate(medians, 1):
+                ax.annotate(f"{int(median)}", xy=(i, median), xytext=(25, 0), textcoords="offset points",
+                    va='center', ha='left', fontsize=8, color="black")
+                
+            avgs = [np.average(data[exp][metric]) for exp in data]
+            for i, avg in enumerate(avgs, 1):
+                ax.annotate(f"{avg:.1f}", xy=(i, avg), xytext=(-25, 0), textcoords="offset points",
+                    va='center', ha='right', fontsize=8, color=mean_color)
+                
+        # Legend for mean and median lines
+        mean_line = plt.Line2D([0], [0], color=mean_color, linestyle='--', linewidth=2, label='Mean')
+        median_line = plt.Line2D([0], [0], color='black', linestyle='-', linewidth=2, label='Median')
+        axes[-1].legend(handles=[mean_line, median_line], loc='center left', bbox_to_anchor=(1.02, 1), fontsize=12)
 
-    # Global legend
-    handles = [plt.Line2D([0], [0], color=color, lw=8, label=label) for color, label in zip(metric_colors, metric_labels)]
-    fig.legend(handles=handles, loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.05), fontsize=12)
-    plt.tight_layout()
-    plt.savefig(f"{graph_output_dir}/performance_cost.png", dpi=300)
-    plt.close()
+        plt.tight_layout()
+        plt.savefig(f"{graph_output_dir}/{nids}_performance.png", dpi=300)
+        plt.close()
+
 
 
 if __name__ == "__main__":
@@ -255,6 +181,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data_for_global_plot = {}
+    performance_data = {}
     output_dir = "graphs"
     os.makedirs(output_dir, exist_ok=True)
     for dataset_name in ["CICIDS2017", "CICIoT2023"]:
@@ -264,51 +191,52 @@ if __name__ == "__main__":
 
             print(f"Generating graphs for {dataset_name} with {target_nids}...")
             data = pd.read_csv(f"csv/{dataset_name}_{target_nids}.csv")
-            df = data[data['experiment'].isin(experiment_mapping)]
-            # Update the experiment column with new names
-            
+            df = data[data['experiment'].isin(experiment_mapping)]            
             df.loc[:, 'experiment'] = df['experiment'].map(experiment_mapping)
-            performance_cost_data = {}
-            for experiment, group in df.groupby("experiment"):
+
+            for exp, group in df.groupby("experiment"):
                 total_pkts_processed = group["pkts_processed"].sum().item()
-                total_baseline_alerts = group["total_baseline_alerts"].sum().item()
-                
                 total_pkts_fowarded = group["pkts_fowarded_absolute"].sum().item()
-                pkts_fowarded_percentage = (total_pkts_fowarded/total_pkts_processed) * 100
 
+                total_baseline_alerts = group["total_baseline_alerts"].sum().item()
                 total_experiment_alerts = group["alerts_true_positive_absolute"].sum().item()
-                alerts_percentage = (total_experiment_alerts/total_baseline_alerts) * 100
 
-                data_for_global_plot[dataset_name+"-"+target_nids+"-"+experiment] = {"pkts_fowarded": pkts_fowarded_percentage, "experiment_alerts": alerts_percentage}
-                if "rule_based" in experiment:
-                    filepath = f"{args.simulation_results_dir}{dataset_name}/{target_nids}/{experiment}/num_comparsions.hdf5"                    
-                    key = experiment_mapping[experiment]
-                    performance_cost_data[key] = {"header": np.array([]), "content": np.array([]), "pcre": np.array([])}
+                key = exp+"-"+target_nids
+                if key in data_for_global_plot:
+                    total_pkts_processed+=data_for_global_plot[key]["total_pkts_processed"]
+                    total_pkts_fowarded+=data_for_global_plot[key]["total_pkts_fowarded"]
+                    total_baseline_alerts+=data_for_global_plot[key]["total_baseline_alerts"]
+                    total_experiment_alerts+=data_for_global_plot[key]["total_experiment_alerts"]
+                    pkts_fowarded_percentage = (total_pkts_fowarded/total_pkts_processed) * 100
+                    alerts_percentage = (total_experiment_alerts/total_baseline_alerts) * 100
+                    data_for_global_plot[key] = {"pkts_fowarded": pkts_fowarded_percentage, "experiment_alerts": alerts_percentage}
+                else:
+                    data_for_global_plot[key] = {"total_pkts_processed": total_pkts_processed, "total_pkts_fowarded": total_pkts_fowarded, 
+                                                 "total_baseline_alerts": total_baseline_alerts, "total_experiment_alerts": total_experiment_alerts}
+
+                if "FS" not in exp:
+                    experiment_filename = list(experiment_mapping.keys())[list(experiment_mapping.values()).index(exp)]
+                    filepath = f"{args.simulation_results_dir}{dataset_name}/{target_nids}/{experiment_filename}/num_comparsions.hdf5" 
+                    if target_nids not in performance_data:
+                        performance_data[target_nids] = {}
+
+                    if exp not in performance_data[target_nids]:
+                        performance_data[target_nids][exp] = {"header": np.array([]), "content": np.array([0]), "pcre": np.array([0])}
+
                     with h5py.File(filepath, 'r') as f:
                         for trace in f.keys():
                             for metric in f[trace].keys():
                                 if "header" in metric:
-                                    performance_cost_data[key]["header"] = np.concatenate((performance_cost_data[key]["header"], f[trace][metric][:]))
+                                    performance_data[target_nids][exp]["header"] = np.concatenate((performance_data[target_nids][exp]["header"], f[trace][metric][:]))
                                 elif "content" in metric:
-                                    performance_cost_data[key]["content"] = np.concatenate((performance_cost_data[key]["content"], f[trace][metric][:]))
+                                    performance_data[target_nids][exp]["content"] = np.concatenate((performance_data[target_nids][exp]["content"], f[trace][metric][:]))
                                 elif "pcre" in metric:
-                                    performance_cost_data[key]["pcre"] = np.concatenate((performance_cost_data[key]["pcre"], f[trace][metric][:]))
+                                    performance_data[target_nids][exp]["pcre"] = np.concatenate((performance_data[target_nids][exp]["pcre"], f[trace][metric][:]))
                     
-            # # # experiments_new_alerts(df, dataset_name, target_nids, graph_output_dir)
             fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
 
-            # df = data[data['experiment'].isin(["rule_based_header_only", "rule_based_fast_pattern", "rule_based_extended"])]
-            # experiment_mapping = {
-            #     "rule_based_header_only": "Header Only",
-            #     "rule_based_fast_pattern": "Fast Pattern",
-            #     "rule_based_extended": "Extended"
-            # }
-            # df.loc[:, 'experiment'] = df['experiment'].map(experiment_mapping)
+    performance(performance_data, output_dir)
 
-            # rules_comparison_graphs(df, graph_output_dir)
-            performance_cost(performance_cost_data, graph_output_dir)
-    
-    # Generate the overview of fowardedXalerts
     overview_of_forwardedXalerts(data_for_global_plot, output_dir)
 
    
