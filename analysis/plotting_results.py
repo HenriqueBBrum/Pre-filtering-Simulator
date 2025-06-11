@@ -1,6 +1,7 @@
 import os
 import h5py
 import pandas as pd
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 from matplotlib.ticker import MaxNLocator
@@ -9,13 +10,15 @@ import argparse
 
 experiment_mapping = {
                 "packet_sampling_5_25": "FS N=5 T=25s",
+                #"packet_sampling_10_25": "FS N=10 T=25s",
                 "packet_sampling_50_5": "FS N=50 T=5s",
                 "rule_based_header_only": "Header Only",
-                "rule_based_fast_pattern": "Fast Pattern",
-                "rule_based_extended": "Extended"
+                "rule_based_fast_pattern": "Fast-Pattern",
+                "rule_based_extended": "eRBF"
             }
 
-experiments_name = ["FS N=5 T=25s", "FS N=50 T=5s", "Header Only", "Fast Pattern","Extended"]
+experiments_name = ["FS N=5 T=25s", "FS N=50 T=5s", "Header Only", "Fast-Pattern","eRBF"]
+
 
 
 def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
@@ -30,8 +33,7 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
 
         # Sort the group by the specified experiment order
         group = group.set_index("experiment").reindex(experiments_name).reset_index()
-
-        # Bar graph for pkts_fowarded_absolute
+       
         ax.bar([i - bar_width / 2 for i in x], group["pkts_fowarded_absolute"], width=bar_width, color='coral', alpha=0.8, hatch='//', label="# suspicious packets")
         ax.set_ylabel("# of packets fowarded", color='coral')
         ax.tick_params(axis='y', labelcolor='coral')
@@ -74,22 +76,23 @@ def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
         "Snort": "#9c1412",
         "Suricata": "#f5aa32"
     }
-    experiment_markers = {"FS N=5 T=25s": "P", "FS N=50 T=5s": "X", "Header Only": "^", "Fast Pattern": "s", "Extended": "p"}
+    experiment_markers = {"FS N=5 T=25s": "P", "FS N=50 T=5s": "X", "Header Only": "^", "Fast-Pattern": "s", "eRBF": "p"}
 
     for key, values in data_for_global_plot.items():
-        experiment, nids = key.split("-")
+        print(key)
+        experiment, nids = key.split("#")
         label = f"{nids.capitalize()} {experiment}"
         color = nids_colors.get(f"{nids.capitalize()}", "black")
         marker = experiment_markers.get(experiment, "")
-        
+        print("Plotting ", {label}, "experiments alerts ", values["experiment_alerts"], " and pkts ", values["pkts_fowarded"])
         ax.scatter(
             values["experiment_alerts"], 
             values["pkts_fowarded"], 
             label=label, 
             color=color, 
-            edgecolor="black", 
-            linewidth=0.8, 
-            s=100, 
+            edgecolor="red" if experiment=="eRBF" else "black", 
+            linewidth=1.5 if experiment=="eRBF" else 0.8, 
+            s=175 if experiment=="eRBF" else 150, 
             marker=marker
         )
 
@@ -110,7 +113,7 @@ def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
     legend1 =  ax.legend(handles=nids_legend, loc="upper left", bbox_to_anchor=(1.025, 1), title="NIDS", fontsize=10)
     ax.add_artist(legend1)
     experiment_legend = [
-        plt.Line2D([0], [0], marker=marker, color="white", markeredgecolor='black', linestyle='None', markersize=10, label=key)
+        plt.Line2D([0], [0], marker=marker, color="white", markeredgecolor=("red" if key=="eRBF" else "black"), linestyle='None', markersize=(11 if key=="eRBF" else 10), label=key)
         for key, marker in experiment_markers.items()
     ]
     ax.legend(handles=experiment_legend, loc="upper left", bbox_to_anchor=(1, 0.85), title="Method", fontsize=10)
@@ -126,11 +129,12 @@ def performance(performance_data, graph_output_dir):
     metric_labels = ["Header", "Content", "PCRE"]
     metric_colors = ["coral", "royalblue", "seagreen"]
     mean_color = "red"
+    order = ["Header Only", "Fast-Pattern","eRBF"]
     for nids, data in performance_data.items():
         fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=False)
         for idx, (metric, label, color) in enumerate(zip(metric_keys, metric_labels, metric_colors)):
             ax = axes[idx]
-            boxplot_data = [data[exp][metric] for exp in data]
+            boxplot_data = [data[exp][metric] for exp in order]
             box = ax.boxplot(boxplot_data, patch_artist=True,
                         boxprops=dict(facecolor=color, color=color),
                         medianprops=dict(color='black'),
@@ -143,18 +147,22 @@ def performance(performance_data, graph_output_dir):
             for mean in box["means"]:
                 mean.set_color(mean_color)
             
+            for median in box["medians"]:
+                median.set_linewidth(2)
+
+            ax.set_yscale('symlog')
             ax.set_title(label)
             ax.set_xticks(range(1, len(data) + 1))
-            ax.set_xticklabels(data.keys(), fontsize=12)
+            ax.set_xticklabels(order, fontsize=12)
             if idx == 0:
                 ax.set_ylabel(f"# of comparisons", fontsize=12)
 
-            medians = [np.median(data[exp][metric]) for exp in data]
+            medians = [np.median(data[exp][metric]) for exp in order]
             for i, median in enumerate(medians, 1):
                 ax.annotate(f"{int(median)}", xy=(i, median), xytext=(25, 0), textcoords="offset points",
-                    va='center', ha='left', fontsize=8, color="black")
+                    va='center', ha='left', fontsize=8, color="black", weight='bold')
                 
-            avgs = [np.average(data[exp][metric]) for exp in data]
+            avgs = [np.average(data[exp][metric]) for exp in order]
             for i, avg in enumerate(avgs, 1):
                 ax.annotate(f"{avg:.1f}", xy=(i, avg), xytext=(-25, 0), textcoords="offset points",
                     va='center', ha='right', fontsize=8, color=mean_color)
@@ -201,7 +209,7 @@ if __name__ == "__main__":
                 total_baseline_alerts = group["total_baseline_alerts"].sum().item()
                 total_experiment_alerts = group["alerts_true_positive_absolute"].sum().item()
 
-                key = exp+"-"+target_nids
+                key = exp+"#"+target_nids
                 if key in data_for_global_plot:
                     total_pkts_processed+=data_for_global_plot[key]["total_pkts_processed"]
                     total_pkts_fowarded+=data_for_global_plot[key]["total_pkts_fowarded"]
@@ -232,11 +240,10 @@ if __name__ == "__main__":
                                     performance_data[target_nids][exp]["content"] = np.concatenate((performance_data[target_nids][exp]["content"], f[trace][metric][:]))
                                 elif "pcre" in metric:
                                     performance_data[target_nids][exp]["pcre"] = np.concatenate((performance_data[target_nids][exp]["pcre"], f[trace][metric][:]))
-                    
-            fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
+            
+            # fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
 
     performance(performance_data, output_dir)
-
-    overview_of_forwardedXalerts(data_for_global_plot, output_dir)
+    # overview_of_forwardedXalerts(data_for_global_plot, output_dir)
 
    
