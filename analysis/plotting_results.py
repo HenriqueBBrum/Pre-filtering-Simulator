@@ -189,61 +189,61 @@ if __name__ == "__main__":
     data_for_global_plot = {}
     performance_data = {}
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-    # for dataset_name in ["CICIDS2017", "CICIoT2023"]:
-    #     for target_nids in ["snort", "suricata"]:
-    #         graph_output_dir = f"{OUTPUT_FOLDER}/{dataset_name}_{target_nids}"
-    #         os.makedirs(graph_output_dir, exist_ok=True)
+    for dataset_name in ["CICIDS2017", "CICIoT2023"]:
+        for target_nids in ["snort", "suricata"]:
+            graph_output_dir = f"{OUTPUT_FOLDER}/{dataset_name}_{target_nids}"
+            os.makedirs(graph_output_dir, exist_ok=True)
 
-    #         print(f"Generating graphs for {dataset_name} with {target_nids}...")
-    #         data = pd.read_csv(f"csv/{dataset_name}_{target_nids}.csv")
-    #         df = data[data['experiment'].isin(experiment_mapping)]            
-    #         df.loc[:, 'experiment'] = df['experiment'].map(experiment_mapping)
+            print(f"Generating graphs for {dataset_name} with {target_nids}...")
+            data = pd.read_csv(f"csv/{dataset_name}_{target_nids}.csv")
+            df = data[data['experiment'].isin(experiment_mapping)]            
+            df.loc[:, 'experiment'] = df['experiment'].map(experiment_mapping)
 
-    #         # Parse CSV data stored
-    #         for exp, group in df.groupby("experiment"):
-    #             total_pkts_processed = group["pkts_processed"].sum().item()
-    #             total_pkts_fowarded = group["pkts_fowarded_absolute"].sum().item()
+            # Parse CSV data stored
+            for exp, group in df.groupby("experiment"):
+                total_pkts_processed = group["pkts_processed"].sum().item()
+                total_pkts_fowarded = group["pkts_fowarded_absolute"].sum().item()
 
-    #             total_baseline_alerts = group["total_baseline_alerts"].sum().item()
-    #             total_experiment_alerts = group["alerts_true_positive_absolute"].sum().item()
+                total_baseline_alerts = group["total_baseline_alerts"].sum().item()
+                total_experiment_alerts = group["alerts_true_positive_absolute"].sum().item()
 
-    #             # Add all for NIDS data irrespective of the dataset
-    #             key = exp+"#"+target_nids
-    #             if key in data_for_global_plot:
-    #                 total_pkts_processed+=data_for_global_plot[key]["total_pkts_processed"]
-    #                 total_pkts_fowarded+=data_for_global_plot[key]["total_pkts_fowarded"]
-    #                 total_baseline_alerts+=data_for_global_plot[key]["total_baseline_alerts"]
-    #                 total_experiment_alerts+=data_for_global_plot[key]["total_experiment_alerts"]
-    #                 pkts_fowarded_percentage = (total_pkts_fowarded/total_pkts_processed) * 100
-    #                 alerts_percentage = (total_experiment_alerts/total_baseline_alerts) * 100
-    #                 data_for_global_plot[key] = {"pkts_fowarded": pkts_fowarded_percentage, "experiment_alerts": alerts_percentage}
-    #             else:
-    #                 data_for_global_plot[key] = {"total_pkts_processed": total_pkts_processed, "total_pkts_fowarded": total_pkts_fowarded, 
-    #                                              "total_baseline_alerts": total_baseline_alerts, "total_experiment_alerts": total_experiment_alerts}
+                # Add all for NIDS data irrespective of the dataset
+                key = exp+"#"+target_nids
+                if key in data_for_global_plot:
+                    total_pkts_processed+=data_for_global_plot[key]["total_pkts_processed"]
+                    total_pkts_fowarded+=data_for_global_plot[key]["total_pkts_fowarded"]
+                    total_baseline_alerts+=data_for_global_plot[key]["total_baseline_alerts"]
+                    total_experiment_alerts+=data_for_global_plot[key]["total_experiment_alerts"]
+                    pkts_fowarded_percentage = (total_pkts_fowarded/total_pkts_processed) * 100
+                    alerts_percentage = (total_experiment_alerts/total_baseline_alerts) * 100
+                    data_for_global_plot[key] = {"pkts_fowarded": pkts_fowarded_percentage, "experiment_alerts": alerts_percentage}
+                else:
+                    data_for_global_plot[key] = {"total_pkts_processed": total_pkts_processed, "total_pkts_fowarded": total_pkts_fowarded, 
+                                                 "total_baseline_alerts": total_baseline_alerts, "total_experiment_alerts": total_experiment_alerts}
                 
-    #             # Grab data for non-flow sampling methods
-    #             if "FS" not in exp:
-    #                 experiment_filename = list(experiment_mapping.keys())[list(experiment_mapping.values()).index(exp)]
-    #                 filepath = f"{args.simulation_results_dir}{dataset_name}/{target_nids}/{experiment_filename}/num_comparsions.hdf5" 
-    #                 if target_nids not in performance_data:
-    #                     performance_data[target_nids] = {}
+                # Grab data for non-flow sampling methods
+                if "FS" not in exp:
+                    experiment_filename = list(experiment_mapping.keys())[list(experiment_mapping.values()).index(exp)]
+                    filepath = f"{args.simulation_results_dir}{dataset_name}/{target_nids}/{experiment_filename}/num_comparsions.hdf5" 
+                    if target_nids not in performance_data:
+                        performance_data[target_nids] = {}
 
-    #                 if exp not in performance_data[target_nids]:
-    #                     performance_data[target_nids][exp] = {"header": np.array([]), "content": np.array([0]), "pcre": np.array([0])}
+                    if exp not in performance_data[target_nids]:
+                        performance_data[target_nids][exp] = {"header": np.array([]), "content": np.array([0]), "pcre": np.array([0])}
 
-    #                 with h5py.File(filepath, 'r') as f:
-    #                     for trace in f.keys():
-    #                         for metric in f[trace].keys():
-    #                             if "header" in metric:
-    #                                 performance_data[target_nids][exp]["header"] = np.concatenate((performance_data[target_nids][exp]["header"], f[trace][metric][:]))
-    #                             elif "content" in metric:
-    #                                 performance_data[target_nids][exp]["content"] = np.concatenate((performance_data[target_nids][exp]["content"], f[trace][metric][:]))
-    #                             elif "pcre" in metric:
-    #                                 performance_data[target_nids][exp]["pcre"] = np.concatenate((performance_data[target_nids][exp]["pcre"], f[trace][metric][:]))
+                    with h5py.File(filepath, 'r') as f:
+                        for trace in f.keys():
+                            for metric in f[trace].keys():
+                                if "header" in metric:
+                                    performance_data[target_nids][exp]["header"] = np.concatenate((performance_data[target_nids][exp]["header"], f[trace][metric][:]))
+                                elif "content" in metric:
+                                    performance_data[target_nids][exp]["content"] = np.concatenate((performance_data[target_nids][exp]["content"], f[trace][metric][:]))
+                                elif "pcre" in metric:
+                                    performance_data[target_nids][exp]["pcre"] = np.concatenate((performance_data[target_nids][exp]["pcre"], f[trace][metric][:]))
             
-    #         fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
+            fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
 
-    # performance(performance_data, OUTPUT_FOLDER)
-    # overview_of_forwardedXalerts(data_for_global_plot, OUTPUT_FOLDER)
+    performance(performance_data, OUTPUT_FOLDER)
+    overview_of_forwardedXalerts(data_for_global_plot, OUTPUT_FOLDER)
 
    

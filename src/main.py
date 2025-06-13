@@ -73,9 +73,8 @@ def main(args):
 
     else:
         print("Wrong simulation type")
-        exit(-1)
 
-
+# Defines the path to the NIDS configuration and the ruleset based on the command line arguments
 def generate_simulation(name, dataset, nids, pcaps_path):
     simulation_config = {}
     simulation_config["scenario"] = name

@@ -1,42 +1,57 @@
-# Pre-filtering for NIDS Simulator
+# Pre-filteringSimulator
 
-This project is a simulator that pre-filters packets to a NIDS based on the NIDS' own rules. There are two main pre-filtering methods simulated in this code: flow sampling and rule-based pre-filtering. 
+This project simulates pre-filtering of packets for a Network Intrusion Detection System (NIDS) based on its own rules. Two main pre-filtering methods are implemented: flow sampling and rule-based pre-filtering.
 
-- Flow sampling works by fowarding to the NIDS only a fixed amount of packets from each flow to the NIDS
-- Rule-based pre-filtering uses a simplfieid vrsion of the NIDS own rules, and uses them to determine what packets should be fowarded and what packets should be discaredd.
+- **Flow sampling** forwards only a fixed number of packets from each flow to the NIDS.
+- **Rule-based pre-filtering** uses a simplified version of the NIDS's rules to decide which packets should be forwarded and which should be discarded.
 
-This repository contains the code and instructions needed to reproduce the experiments for the paper:
+This repository contains the code and instructions needed to reproduce the experiments for the paper: ()[]
 
+## Clone the Repository
 
-## Instalation Guide
-
+```bash
+git clone https://github.com/HenriqueBBrum/Pre-filtering-Simulator.git
 ```
-git clone 
-```
 
-The simulator is a Python program, so install Python3.
+## Install Dependencies
 
-Then, create a venv and install de required packegs:
+The simulator is written in Python. Python 3.10.12 was used for development.
+
+Install the required Python libraries:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-Install Rscript for the analysis of the simulator results
+Install `littler` (Rscript) for analyzing the simulator results:
 
-```
+```bash
 sudo apt-get install littler
 ```
 
 That's it!
 
+## Running the Simulator
 
-## Running
+By default, the simulator outputs results to the `simulation_results/` folder at the same level as this README. You can change this folder, but note that `analysis/get_pcap_infor.r` expects results in this location.
 
-By default, the output_folder of the is  
+Open a tmux window and run the following command with your desired arguments:
 
+```bash
+python3 src/main.py --name <NAME> -t <TYPE> -d <DATASET> -n <NIDS> -p <PCAPS_PATH>
+```
 
-Open a tmux window, and run the following command with the desired arguments:
+- `<NAME>`: (Optional) Name identifying the experiment you are running  
+- `<TYPE>`: Type of simulation to run (`packet_sampling` or `rule_based`)
+- `<DATASET>`: Dataset name (`CICIDS2017` or `CICIoT2023`)
+- `<NIDS>`: NIDS name (`snort` or `suricata`)
+- `<PCAPS_PATH>`: Path to the dataset's pcap folders
 
+To reproduce all results presented in the paper, run the following script:
+
+```
+
+```
 
 ## Repository Structure
 
@@ -48,12 +63,10 @@ Open a tmux window, and run the following command with the desired arguments:
 ├── README.md
 ```
 
-- **`analysis/`**: The scripts required to process the simulator's results and plot graphs;
-
-- **`etc/`**: Contains the NIDS's configurations for each dataset, the baseline alerts when the NIDS process all packets, and the ruleset studied;
-
-- **`src/`**: Folder containing the source code for this project;
-	- **`nids_parser/`**: Parser of NIDS rules;
-	- **`simulator/`**: The simulator's code;
-	- **`utils`**: Files containing code used by different files or with specific purpose;
-	- **`main`**: Main file that is called to start the simulator;
+- **`analysis/`**: Scripts to process simulator results and plot graphs
+- **`etc/`**: NIDS configurations for each dataset, baseline alerts for all packets, and the studied ruleset
+- **`src/`**: Source code for the project
+    - **`nids_parser/`**: NIDS rule parser
+    - **`simulator/`**: Simulator code
+    - **`utils`**: Utility code used by different modules
+    - **`main`**: Entry point to start the simulator
