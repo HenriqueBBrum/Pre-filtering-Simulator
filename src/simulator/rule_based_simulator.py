@@ -22,7 +22,7 @@ import sys
 sys.path.insert(0,'../utils')
 from utils.port_services import ip_proto_num_to_str, port_to_service_map, change_map
 
-# Simulate the pre-filtering of packets based on signature rules]
+# Simulate the pre-filtering of packets based on signature rules
 def rule_based_simulation(sim_config, matches, no_content_matches, info):
     lock = Lock()
     shared_info = Manager().dict()
@@ -45,10 +45,9 @@ def rule_based_simulation(sim_config, matches, no_content_matches, info):
     info.update(shared_info)
     return info, comparisons_info
 
-# Individual process for each pcap
+# Individual process for each pcap to speed up simulation
 def individual_pcap_simulation(sim_config, pcap_file, matches, no_content_matches, shared_info, shared_comparisons_info, lock):
     current_trace = pcap_file.split(".")[0] # Remove ".pcap" to get day
-    print(current_trace)
     local_dict = {current_trace:{}}
 
     start = time()
@@ -90,6 +89,8 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
 
                 matches_key = get_related_matches_key(pkt, no_content_matches.keys() if pkt.payload_size == 0 else matches.keys()) 
                 suspicious_pkt = None
+
+                # Only run this code if the scenario is the one proposed by the paper
                 if sim_config["scenario"] != "header_only" and sim_config["scenario"] != "fast_pattern" and (pkt.tcp or pkt.udp):
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
                     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) # Invert order to match flow
@@ -109,6 +110,7 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
                     if not suspicious_pkt:
                         header_check+=4
             
+                # Go over the offloaded rules to find a match or not
                 if not suspicious_pkt: 
                     final_matches = no_content_matches[matches_key] if pkt.payload_size == 0 else matches[matches_key]                
                     suspicious_pkt, ch, content_checks, pcre_checks = is_packet_suspicious(pkt, pkt_count, final_matches, tcp_stream_tracker, sim_config["scenario"])
@@ -151,8 +153,7 @@ def unsupported_protocols(pkt):
         if sport in unsupported_protocols_port or dport in unsupported_protocols_port:
             return True
 
-# Returns the key indicating the transport layer protocol and (if there is) the application layer service
-#  to reduce the number of rules this packet is compared to
+# Returns the key indicating the transport layer protocol and (if there is) the application layer service to reduce the number of rules this packet is compared to
 def get_related_matches_key(pkt, matches_keys):
     proto = pkt.header["ip_proto"]
     pkt_proto = ip_proto_num_to_str[proto] if proto in ip_proto_num_to_str else proto

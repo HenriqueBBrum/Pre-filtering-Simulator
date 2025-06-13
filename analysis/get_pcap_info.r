@@ -1,8 +1,9 @@
+# Read over all the simulator results and collected the plotting information for each dataset and NIDS combination
+
 library("rjson")
 options(error = traceback)
 
 specify_decimal <- function(x, k) trimws(format(round(x, k), nsmall=k))
-
 
 for (datset in c("CICIDS2017", "CICIoT2023")) {
   for (nids_name in c("snort", "suricata")) {
@@ -22,13 +23,11 @@ for (datset in c("CICIDS2017", "CICIoT2023")) {
 
     rows<-(length(dirs)-1)*length(pcap_names)
     count<-1
+    
     pcaps <- c()
-
     pkts_processed <- c()
-
     total_baseline_alerts <- c()
     total_experiment_alerts <- c()
-
     experiment <- c()
 
     avg_num_rules_compared_to <- vector("double", length=rows)

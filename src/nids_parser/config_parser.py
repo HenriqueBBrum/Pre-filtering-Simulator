@@ -1,8 +1,7 @@
 ### This file contains a class that parsers the network variables defined by Snort and Suricata
-## The config files to parse are based on Snort 2.* config
+## The config files to parse are based on Snort 2.* config format
 
 import re
-import sys
 
 MIN_PORT = 0
 MAX_PORT = 65535

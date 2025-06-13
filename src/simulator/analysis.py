@@ -2,7 +2,6 @@ import os
 import re
 import json
 import subprocess
-import argparse
 from time import time
 
 from scapy.utils import PcapReader, PcapWriter 
@@ -84,71 +83,6 @@ def parse_alerts(alerts_filepath, nids_name):
                 alerts.add(alert_id)
       
     return alerts
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Analyze the differences in alerts between the baseline and the experiment.")
-    parser.add_argument("dataset_name", choices=["CICIDS2017", "CICIoT2023"], help="Dataset name (CICIDS2017 or CICIoT2023).")
-    parser.add_argument("target_nids", choices=["snort", "suricata"], help="Target NIDS (snort or suricata).")
-
-    args = parser.parse_args()
-    results_folder = f"/home/hbeckerbrum/Pre-filtering-Simulator/simulation_results/"
-    baseline_folder = "/home/hbeckerbrum/Pre-filtering-Simulator/etc/"
-    for folder in os.listdir(f"{results_folder}{args.dataset_name}/{args.target_nids}/"):
-        print(f"Folder: {folder}")
-        if not os.path.isdir(os.path.join(f"{results_folder}{args.dataset_name}/{args.target_nids}/", folder)):
-            continue
-       
-        analysis_file = os.path.join(f"{results_folder}{args.dataset_name}/{args.target_nids}/", folder, "analysis.json")
-        if os.path.exists(analysis_file):
-            with open(analysis_file, "r") as f:
-                analysis_data = json.load(f)
-        else:
-            analysis_data = {}
-        for alert_file in os.listdir(os.path.join(f"{results_folder}{args.dataset_name}/{args.target_nids}/", folder)):
-            if not alert_file.endswith(".log"):
-                continue
-
-            experiments_alerts = os.path.join(f"{results_folder}{args.dataset_name}/{args.target_nids}/", folder, alert_file)
-            print(f"Experiment: {alert_file}")
-
-            baseline_alerts = os.path.join(f"{baseline_folder}{args.dataset_name}/alerts/{args.target_nids}", alert_file)
-            baseline_alerts = parse_alerts(baseline_alerts, args.target_nids)
-            experiment_alerts = parse_alerts(experiments_alerts, args.target_nids)
-
-            missed_alerts, aditional_alerts = 0, 0
-            missed_by_protocol = {"IP": 0, "UDP": 0, "TCP": 0, "ICMP": 0}    
-            for key in baseline_alerts | experiment_alerts:
-                base = key in baseline_alerts
-                exp = key in experiment_alerts
-                if base-exp==1:
-                    missed_alerts+=1
-                    for proto in missed_by_protocol:
-                        if proto in key:
-                            missed_by_protocol[proto]+=1 
-
-                elif base-exp==-1:
-                    aditional_alerts+=1
-
-            alert_file_key = alert_file.replace(".log", "")
-            new_data = {
-                "baseline_alerts": len(baseline_alerts),
-                "experiment_alerts": len(experiment_alerts),
-                "alerts_true_positive": len(baseline_alerts) - missed_alerts,
-                "alerts_false_negative": missed_alerts,
-                "alerts_false_positive": aditional_alerts,
-                "pkts_fowarded": analysis_data[alert_file_key]["pkts_fowarded"],
-            }
-
-            for key in list(analysis_data[alert_file_key].keys()):
-               if "signature" in key:
-                   analysis_data[alert_file_key].pop(key)
-            analysis_data[alert_file_key].update(new_data)
-
-            
-            with open(analysis_file, "w") as f:
-                json.dump(analysis_data , f, indent=4)
-            
 
 
 

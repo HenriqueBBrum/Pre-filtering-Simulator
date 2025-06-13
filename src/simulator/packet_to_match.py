@@ -6,6 +6,7 @@ import sys
 sys.path.insert(0,'../utils')
 from utils.port_services import file_data_ports
 
+# A class representing the packet that is compared against the offloaded rules
 class PacketToMatch(object):
     def __init__(self, pkt):
         self.icmp = ICMP in pkt

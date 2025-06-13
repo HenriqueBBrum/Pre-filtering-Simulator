@@ -15,7 +15,7 @@ def matched_payload(pkt, match):
 
     return True, 0, 0
 
-# Comapre the payload of packet with the "content" or "pcre" keyword of a match
+# Compare the payload of packet with the "content" or "pcre" keyword of a match
 def __matched_content_pcre(pkt, match_contents):
     compared_to_content = 0
     compared_to_pcre = 0
@@ -31,7 +31,7 @@ def __matched_content_pcre(pkt, match_contents):
             start, end, nocase = __process_content_modifiers(modifiers, position, len(buffer))
             match_pos = pkt.payload_buffers[buffer_name][nocase][start:end].find(match_str)
             compared_to_content+=1
-        else: # "pcre" keyword
+        else: # "PCRE" keyword
             if modifiers:
                 start = position
         

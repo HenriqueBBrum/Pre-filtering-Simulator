@@ -40,10 +40,10 @@ class Rule(object):
 
         
 ### 
-#   Parses Snort/Suricata rules and returns two lists owith all the rules parsed:
+#   Parses Snort/Suricata rules and returns two lists with all the rules parsed:
 #       One contains the original rules with minimals changes
-#       The other contains only supported rules, without system variables and without bidirectional 
-#   If there are invalid option in the rule an Error is raised. 
+#       The other contains only supported rules, without system variables and no bidirectional rules (divided into two) 
+#   If there are invalid options in the rule an Error is raised. 
 ###
 
 regex_unsupported_keywords = "; *(sip_|dce_|base64_|sd_pattern|cvs|md5|sha256|sha512|gtp_|dnp3_|cip_|iec104_|mms_|modbus_|s7commplus|rpc:|ja3_)"
@@ -418,7 +418,7 @@ class RulesParser(object):
             last_char = char
         return op_list
     
-    # Fix buffers 
+    # Fix buffer names
     def __simplify_buffers(self, buffer_name):
         buffer_name = buffer_name.replace('.', '_')
         if buffer_name == "http_uri_raw":

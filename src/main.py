@@ -18,16 +18,18 @@ from utils.port_services import file_data_ports, port_to_service_map
 
 OUTPUT_FOLDER = "simulation_results/"
 
-def main(simulation_name, simulation_type, dataset_name, target_nids):
-    simulation_config = generate_simulation(simulation_name, dataset_name, target_nids)
+def main(args):
+    simulation_config = generate_simulation(args.name, args.dataset, args.nids, args.pcaps_path)
     info = {}
-    info["type"] = simulation_type
+    info["type"] = args.type
     start = time()
-    if simulation_type =="rule_based":
+    if args.type =="rule_based":
         nids_config = NIDSConfiguration(simulation_config["ipvars_config_path"])
         print("*" * 80)
         print("*" * 26 + " NIDS RULES PARSING STAGE " + "*" * 27+ "\n\n")
         matches, no_content_matches, info["number_of_rules"] = convert_rules_to_matches(simulation_config, nids_config)
+
+        # Binds HTTP to the HTTP ports defined in the configuration
         for port_group in nids_config.ports:
             if "HTTP" in port_group:
                 for port in nids_config.ports[port_group]:
@@ -41,8 +43,7 @@ def main(simulation_name, simulation_type, dataset_name, target_nids):
         
         print("PRE-FILTERING SIMULATION")
         print("Scenario: ", simulation_config["scenario"])
-        simulation_config["output_folder"] = os.path.join(OUTPUT_FOLDER, f"{dataset_name}/{target_nids}/rule_based_{simulation_name}/")
-        print("Output folder: ", simulation_config["output_folder"])
+        simulation_config["output_folder"] = os.path.join(OUTPUT_FOLDER, f"{args.dataset}/{args.nids}/rule_based_{args.name}/")
         if not os.path.exists(simulation_config["output_folder"]):
             os.makedirs(simulation_config["output_folder"])
 
@@ -51,18 +52,17 @@ def main(simulation_name, simulation_type, dataset_name, target_nids):
         with open(simulation_config["output_folder"] + "analysis.json", 'a') as f:
             json.dump(info , f, ensure_ascii=False, indent=4)
 
+        # Save the number of comparisons in the h5 format
         with h5py.File(simulation_config["output_folder"] + "num_comparsions.hdf5", "w") as f:
             for trace in comparisons_info:
                 group = f.create_group(trace)
                 for metric in comparisons_info[trace]:
-                    dset = group.create_dataset(metric, data = comparisons_info[trace][metric])
-        
-
-    elif simulation_type  == "packet_sampling":
+                    group.create_dataset(metric, data = comparisons_info[trace][metric])
+    elif args.type  == "packet_sampling":
         for n in [5, 10, 25, 50]:
-            for t in [5, 10, 25]:
+            for t in [50]: # 5, 10, 25, 
                 print("PACKET SAMPLING SIMULATION")
-                simulation_config["output_folder"] = os.path.join(OUTPUT_FOLDER, f"{dataset_name}/{target_nids}/packet_sampling_{str(n)}_{str(t)}/")
+                simulation_config["output_folder"] = os.path.join(OUTPUT_FOLDER, f"{args.dataset}/{args.nids}/packet_sampling_{str(n)}_{str(t)}/")
                 if not os.path.exists(simulation_config["output_folder"]):
                     os.makedirs(simulation_config["output_folder"])
 
@@ -76,36 +76,33 @@ def main(simulation_name, simulation_type, dataset_name, target_nids):
         exit(-1)
 
 
-def generate_simulation(simulation_name, dataset_name, target_nids):
+def generate_simulation(name, dataset, nids, pcaps_path):
     simulation_config = {}
-    simulation_config["scenario"] = simulation_name
+    simulation_config["scenario"] = name
     base_path = os.path.dirname(os.path.abspath(__file__))
-    simulation_config["pcaps_path"] = f"/home/hbeckerbrum/NFSDatasets/{dataset_name}/"
-    simulation_config["nids_name"] = target_nids
-    file_ending = "lua" if target_nids == "snort" else "yaml"
-    simulation_config["baseline_alerts_path"] = os.path.join(base_path, f"../etc/{dataset_name}/alerts/{target_nids}/")
-    simulation_config["nids_config_path"] = os.path.join(base_path, f"../etc/{dataset_name}/nids_configuration/{target_nids}/{target_nids}.{file_ending}")
-    if target_nids == "snort":
+    simulation_config["pcaps_path"] = f"{pcaps_path}/{dataset}/"
+    simulation_config["nids_name"] = nids
+
+    simulation_config["baseline_alerts_path"] = os.path.join(base_path, f"../etc/{dataset}/alerts/{nids}/")
+
+    file_ending = "lua" if nids == "snort" else "yaml"
+    simulation_config["nids_config_path"] = os.path.join(base_path, f"../etc/{dataset}/nids_configuration/{nids}/{nids}.{file_ending}")
+    if nids == "snort":
         simulation_config["ruleset_path"] = os.path.join(base_path, "../etc/rules/snort3-registered/")
     else:
         simulation_config["ruleset_path"] = os.path.join(base_path, "../etc/rules/suricata-emerging/emerging-all.rules")
 
-    simulation_config["ipvars_config_path"] = os.path.join(base_path, f"../etc/{dataset_name}/nids_configuration/")
+    simulation_config["ipvars_config_path"] = os.path.join(base_path, f"../etc/{dataset}/nids_configuration/")
     return simulation_config
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Run a simulation for rule-based or packet sampling pre-filtering.")
-    parser.add_argument("simulation_type", choices=["packet_sampling", "rule_based"], help="Type of simulation to run.")
-    parser.add_argument("dataset_name", choices=["CICIDS2017", "CICIoT2023"], help="Dataset name (CICIDS2017 or CICIoT2023).")
-    parser.add_argument("target_nids", choices=["snort", "suricata"], help="Target NIDS (snort or suricata).")
-    parser.add_argument("simulation_name", type=str, help="Name of the simulation.", nargs='?', default="")
+    parser = argparse.ArgumentParser(description="Run a simulation for packet sampling or rule-based pre-filtering.")
 
-    args = parser.parse_args()
+    parser.add_argument("--name", type=str, help="Name of the simulation.", nargs='?', default="")
+    parser.add_argument("-t", "--type", choices=["packet_sampling", "rule_based"], help="Type of simulation to run.", required=True)
+    parser.add_argument("-d", "--dataset", choices=["CICIDS2017", "CICIoT2023"], help="Dataset name (CICIDS2017 or CICIoT2023).", required=True)
+    parser.add_argument("-n" ,"--nids", choices=["snort", "suricata"], help="Target NIDS (snort or suricata).", required=True)
+    parser.add_argument("-p", "--pcaps_path", type=str, help="Folder path for the pcaps to input for the simulator", required=True)
 
-    simulation_name = args.simulation_name
-    simulation_type = args.simulation_type
-    dataset_name = args.dataset_name
-    target_nids = args.target_nids
-
-    main(simulation_name, simulation_type, dataset_name, target_nids)
+    main(parser.parse_args())

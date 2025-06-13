@@ -1,8 +1,8 @@
-# File containing methods to parse snort rules. THe operations include:
-# - Retrieve rules from file
-# - Raw parsing of rule via snort_rule_parser.parser.Parser
-# - Deduplicate rules
-# - Replace system variables, fix negated ports and group ports into ranges
+# File containing methods to parse snort rules. The operations performed are:
+# - Retrieving rules from (a) file(s)
+# - Raw parsing of rules via rules_parser.RulesParser
+# - Deduplicating rules that contain the same fields
+# - Replacing system variables, fixing negated ports and grouping ports into ranges
 
 from .rules_parser import RulesParser
 from .match import Match
@@ -80,8 +80,7 @@ class MatchTree:
        for key, node in self.nodes.items():
            print(node.parents, node.name, node.children, len(node.matches))
 
-# Functions related to the parsing of Snort/Suricata rules from multiple files, and the subsequent deduplication, 
-# replacement of system variables, port groupping and fixing negated headers 
+### Parsing Snort/Suricata rules from multiple files, and the subsequent deduplication, replacement of system variables, port groupping and fixing negated headers 
 def convert_rules_to_matches(simulation_config, nids_config):
     print(f'---- Parsing rules from { simulation_config["ruleset_path"]} ----')
     parser = RulesParser(simulation_config, nids_config)
@@ -148,7 +147,7 @@ def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
             deduped_matches[rule_id].sid_rev_list.append(sid_rev_string)
     return list(deduped_matches.values())
 
-# Retruns the final matches and the matches for packets with no content
+# Returns the final matches and the matches for packets with no content
 def __group_matches(matches):
     match_tree = __group_by_protocol(matches)
     no_content_matches = [match for match in matches if "content_pcre" not in match.payload_fields]
@@ -156,7 +155,7 @@ def __group_matches(matches):
     return __group_by_rule_header(match_tree), __group_by_rule_header(no_content_match_tree)
 
 
-### Functios to group rules based on protocols so each packet is compared against fewer rules ###   
+### Groups rules based on protocols so each packet is compared against fewer rules ###   
 def __group_by_protocol(matches):
     match_tree = MatchTree("ip", [("ip", "icmp"), ("ip", "tcp"), ("ip", "udp")])
     for match in matches:

@@ -1,4 +1,4 @@
-### Functions to match on header fuelds of a packet
+### Functions to compare the header fields of a packet
 
 def matched_ip_and_port(pkt, match):
      # Compares the packet's port(s) against the match's port(s) 

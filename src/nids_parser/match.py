@@ -1,3 +1,5 @@
+# Class that contains all the fields required to match against packets 
+
 import radix
 import re
 
@@ -36,7 +38,6 @@ pcre_modifier_to_buffer = {"U":"http_uri", "I": "http_raw_uri",
 
 native_pcre_modifiers = {'i', 's', 'm', 'x'}
 
-# Class that contains all the fields required to match against networking packets 
 class Match(object):
     def __init__(self, header_fields, payload_fields, pre_filtering_scenario):
         self.header_key = header_fields["ip_port_key"]
