@@ -1,4 +1,4 @@
-# Pre-filteringSimulator
+# Pre-filtering Simulator
 
 This project simulates pre-filtering of packets for a Network Intrusion Detection System (NIDS) based on its own rules. Two main pre-filtering methods are implemented: flow sampling and rule-based pre-filtering.
 
@@ -6,6 +6,26 @@ This project simulates pre-filtering of packets for a Network Intrusion Detectio
 - **Rule-based pre-filtering** uses a simplified version of the NIDS's rules to decide which packets should be forwarded and which should be discarded.
 
 This repository contains the code and instructions needed to reproduce the experiments for the paper: ()[]
+
+
+## Repository Structure
+
+```
+├── analysis/
+├── etc/
+├── src/
+├── .gitignore
+├── README.md
+```
+
+- **`analysis/`**: Scripts to process simulator results and plot graphs
+- **`etc/`**: NIDS configurations for each dataset, baseline alerts for all packets, and the studied ruleset
+- **`src/`**: Source code for the project
+    - **`nids_parser/`**: Parsing NIDS rules
+    - **`simulator/`**: Pre-filtering simulator
+    - **`utils`**: Utility code used by different modules
+    - **`main`**: Entry point to start the simulator
+
 
 ## Clone the Repository
 
@@ -33,6 +53,8 @@ That's it!
 
 ## Running the Simulator
 
+With everything installed, it's time to run the simulator.
+
 By default, the simulator outputs results to the `simulation_results/` folder at the same level as this README. You can change this folder, but note that `analysis/get_pcap_infor.r` expects results in this location.
 
 Open a tmux window and run the following command with your desired arguments:
@@ -53,20 +75,10 @@ To reproduce all results presented in the paper, run the following script:
 
 ```
 
-## Repository Structure
+## Rulesets
 
-```
-├── analysis/
-├── etc/
-├── src/
-├── .gitignore
-├── README.md
-```
+| NIDS | Ruleset | Download date | Rules removed |
+|:---:|:---:|:---:|---|
+| Snort++ 3.3.7.0 | [Snort 3 Ruleset snapshot-31470](https://www.snort.org/downloads/registered/snortrules-snapshot-31470.tar.gz) | 4 April 2025 |300039:1, 300046:1 |
+| Suricata 7.0.8 | [Emerging Threats Suricata 7.0.3](https://rules.emergingthreatspro.com/open/suricata-7.0.3/) | 17 Fev 2025 | - |
 
-- **`analysis/`**: Scripts to process simulator results and plot graphs
-- **`etc/`**: NIDS configurations for each dataset, baseline alerts for all packets, and the studied ruleset
-- **`src/`**: Source code for the project
-    - **`nids_parser/`**: NIDS rule parser
-    - **`simulator/`**: Simulator code
-    - **`utils`**: Utility code used by different modules
-    - **`main`**: Entry point to start the simulator
