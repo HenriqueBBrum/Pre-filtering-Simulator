@@ -91,7 +91,7 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
                 suspicious_pkt = None
 
                 # Only run this code if the scenario is the one proposed by the paper
-                if sim_config["scenario"] != "header_only" and sim_config["scenario"] != "fast_pattern" and (pkt.tcp or pkt.udp):
+                if sim_config["scenario"] == "eRBF" and (pkt.tcp or pkt.udp):
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
                     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) # Invert order to match flow
                     if "tls" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) == 0x16:

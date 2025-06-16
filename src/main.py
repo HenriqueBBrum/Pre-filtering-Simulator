@@ -60,7 +60,7 @@ def main(args):
                     group.create_dataset(metric, data = comparisons_info[trace][metric])
     elif args.type  == "packet_sampling":
         for n in [5, 10, 25, 50]:
-            for t in [50]: # 5, 10, 25, 
+            for t in [5, 10, 25, 50]:
                 print("PACKET SAMPLING SIMULATION")
                 simulation_config["output_folder"] = os.path.join(OUTPUT_FOLDER, f"{args.dataset}/{args.nids}/packet_sampling_{str(n)}_{str(t)}/")
                 if not os.path.exists(simulation_config["output_folder"]):

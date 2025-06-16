@@ -12,14 +12,14 @@ from matplotlib.ticker import MaxNLocator
 
 OUTPUT_FOLDER="graphs/"
 
-experiments_name = ["FS N=5 T=25s", "FS N=50 T=5s", "Header Only", "Fast-Pattern","eRBF"]
+experiments_name = ["FS N=5 T=50s", "FS N=50 T=5s", "Header Only", "Fast-Pattern","eRBF"]
 
 experiment_mapping = {
-                "packet_sampling_5_25": "FS N=5 T=25s",
+                "packet_sampling_5_25": "FS N=5 T=50s",
                 "packet_sampling_50_5": "FS N=50 T=5s",
                 "rule_based_header_only": "Header Only",
                 "rule_based_fast_pattern": "Fast-Pattern",
-                "rule_based_extended": "eRBF"
+                "rule_based_eRBF": "eRBF"
             }
 
 
@@ -85,7 +85,7 @@ def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
         "Snort": "#9c1412",
         "Suricata": "#f5aa32"
     }
-    experiment_markers = {"FS N=5 T=25s": "P", "FS N=50 T=5s": "X", "Header Only": "^", "Fast-Pattern": "s", "eRBF": "p"}
+    experiment_markers = {"FS N=5 T=50s": "P", "FS N=50 T=5s": "X", "Header Only": "^", "Fast-Pattern": "s", "eRBF": "p"}
 
     for key, values in data_for_global_plot.items():
         experiment, nids = key.split("#")
@@ -243,7 +243,7 @@ if __name__ == "__main__":
             
             fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
 
-    performance(performance_data, OUTPUT_FOLDER)
+    # performance(performance_data, OUTPUT_FOLDER)
     overview_of_forwardedXalerts(data_for_global_plot, OUTPUT_FOLDER)
 
    

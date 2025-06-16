@@ -101,8 +101,6 @@ for (datset in c("CICIDS2017", "CICIoT2023")) {
       pkts_processed = pkts_processed,
       total_baseline_alerts = total_baseline_alerts,
       total_experiment_alerts = total_experiment_alerts,
-      total_baseline_alerts = total_baseline_alerts,
-      total_experiment_alerts = total_experiment_alerts,
       avg_num_rules_compared_to = avg_num_rules_compared_to,
       avg_num_contents_compared_to = avg_num_contents_compared_to,
       avg_num_pcre_compared_to = avg_num_pcre_compared_to,

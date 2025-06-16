@@ -1,12 +1,13 @@
 # Pre-filtering Simulator
 
-This project simulates pre-filtering of packets for a Network Intrusion Detection System (NIDS) based on its own rules. Two main pre-filtering methods are implemented: flow sampling and rule-based pre-filtering.
+This repository contains the code and instructions needed to reproduce the experiments for the paper: []()
+
+This project simulates the pre-filtering of packets for a Network Intrusion Detection System (NIDS) based on its own rules. Two main pre-filtering methods are implemented: flow sampling and rule-based pre-filtering. 
 
 - **Flow sampling** forwards only a fixed number of packets from each flow to the NIDS.
 - **Rule-based pre-filtering** uses a simplified version of the NIDS's rules to decide which packets should be forwarded and which should be discarded.
 
-This repository contains the code and instructions needed to reproduce the experiments for the paper: ()[]
-
+Three rule-based pre-filtering are evaluated in this simulator: two based on existing methods, and one developed and introduced in the aforementioned paper. To obtain the results shown in the paper, follow the instructions starting at [Clone the Repository](#clone-the-repository).
 
 ## Repository Structure
 
@@ -16,6 +17,7 @@ This repository contains the code and instructions needed to reproduce the exper
 ├── src/
 ├── .gitignore
 ├── README.md
+├── requirements.txt
 ```
 
 - **`analysis/`**: Scripts to process simulator results and plot graphs
@@ -51,6 +53,18 @@ sudo apt-get install littler
 
 That's it!
 
+## Download the Datsets
+
+Before running the simulator, dowload the datasets. Both of them are quite heavy so allocated enough space. 
+- [CICIDS2017](https://www.unb.ca/cic/datasets/ids-2017.html)
+- [CICIoT2023](https://www.unb.ca/cic/datasets/iotdataset-2023.html)
+
+## Install Snort and Suricata
+
+The last step before running the simulator is to install the NIDS:
+- [Snort](https://www.snort.org/downloads#snort3-downloads)
+- [Suricata](https://suricata.io/download/)
+
 ## Running the Simulator
 
 With everything installed, it's time to run the simulator.
@@ -69,11 +83,12 @@ python3 src/main.py --name <NAME> -t <TYPE> -d <DATASET> -n <NIDS> -p <PCAPS_PAT
 - `<NIDS>`: NIDS name (`snort` or `suricata`)
 - `<PCAPS_PATH>`: Path to the dataset's pcap folders
 
-To reproduce all results presented in the paper, run the following script:
+To obtain the results presented in the paper and generate the final graphs, run the following script:
 
 ```
 
 ```
+
 
 ## Rulesets
 
