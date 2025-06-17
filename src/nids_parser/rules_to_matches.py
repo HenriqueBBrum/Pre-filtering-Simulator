@@ -128,12 +128,11 @@ def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
 
         if rule_id not in deduped_matches:
             match = Match(header_fields, payload_fields, pre_filtering_scenario)
-            # Only add matches if the "content_pcre" has a valid non-None value 
-            if pre_filtering_scenario != "header_only":
+            if pre_filtering_scenario == "header_only":
+                deduped_matches[rule_id] = match
+            else: # Only add matches if the "content_pcre" has a valid non-None value 
                 if not ("content_pcre" in match.payload_fields and not match.payload_fields["content_pcre"]):
                     deduped_matches[rule_id] =  match
-            else:
-                deduped_matches[rule_id] = match
             
         if rule_id in deduped_matches:
             sid = rule.get_simple_option_value("sid")
