@@ -67,7 +67,7 @@ def individual_pcap_simulation(sim_config, pcap_file, matches, no_content_matche
     shared_info[current_trace] = local_dict[current_trace]
     shared_comparisons_info[current_trace] = comparisons_info
 
-# Find the suspicious packets
+# Find the suspicious packets, matches are all the original rules in the form of Match while no_content_matches are only rules that have no "content" or "pcre"
 def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_matches):
     suspicious_pkts = []
     pkt_count, ip_pkt_count = 0, 0
@@ -76,8 +76,8 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
     for scapy_pkt in PcapReader(pcap_filepath):
         header_check, content_checks, pcre_checks = 1, 0, 0
         if IP in scapy_pkt:
+            header_check+=1
             if unsupported_protocols(scapy_pkt):
-                header_check+=1
                 suspicious_pkt = (pkt_count, "unsupported")
             else:
                 try:
@@ -87,11 +87,11 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
                     suspicious_pkts.append((pkt_count, "error"))
                     continue
 
-                matches_key = get_related_matches_key(pkt, no_content_matches.keys() if pkt.payload_size == 0 else matches.keys()) 
+                matches_key = get_related_matches_key(pkt, no_content_matches.keys() if (pkt.payload_size == 0 and "header_only" not in sim_config["scenario"]) else matches.keys())  
                 suspicious_pkt = None
 
                 # Only run this code if the scenario is the one proposed by the paper
-                if sim_config["scenario"] == "eRBF" and (pkt.tcp or pkt.udp):
+                if "eRBF" in sim_config["scenario"] and (pkt.tcp or pkt.udp):
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
                     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) # Invert order to match flow
                     if "tls" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) == 0x16:
@@ -112,7 +112,7 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
             
                 # Go over the offloaded rules to find a match or not
                 if not suspicious_pkt: 
-                    final_matches = no_content_matches[matches_key] if pkt.payload_size == 0 else matches[matches_key]                
+                    final_matches = no_content_matches[matches_key] if (pkt.payload_size == 0 and "header_only" not in sim_config["scenario"]) else matches[matches_key]           
                     suspicious_pkt, ch, content_checks, pcre_checks = is_packet_suspicious(pkt, pkt_count, final_matches, tcp_stream_tracker, sim_config["scenario"])
                     header_check+=ch
 
@@ -244,14 +244,14 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_stream_tracker, scenario):
                 if not matched_header_fields(pkt, match):
                     continue                    
 
-                if scenario != "header_only":
+                if "header_only" not in scenario:
                     matched, compared_to_content, compared_to_pcre = matched_payload(pkt, match)
                     comparisons_to_content+=compared_to_content
                     comparisons_to_pcre+=compared_to_pcre
                     if not matched:
                         continue
                     
-                    if scenario != "fast_pattern" and pkt.tcp:
+                    if "eRBF" in scenario and pkt.tcp:
                         flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"])
                         if (pkt.header["flags"] == 16 or pkt.header["flags"] & 24 == 24):
                             tcp_stream_tracker.add(flow) 

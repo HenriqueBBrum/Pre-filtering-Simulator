@@ -183,7 +183,7 @@ def performance(performance_data, graph_output_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plotting results for pre-filtering simulator.")
-    parser.add_argument("--simulation_results_dir", type=str, default="../simulation_results/", help="Folder containing simulation results files.")
+    parser.add_argument("-s", "--simulation_results_dir", type=str, default="../simulation_results/", help="Folder containing simulation results files.")
     args = parser.parse_args()
 
     data_for_global_plot = {}
@@ -243,7 +243,7 @@ if __name__ == "__main__":
             
             fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
 
-    # performance(performance_data, OUTPUT_FOLDER)
+    performance(performance_data, OUTPUT_FOLDER)
     overview_of_forwardedXalerts(data_for_global_plot, OUTPUT_FOLDER)
 
    

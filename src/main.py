@@ -28,7 +28,6 @@ def main(args):
         print("*" * 80)
         print("*" * 26 + " NIDS RULES PARSING STAGE " + "*" * 27+ "\n\n")
         matches, no_content_matches, info["number_of_rules"] = convert_rules_to_matches(simulation_config, nids_config)
-
         # Binds HTTP to the HTTP ports defined in the configuration
         for port_group in nids_config.ports:
             if "HTTP" in port_group:
@@ -38,7 +37,6 @@ def main(args):
                     port_to_service_map[int(port[0])] = "http"
                     file_data_ports.add(int(port[0]))
 
-        info["number_offloaded_rules"] = len(matches)
         info["time_to_process_rules"] = time()-start
         
         print("PRE-FILTERING SIMULATION")

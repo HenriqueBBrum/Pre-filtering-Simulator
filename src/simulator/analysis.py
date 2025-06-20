@@ -11,8 +11,8 @@ def compare_to_baseline(sim_config, current_trace, suspicious_pkts, info):
     suspicious_pkts_alert_file, nids_processing_time = nids_with_suspicious_pcap(sim_config, current_trace, suspicious_pkts) # WHAT IF THERE IS NO SUSPCIIOUS PACKETS?
     info[current_trace]["nids_processing_time"] = nids_processing_time
     
-    baseline_alerts = parse_alerts(sim_config["baseline_alerts_path"]+current_trace+".log", sim_config["nids_name"]) # Baseline alerts
-    experiment_alerts = parse_alerts(suspicious_pkts_alert_file, sim_config["nids_name"])
+    baseline_alerts, baseline_signatures = parse_alerts(sim_config["baseline_alerts_path"]+current_trace+".log", sim_config["nids_name"]) # Baseline alerts
+    experiment_alerts, experiment_signatures = parse_alerts(suspicious_pkts_alert_file, sim_config["nids_name"])
 
     missed_alerts = 0
     aditional_alerts = 0
@@ -29,6 +29,23 @@ def compare_to_baseline(sim_config, current_trace, suspicious_pkts, info):
     info[current_trace]["alerts_true_positive"] = len(baseline_alerts) - missed_alerts
     info[current_trace]["alerts_false_negative"] = missed_alerts
     info[current_trace]["alerts_false_positive"] = aditional_alerts
+
+
+    missed_signatures = 0
+    aditional_signatures = 0
+    for key in baseline_signatures | experiment_signatures:
+        base = baseline_signatures.get(key, 0)
+        exp = experiment_signatures.get(key, 0)
+        if base-exp>=0:
+            missed_signatures+=(base-exp)
+        else:
+            aditional_signatures+=(exp-base)
+
+    info[current_trace]["baseline_signatures"] = sum(baseline_signatures.values())
+    info[current_trace]["experiment_signatures"] =  sum(experiment_signatures.values())
+    info[current_trace]["signatures_true_positive"] = sum(baseline_signatures.values()) - missed_signatures
+    info[current_trace]["signatures_false_negative"] = missed_signatures
+    info[current_trace]["signatures_false_positive"] = aditional_signatures
 
 # Run Snort or Suricata with the final pcap after pre-filtering or packet sampling
 def nids_with_suspicious_pcap(sim_config, current_trace, suspicious_pkts):
@@ -66,8 +83,10 @@ def nids_with_suspicious_pcap(sim_config, current_trace, suspicious_pkts):
 # Parses an alert file and calculate the amount of detected alerts. 
 def parse_alerts(alerts_filepath, nids_name):
     alerts = set()
+    signatures = {}
     with open(alerts_filepath, 'r') as file:
         for line in file.readlines():
+            signature = ""
             if nids_name == "snort":
                 parsed_line = json.loads(line)
                 signature = parsed_line["rule"].split(':')[1]
@@ -79,10 +98,15 @@ def parse_alerts(alerts_filepath, nids_name):
                 src_ap, dst_ap = re.search(r"(\d+\.\d+\.\d+\.\d+:\d+) -> (\d+\.\d+\.\d+\.\d+:\d+)", l).groups()
                 alert_id = proto+" - "+src_ap+" - "+dst_ap+" - "+signature
 
+            if signature in signatures:
+                signatures[signature]+=1
+            else:
+                signatures[signature]=1
+
             if alert_id not in alerts:
                 alerts.add(alert_id)
       
-    return alerts
+    return alerts, signatures
 
 
 

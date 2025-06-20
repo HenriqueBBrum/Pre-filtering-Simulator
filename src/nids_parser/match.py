@@ -63,7 +63,7 @@ class Match(object):
         max_len = 0
         if "content_pcre" in self.payload_fields and self.payload_fields["content_pcre"]:
             for content_pcre in self.payload_fields["content_pcre"]:
-                if content_pcre[0] == 0:
+                if content_pcre[0] == 0: # If it is content and not pcre
                     content_len = len(content_pcre[3])
                     if content_len > max_len:
                         max_len = content_len
@@ -285,7 +285,7 @@ class Match(object):
     # wang_chang takes the fast pattern if there is or the longest content. If there is no final content the rule will be discarded
     def __apply_pre_filtering_scenario(self, content_pcre, fast_pattern_match, pre_filtering_scenario):
         final_content_pcre = []
-        if pre_filtering_scenario == "wang_chang":
+        if pre_filtering_scenario == "fast_pattern":
             longest, size = None, 0   
             if fast_pattern_match:
                 final_content_pcre = [fast_pattern_match] 
@@ -302,7 +302,7 @@ class Match(object):
                     final_content_pcre = None
                 else:
                     final_content_pcre = [longest]
-        elif pre_filtering_scenario == "header_only":
+        elif "header_only" in pre_filtering_scenario:
             final_content_pcre = []
         else:
             final_content_pcre = content_pcre

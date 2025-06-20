@@ -6,7 +6,7 @@ options(error = traceback)
 specify_decimal <- function(x, k) trimws(format(round(x, k), nsmall=k))
 
 for (datset in c("CICIDS2017", "CICIoT2023")) {
-  for (nids_name in c("snort", "suricata")) {
+  for (nids_name in c("snort", "suricata")) { 
     exp_folder_path = paste("../simulation_results/", datset, "/", nids_name, sep="")
     if (!dir.exists(exp_folder_path)) {
       stop(paste("The directory", exp_folder_path, "does not exist."))
@@ -57,7 +57,7 @@ for (datset in c("CICIDS2017", "CICIoT2023")) {
         if (file.exists(json_file)){
             json_data <- fromJSON(file=json_file)
             pcaps <- append(pcaps, pcap_cleaned_name)
-            pkts_processed <- append(pkts_processed, json_data[[pcap_name]]$pkts_processed)
+            pkts_processed <- append(pkts_processed, json_data[[pcap_name]]$pcap_size)
             total_baseline_alerts <- append(total_baseline_alerts, json_data[[pcap_name]]$baseline_alerts)
             total_experiment_alerts <- append(total_experiment_alerts, json_data[[pcap_name]]$experiment_alerts)
 
@@ -72,7 +72,7 @@ for (datset in c("CICIDS2017", "CICIoT2023")) {
               avg_num_pcre_compared_to[count] <- 0
             }
 
-            pkts_fowarded_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$pkts_fowarded/json_data[[pcap_name]]$pkts_processed), 2)
+            pkts_fowarded_percent[count] <- specify_decimal(100*(json_data[[pcap_name]]$pkts_fowarded/json_data[[pcap_name]]$pcap_size), 2)
             pkts_fowarded_absolute[count] <- json_data[[pcap_name]]$pkts_fowarded
 
             alerts_true_positive_absolute[count] <-json_data[[pcap_name]]$alerts_true_positive

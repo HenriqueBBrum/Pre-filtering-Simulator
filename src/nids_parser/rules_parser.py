@@ -56,6 +56,7 @@ class RulesParser(object):
         self.ruleset_path = simulation_config["ruleset_path"]
         self.nids_name = simulation_config["nids_name"]
         self.nids_config = nids_config
+        self.remove_generic_rules = True if "header_only" in simulation_config["scenario"] else False
 
     # Returns two list of rules from one or multiple files. 
     # The first list contains the parsed rules similar as they apperead in the files but saving the values in dictionaries. 
@@ -104,6 +105,16 @@ class RulesParser(object):
                 cp_rule.header["sport"] =  self.__replace_system_variables(cp_rule.header["sport"],  self.nids_config.ports)
                 cp_rule.header["dst_ip"] =  self.__replace_system_variables(cp_rule.header["dst_ip"], self.nids_config.ip_addresses)
                 cp_rule.header["dport"] =  self.__replace_system_variables(cp_rule.header["dport"],  self.nids_config.ports)
+
+                if self.remove_generic_rules:
+                    any_fields = [
+                        any(ip[0] == '0.0.0.0/0' for ip in cp_rule.header["src_ip"]),
+                        any(ip[0] == '0.0.0.0/0' for ip in cp_rule.header["dst_ip"]),
+                        any(ip[0] == range(0, 65536) for ip in cp_rule.header["sport"]),
+                        any(ip[0] == range(0, 65536) for ip in cp_rule.header["dport"]),
+                    ]
+                    if sum(any_fields) > 1:
+                        continue
 
                 if cp_rule.header.get("direction") == "bidirectional":
                     cp_rule.header["direction"] = "unidirectional"

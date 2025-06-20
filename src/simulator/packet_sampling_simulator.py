@@ -18,6 +18,9 @@ def packet_sampling_simulation(sim_config, n, t, info):
     for pcap_file in os.listdir(sim_config["pcaps_path"]):
         if not os.path.isfile(os.path.join(sim_config["pcaps_path"], pcap_file)):
             continue
+
+        if not pcap_file.endswith(".pcap"):
+            continue
         
         p = Process(target=individual_pcap_simulation, args=(sim_config, pcap_file, n, t, shared_info, lock))
         jobs.append(p)
@@ -50,13 +53,13 @@ def individual_pcap_simulation(sim_config, pcap_file, n, t, shared_info, lock):
 
     shared_info[current_trace] = local_dict[current_trace]  
 # Run the packet sampling method over the packets in the PCAP
-def sample_flows(pcap_file, flow_count_threshold, time_threshold):
+def sample_flows(pcap_filepath, flow_count_threshold, time_threshold):
     pkt_count, ip_pkt_count = 0, 0
     suspicious_pkts = []
     time_to_process = []
     flow_tracker = {} # One entry is (current_count, last_pkt_time)
 
-    for pkt in PcapReader(pcap_file):
+    for pkt in PcapReader(pcap_filepath):
         if IP in pkt:
             start = time()
             proto = str(pkt[IP].proto)

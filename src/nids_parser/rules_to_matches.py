@@ -121,14 +121,14 @@ def __dedup_rules_to_matches(nids_config, rules , pre_filtering_scenario):
             elif Dicts.non_payload_options(option) and option not in unsupported_non_payload_fields:
                 header_fields[option] = rule.options[option]
 
-        if pre_filtering_scenario == "header_only":
+        if "header_only" in pre_filtering_scenario:
             rule_id = hash(str(header_fields)+str(payload_fields["dsize"] if "dsize" in payload_fields else ""))
         else:
             rule_id = hash(str(header_fields)+str(payload_fields))
 
         if rule_id not in deduped_matches:
             match = Match(header_fields, payload_fields, pre_filtering_scenario)
-            if pre_filtering_scenario == "header_only":
+            if "header_only" in pre_filtering_scenario:
                 deduped_matches[rule_id] = match
             else: # Only add matches if the "content_pcre" has a valid non-None value 
                 if not ("content_pcre" in match.payload_fields and not match.payload_fields["content_pcre"]):
