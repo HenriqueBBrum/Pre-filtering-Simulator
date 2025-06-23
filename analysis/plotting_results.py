@@ -15,7 +15,7 @@ OUTPUT_FOLDER="graphs/"
 experiments_name = ["FS N=5 T=50s", "FS N=50 T=5s", "Header Only", "Fast-Pattern","eRBF"]
 
 experiment_mapping = {
-                "packet_sampling_5_25": "FS N=5 T=50s",
+                "packet_sampling_5_50": "FS N=5 T=50s",
                 "packet_sampling_50_5": "FS N=50 T=5s",
                 "rule_based_header_only": "Header Only",
                 "rule_based_fast_pattern": "Fast-Pattern",
@@ -36,7 +36,6 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
 
         # Sort the group by the specified experiment order
         group = group.set_index("experiment").reindex(experiments_name).reset_index()
-       
         ax.bar([i - bar_width / 2 for i in x], 
                group["pkts_fowarded_absolute"], 
                width=bar_width, 
@@ -131,13 +130,13 @@ def performance(performance_data, graph_output_dir):
     metric_keys = ["header", "content", "pcre"]
     metric_labels = ["Header", "Content", "PCRE"]
     metric_colors = ["coral", "royalblue", "seagreen"]
+    box_plot_experimnets = ["Header Only", "Fast-Pattern","eRBF"]
     mean_color = "red"
-    order = ["Header Only", "Fast-Pattern","eRBF"]
     for nids, data in performance_data.items():
         fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=False)
         for idx, (metric, label, color) in enumerate(zip(metric_keys, metric_labels, metric_colors)):
             ax = axes[idx]
-            boxplot_data = [data[exp][metric] for exp in order]
+            boxplot_data = [data[exp][metric] for exp in box_plot_experimnets]
             box = ax.boxplot(boxplot_data, patch_artist=True,
                         boxprops=dict(facecolor=color, color=color),
                         medianprops=dict(color='black'),
@@ -156,16 +155,16 @@ def performance(performance_data, graph_output_dir):
             ax.set_yscale('symlog')
             ax.set_title(label)
             ax.set_xticks(range(1, len(data) + 1))
-            ax.set_xticklabels(order, fontsize=12)
+            ax.set_xticklabels(box_plot_experimnets, fontsize=12)
             if idx == 0:
                 ax.set_ylabel(f"# of comparisons", fontsize=12)
 
-            medians = [np.median(data[exp][metric]) for exp in order]
+            medians = [np.median(data[exp][metric]) for exp in box_plot_experimnets]
             for i, median in enumerate(medians, 1):
                 ax.annotate(f"{int(median)}", xy=(i, median), xytext=(25, 0), textcoords="offset points",
                     va='center', ha='left', fontsize=8, color="black", weight='bold')
                 
-            avgs = [np.average(data[exp][metric]) for exp in order]
+            avgs = [np.average(data[exp][metric]) for exp in box_plot_experimnets]
             for i, avg in enumerate(avgs, 1):
                 ax.annotate(f"{avg:.1f}", xy=(i, avg), xytext=(-25, 0), textcoords="offset points",
                     va='center', ha='right', fontsize=8, color=mean_color)

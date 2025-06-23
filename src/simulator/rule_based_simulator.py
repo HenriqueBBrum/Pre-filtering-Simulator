@@ -237,9 +237,9 @@ def is_packet_suspicious(pkt, pkt_count, matches, tcp_stream_tracker, scenario):
 
             # Matched the groups' ip and port header, compare with the other fields of each rule in this group
             for match in matches[header_group]:
-                if match.max_content_size > pkt.payload_size: # All further matches have at least the same max_content_size as the current match
+                if "header_only" not in scenario and match.max_content_size > pkt.payload_size: # All further matches have at least the same max_content_size as the current match
                     break
-                
+
                 comparisons_to_header+=1
                 if not matched_header_fields(pkt, match):
                     continue                    

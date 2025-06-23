@@ -113,7 +113,7 @@ class RulesParser(object):
                         any(ip[0] == range(0, 65536) for ip in cp_rule.header["sport"]),
                         any(ip[0] == range(0, 65536) for ip in cp_rule.header["dport"]),
                     ]
-                    if sum(any_fields) > 1:
+                    if sum(any_fields) > 0: # 2
                         continue
 
                 if cp_rule.header.get("direction") == "bidirectional":
