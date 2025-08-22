@@ -78,15 +78,25 @@ python3 src/main.py --name <NAME> -t <TYPE> -d <DATASET> -n <NIDS> -p <PCAPS_PAT
 ```
 
 - `<NAME>`: (Optional) Name identifying the experiment you are running  
-- `<TYPE>`: Type of simulation to run (`packet_sampling` or `rule_based`)
+- `<TYPE>`: Type of simulation to run (`flow_sampling` or `rule_based`)
 - `<DATASET>`: Dataset name (`CICIDS2017` or `CICIoT2023`)
 - `<NIDS>`: NIDS name (`snort` or `suricata`)
 - `<PCAPS_PATH>`: Path to the dataset's pcap folders
 
-To obtain the results presented in the paper and generate the final graphs, run the following script:
+To obtain the results presented in the paper and generate the final graphs, run the following scripts.
+
+First, run the `get_pcap_info.r` script that generates intermediate csv files: 
 
 ```
+Rscript get_pcap_info.r
+```
 
+The simulation results should be on the same level as the `analysis/` folder.
+
+Then, with the csv generated, run the plotting script:
+
+```
+python3 plotting_results.py 
 ```
 
 

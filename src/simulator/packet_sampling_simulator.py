@@ -11,7 +11,7 @@ from .analysis import compare_to_baseline
 
 
 # Packet sampling simulation to compare against the pre-filtering proposal. time_threshold in seconds
-def packet_sampling_simulation(sim_config, n, t, info):
+def flow_sampling_simulation(sim_config, n, t, info):
     lock = Lock()
     shared_info = Manager().dict()
     jobs = []

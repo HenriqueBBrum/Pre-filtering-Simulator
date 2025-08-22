@@ -8,7 +8,7 @@ from time import time
 from nids_parser.config_parser import NIDSConfiguration
 from nids_parser.rules_to_matches import convert_rules_to_matches
 from simulator.rule_based_simulator import rule_based_simulation 
-from simulator.packet_sampling_simulator import packet_sampling_simulation
+from simulator.flow_sampling_simulator import flow_sampling_simulation
 
 from scapy.all import TCP
 from scapy.packet import bind_layers
@@ -56,15 +56,15 @@ def main(args):
                 group = f.create_group(trace)
                 for metric in comparisons_info[trace]:
                     group.create_dataset(metric, data = comparisons_info[trace][metric])
-    elif args.type  == "packet_sampling":
+    elif args.type  == "flow_sampling":
         for n in [5, 10, 25, 50]:
             for t in [5, 10, 25, 50]:
                 print("PACKET SAMPLING SIMULATION")
-                simulation_config["output_folder"] = os.path.join(OUTPUT_FOLDER, f"{args.dataset}/{args.nids}/packet_sampling_{str(n)}_{str(t)}/")
+                simulation_config["output_folder"] = os.path.join(OUTPUT_FOLDER, f"{args.dataset}/{args.nids}/flow_sampling_{str(n)}_{str(t)}/")
                 if not os.path.exists(simulation_config["output_folder"]):
                     os.makedirs(simulation_config["output_folder"])
 
-                info = packet_sampling_simulation(simulation_config, n, t, info)
+                info = flow_sampling_simulation(simulation_config, n, t, info)
                 info["total_execution_time"] = time() - start
                 with open(simulation_config["output_folder"] + "analysis.json", 'a') as f:
                     json.dump(info , f, ensure_ascii=False, indent=4)
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run a simulation for packet sampling or rule-based pre-filtering.")
 
     parser.add_argument("--name", type=str, help="Name of the simulation.", nargs='?', default="")
-    parser.add_argument("-t", "--type", choices=["packet_sampling", "rule_based"], help="Type of simulation to run.", required=True)
+    parser.add_argument("-t", "--type", choices=["flow_sampling", "rule_based"], help="Type of simulation to run.", required=True)
     parser.add_argument("-d", "--dataset", choices=["CICIDS2017", "CICIoT2023"], help="Dataset name (CICIDS2017 or CICIoT2023).", required=True)
     parser.add_argument("-n" ,"--nids", choices=["snort", "suricata"], help="Target NIDS (snort or suricata).", required=True)
     parser.add_argument("-p", "--pcaps_path", type=str, help="Folder path for the pcaps to input for the simulator", required=True)

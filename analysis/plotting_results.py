@@ -15,8 +15,8 @@ OUTPUT_FOLDER="graphs/"
 experiments_name = ["FS N=5 T=50s", "FS N=50 T=5s", "Header Only", "Fast-Pattern","eRBF"]
 
 experiment_mapping = {
-                "packet_sampling_5_50": "FS N=5 T=50s",
-                "packet_sampling_50_5": "FS N=50 T=5s",
+                "flow_sampling_5_50": "FS N=5 T=50s",
+                "flow_sampling_50_5": "FS N=50 T=5s",
                 "rule_based_header_only": "Header Only",
                 "rule_based_fast_pattern": "Fast-Pattern",
                 "rule_based_eRBF": "eRBF"
@@ -78,52 +78,124 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
         plt.close()
 
 # Scatter plot showing the overview of packets fowarded and alerts correctly identified as percentage of the total number of packets and alerts of the baseline for each NIDS
-def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    nids_colors = {
-        "Snort": "#9c1412",
-        "Suricata": "#f5aa32"
-    }
-    experiment_markers = {"FS N=5 T=50s": "P", "FS N=50 T=5s": "X", "Header Only": "^", "Fast-Pattern": "s", "eRBF": "p"}
+# def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
+#     fig, ax = plt.subplots(figsize=(10, 6))
+#     nids_colors = {
+#         "Snort": "#9c1412",
+#         "Suricata": "#f5aa32"
+#     }
+#     experiment_markers = {"FS N=5 T=50s": "P", "FS N=50 T=5s": "X", "Header Only": "^", "Fast-Pattern": "s", "eRBF": "p"}
 
-    for key, values in data_for_global_plot.items():
-        experiment, nids = key.split("#")
-        ax.scatter(
-            values["experiment_alerts"], 
-            values["pkts_fowarded"], 
-            color=nids_colors.get(f"{nids.capitalize()}", "black"), 
-            edgecolor="red" if experiment=="eRBF" else "black", 
-            linewidth=1.5 if experiment=="eRBF" else 0.8, 
-            s=175 if experiment=="eRBF" else 150, 
-            marker=experiment_markers.get(experiment, ""),
-            label=f"{nids.capitalize()} {experiment}" 
-        )
+#     for key, values in data_for_global_plot.items():
+#         experiment, nids = key.split("#")
+#         ax.scatter(
+#             values["experiment_alerts"], 
+#             values["pkts_fowarded"], 
+#             color=nids_colors.get(f"{nids.capitalize()}", "black"), 
+#             edgecolor="red" if experiment=="eRBF" else "black", 
+#             linewidth=1.5 if experiment=="eRBF" else 0.8, 
+#             s=175 if experiment=="eRBF" else 150, 
+#             marker=experiment_markers.get(experiment, ""),
+#             label=f"{nids.capitalize()} {experiment}" 
+#         )
 
-    ax.set_xlim([0, 102])
-    ax.xaxis.set_major_formatter(mtick.PercentFormatter())
-    ax.set_xlabel("% of alerts correctly identified " + r"($\bf{higher}$ is better)")
-    ax.set_ylim([0, 102])
-    ax.yaxis.set_major_formatter(mtick.PercentFormatter())
-    ax.set_ylabel("% of packets fowarded " +  r"($\bf{lower}$ is better)")
-    ax.set_title("Packets Fowarded vs Alerts Correctly Identified")    
+#     ax.set_xlim([0, 102])
+#     ax.xaxis.set_major_formatter(mtick.PercentFormatter())
+#     ax.set_xlabel("% of alerts correctly identified " + r"($\bf{higher}$ is better)")
+#     ax.set_ylim([0, 102])
+#     ax.yaxis.set_major_formatter(mtick.PercentFormatter())
+#     ax.set_ylabel("% of packets fowarded " +  r"($\bf{lower}$ is better)")
+#     ax.set_title("Packets Fowarded vs Alerts Correctly Identified")    
     
-    # Create the NIDS and marker legends individually
-    nids_legend = [
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=color, markersize=10, label=key)
-        for key, color in nids_colors.items()
-    ]
-    legend1 =  ax.legend(handles=nids_legend, loc="upper left", bbox_to_anchor=(1.025, 1), title="NIDS", fontsize=10)
-    ax.add_artist(legend1)
-    experiment_legend = [
-        plt.Line2D([0], [0], marker=marker, color="white", markeredgecolor=("red" if key=="eRBF" else "black"), linestyle='None', markersize=(11 if key=="eRBF" else 10), label=key)
-        for key, marker in experiment_markers.items()
-    ]
-    ax.legend(handles=experiment_legend, loc="upper left", bbox_to_anchor=(1, 0.85), title="Method", fontsize=10)
-    ax.grid(True, linestyle="--", alpha=0.6)
+#     # Create the NIDS and marker legends individually
+#     nids_legend = [
+#         plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=color, markersize=10, label=key)
+#         for key, color in nids_colors.items()
+#     ]
+#     legend1 =  ax.legend(handles=nids_legend, loc="upper left", bbox_to_anchor=(1.025, 1), title="NIDS", fontsize=10)
+#     ax.add_artist(legend1)
+#     experiment_legend = [
+#         plt.Line2D([0], [0], marker=marker, color="white", markeredgecolor=("red" if key=="eRBF" else "black"), linestyle='None', markersize=(11 if key=="eRBF" else 10), label=key)
+#         for key, marker in experiment_markers.items()
+#     ]
+#     ax.legend(handles=experiment_legend, loc="upper left", bbox_to_anchor=(1, 0.85), title="Method", fontsize=10)
+#     ax.grid(True, linestyle="--", alpha=0.6)
 
-    plt.tight_layout()
-    plt.savefig(f"{graph_output_dir}/overview_forwardedXalerts.png", dpi=300)
-    plt.show()
+#     plt.tight_layout()
+#     plt.savefig(f"{graph_output_dir}/overview_forwardedXalerts.png", dpi=300)
+#     plt.show()
+
+
+def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
+    print(data_for_global_plot)
+    nids_colors = {
+        "FS N=5 T=50s": "#1f77b4",
+        "FS N=50 T=5s": "#ff7f0e",
+        "Header Only": "#2ca02c",
+        "Fast-Pattern": "#d62728",
+        "eRBF": "grey"
+    }
+    experiment_markers = {
+        "FS N=5 T=50s": "P",
+        "FS N=50 T=5s": "X",
+        "Header Only": "^",
+        "Fast-Pattern": "s",
+        "eRBF": "p"
+    }
+    nids_list = ["snort", "suricata"]
+
+    for nids in nids_list:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        for key, values in data_for_global_plot.items():
+            experiment, nids_key = key.split("#")
+            if nids_key != nids:
+                continue
+            x_vals = values["alerts_true_positive_percent"]
+            y_vals = values["pkts_fowarded_percent"]
+            ax.scatter(
+                x_vals,
+                y_vals,
+                color=nids_colors.get(experiment, "black"),
+                alpha=0.6,
+                s=10, 
+                marker="o",
+                label=experiment
+            )
+            # Add average point for each strategy
+            avg_x = np.mean(x_vals)
+            avg_y = np.mean(y_vals)
+            ax.scatter(
+                avg_x,
+                avg_y,
+                color=nids_colors.get(experiment, "black"),
+                alpha=1.0,
+                s=120,
+                marker="o",
+                edgecolor="black",
+                linewidth=1.5,
+                label=f"{experiment} (avg)"
+            )
+
+        ax.set_xlim([-1, 102])
+        ax.xaxis.set_major_formatter(mtick.PercentFormatter())
+        ax.set_xlabel("% of alerts correctly identified " + r"($\bf{higher}$ is better)")
+        ax.set_ylim([-1, 102])
+        ax.yaxis.set_major_formatter(mtick.PercentFormatter())
+        ax.set_ylabel("% of packets fowarded " +  r"($\bf{lower}$ is better)")
+        ax.set_title(f"Packets Fowarded vs Alerts Correctly Identified ({nids.capitalize()})")
+
+        # Only one legend for strategies (color + marker)
+        handles = [
+            plt.Line2D([0], [0], marker="o", color='w',
+                       markerfacecolor=color, markeredgecolor='black', markersize=10, label=exp)
+            for exp, color in nids_colors.items()
+        ]
+        ax.legend(handles=handles, loc="upper left", bbox_to_anchor=(1.02, 1), title="Method", fontsize=10)
+        ax.grid(True, linestyle="--", alpha=0.6)
+
+        plt.tight_layout()
+        plt.savefig(f"{graph_output_dir}/overview_forwardedXalerts_{nids}.png", dpi=300)
+        plt.close()
 
 # Boxplot graphs shwoing the number of comparisons done by all packet for the rule-based pre-filtering methods
 def performance(performance_data, graph_output_dir):
@@ -207,42 +279,54 @@ if __name__ == "__main__":
                 total_experiment_alerts = group["alerts_true_positive_absolute"].sum().item()
 
                 # Add all for NIDS data irrespective of the dataset
+                print(exp)
                 key = exp+"#"+target_nids
+                # if key in data_for_global_plot:
+                #     total_pkts_processed+=data_for_global_plot[key]["total_pkts_processed"]
+                #     total_pkts_fowarded+=data_for_global_plot[key]["total_pkts_fowarded"]
+                #     total_baseline_alerts+=data_for_global_plot[key]["total_baseline_alerts"]
+                #     total_experiment_alerts+=data_for_global_plot[key]["total_experiment_alerts"]
+                #     pkts_fowarded_percentage = (total_pkts_fowarded/total_pkts_processed) * 100
+                #     alerts_percentage = (total_experiment_alerts/total_baseline_alerts) * 100
+                #     data_for_global_plot[key] = {"pkts_fowarded": pkts_fowarded_percentage, "experiment_alerts": alerts_percentage}
+                # else:
+                #     data_for_global_plot[key] = {"total_pkts_processed": total_pkts_processed, "total_pkts_fowarded": total_pkts_fowarded, 
+                #                                  "total_baseline_alerts": total_baseline_alerts, "total_experiment_alerts": total_experiment_alerts}
+
+
                 if key in data_for_global_plot:
-                    total_pkts_processed+=data_for_global_plot[key]["total_pkts_processed"]
-                    total_pkts_fowarded+=data_for_global_plot[key]["total_pkts_fowarded"]
-                    total_baseline_alerts+=data_for_global_plot[key]["total_baseline_alerts"]
-                    total_experiment_alerts+=data_for_global_plot[key]["total_experiment_alerts"]
-                    pkts_fowarded_percentage = (total_pkts_fowarded/total_pkts_processed) * 100
-                    alerts_percentage = (total_experiment_alerts/total_baseline_alerts) * 100
-                    data_for_global_plot[key] = {"pkts_fowarded": pkts_fowarded_percentage, "experiment_alerts": alerts_percentage}
+                    data_for_global_plot[key]["pkts_fowarded_percent"].extend(group["pkts_fowarded_percent"].to_list())
+                    data_for_global_plot[key]["alerts_true_positive_percent"].extend(group["alerts_true_positive_percent"].to_list())
                 else:
-                    data_for_global_plot[key] = {"total_pkts_processed": total_pkts_processed, "total_pkts_fowarded": total_pkts_fowarded, 
-                                                 "total_baseline_alerts": total_baseline_alerts, "total_experiment_alerts": total_experiment_alerts}
+                    data_for_global_plot[key] = {
+                        "pkts_fowarded_percent": group["pkts_fowarded_percent"].to_list(),
+                        "alerts_true_positive_percent": group["alerts_true_positive_percent"].to_list()
+                    }
+
                 
                 # Grab data for non-flow sampling methods
-                if "FS" not in exp:
-                    experiment_filename = list(experiment_mapping.keys())[list(experiment_mapping.values()).index(exp)]
-                    filepath = f"{args.simulation_results_dir}{dataset_name}/{target_nids}/{experiment_filename}/num_comparsions.hdf5" 
-                    if target_nids not in performance_data:
-                        performance_data[target_nids] = {}
+                # if "FS" not in exp:
+                #     experiment_filename = list(experiment_mapping.keys())[list(experiment_mapping.values()).index(exp)]
+                #     filepath = f"{args.simulation_results_dir}{dataset_name}/{target_nids}/{experiment_filename}/num_comparsions.hdf5" 
+                #     if target_nids not in performance_data:
+                #         performance_data[target_nids] = {}
 
-                    if exp not in performance_data[target_nids]:
-                        performance_data[target_nids][exp] = {"header": np.array([]), "content": np.array([0]), "pcre": np.array([0])}
+                #     if exp not in performance_data[target_nids]:
+                #         performance_data[target_nids][exp] = {"header": np.array([]), "content": np.array([0]), "pcre": np.array([0])}
 
-                    with h5py.File(filepath, 'r') as f:
-                        for trace in f.keys():
-                            for metric in f[trace].keys():
-                                if "header" in metric:
-                                    performance_data[target_nids][exp]["header"] = np.concatenate((performance_data[target_nids][exp]["header"], f[trace][metric][:]))
-                                elif "content" in metric:
-                                    performance_data[target_nids][exp]["content"] = np.concatenate((performance_data[target_nids][exp]["content"], f[trace][metric][:]))
-                                elif "pcre" in metric:
-                                    performance_data[target_nids][exp]["pcre"] = np.concatenate((performance_data[target_nids][exp]["pcre"], f[trace][metric][:]))
+                #     with h5py.File(filepath, 'r') as f:
+                #         for trace in f.keys():
+                #             for metric in f[trace].keys():
+                #                 if "header" in metric:
+                #                     performance_data[target_nids][exp]["header"] = np.concatenate((performance_data[target_nids][exp]["header"], f[trace][metric][:]))
+                #                 elif "content" in metric:
+                #                     performance_data[target_nids][exp]["content"] = np.concatenate((performance_data[target_nids][exp]["content"], f[trace][metric][:]))
+                #                 elif "pcre" in metric:
+                #                     performance_data[target_nids][exp]["pcre"] = np.concatenate((performance_data[target_nids][exp]["pcre"], f[trace][metric][:]))
             
-            fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
+            # fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
 
-    performance(performance_data, OUTPUT_FOLDER)
+    #performance(performance_data, OUTPUT_FOLDER)
     overview_of_forwardedXalerts(data_for_global_plot, OUTPUT_FOLDER)
 
    
