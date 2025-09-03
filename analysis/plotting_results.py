@@ -114,7 +114,7 @@ def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
         plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=color, markersize=10, label=key)
         for key, color in dataset_colors.items()
     ]
-    legend1 =  ax.legend(handles=nids_legend, loc="upper left", bbox_to_anchor=(1.025, 1), title="NIDS", fontsize=10)
+    legend1 =  ax.legend(handles=nids_legend, loc="upper left", bbox_to_anchor=(1.025, 1), title="Dataset", fontsize=10)
     ax.add_artist(legend1)
     experiment_legend = [
         plt.Line2D([0], [0], marker=marker, color="white", markeredgecolor=("red" if key=="eRBF" else "black"), linestyle='None', markersize=(11 if key=="eRBF" else 10), label=key)
@@ -202,7 +202,7 @@ def overview_of_forwardedXalerts_traces(data_for_global_plot, graph_output_dir):
     ax.grid(True, linestyle="--", alpha=0.6)
 
     plt.tight_layout()
-    plt.savefig(f"{graph_output_dir}/overview_traces_forwardedXalerts_{nids}.png", dpi=300)
+    plt.savefig(f"{graph_output_dir}/overview_traces_forwardedXalerts.png", dpi=300)
     plt.close()
 
 # Boxplot graphs shwoing the number of comparisons done by all packet for the rule-based pre-filtering methods
