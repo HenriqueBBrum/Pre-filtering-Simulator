@@ -6,7 +6,7 @@ options(error = traceback)
 specify_decimal <- function(x, k) trimws(format(round(x, k), nsmall=k))
 
 for (datset in c("CICIDS2017", "CICIoT2023")) {
-  for (nids_name in c("snort", "suricata")) { 
+  for (nids_name in c("snort")) { 
     exp_folder_path = paste("../simulation_results/", datset, "/", nids_name, sep="")
     if (!dir.exists(exp_folder_path)) {
       stop(paste("The directory", exp_folder_path, "does not exist."))
