@@ -137,6 +137,13 @@ def overview_of_forwardedXalerts(data_for_global_plot, graph_output_dir):
 
         # Only one legend for strategies (color + marker)
         handles = [
+            plt.Line2D([0], [0], marker="o", color='w',
+                       markerfacecolor="lightgray", markeredgecolor='black', markersize=size, label=label)
+            for size, label in [("4", "Trace"), ("13", "Average of all traces")]
+        ]
+        leg1 =  ax.legend(handles=handles, loc="upper left", bbox_to_anchor=(1.02, 0.72), title="Size", fontsize=10)
+        ax.add_artist(leg1)
+        handles = [
             plt.Line2D([0], [0], marker=experiment_markers.get(exp, "o"), color='w',
                        markerfacecolor=color, markeredgecolor='black', markersize=10, label=exp)
             for exp, color in nids_colors.items()
@@ -242,28 +249,28 @@ if __name__ == "__main__":
 
                 
                 # Grab data for non-flow sampling methods
-                if "FS" not in exp:
-                    experiment_filename = list(experiment_mapping.keys())[list(experiment_mapping.values()).index(exp)]
-                    filepath = f"{args.simulation_results_dir}{dataset_name}/{target_nids}/{experiment_filename}/num_comparsions.hdf5" 
-                    if target_nids not in performance_data:
-                        performance_data[target_nids] = {}
+                # if "FS" not in exp:
+                #     experiment_filename = list(experiment_mapping.keys())[list(experiment_mapping.values()).index(exp)]
+                #     filepath = f"{args.simulation_results_dir}{dataset_name}/{target_nids}/{experiment_filename}/num_comparsions.hdf5" 
+                #     if target_nids not in performance_data:
+                #         performance_data[target_nids] = {}
 
-                    if exp not in performance_data[target_nids]:
-                        performance_data[target_nids][exp] = {"header": np.array([]), "content": np.array([0]), "pcre": np.array([0])}
+                #     if exp not in performance_data[target_nids]:
+                #         performance_data[target_nids][exp] = {"header": np.array([]), "content": np.array([0]), "pcre": np.array([0])}
 
-                    with h5py.File(filepath, 'r') as f:
-                        for trace in f.keys():
-                            for metric in f[trace].keys():
-                                if "header" in metric:
-                                    performance_data[target_nids][exp]["header"] = np.concatenate((performance_data[target_nids][exp]["header"], f[trace][metric][:]))
-                                elif "content" in metric:
-                                    performance_data[target_nids][exp]["content"] = np.concatenate((performance_data[target_nids][exp]["content"], f[trace][metric][:]))
-                                elif "pcre" in metric:
-                                    performance_data[target_nids][exp]["pcre"] = np.concatenate((performance_data[target_nids][exp]["pcre"], f[trace][metric][:]))
+                #     with h5py.File(filepath, 'r') as f:
+                #         for trace in f.keys():
+                #             for metric in f[trace].keys():
+                #                 if "header" in metric:
+                #                     performance_data[target_nids][exp]["header"] = np.concatenate((performance_data[target_nids][exp]["header"], f[trace][metric][:]))
+                #                 elif "content" in metric:
+                #                     performance_data[target_nids][exp]["content"] = np.concatenate((performance_data[target_nids][exp]["content"], f[trace][metric][:]))
+                #                 elif "pcre" in metric:
+                #                     performance_data[target_nids][exp]["pcre"] = np.concatenate((performance_data[target_nids][exp]["pcre"], f[trace][metric][:]))
             
-            fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
+            # fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
 
-    performance(performance_data, OUTPUT_FOLDER)
+    # performance(performance_data, OUTPUT_FOLDER)
     overview_of_forwardedXalerts(data_for_global_plot, OUTPUT_FOLDER)
 
    

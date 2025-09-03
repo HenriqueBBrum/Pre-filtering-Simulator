@@ -52,6 +52,7 @@ def individual_pcap_simulation(sim_config, pcap_file, n, t, shared_info, lock):
     lock.release()
 
     shared_info[current_trace] = local_dict[current_trace]  
+
 # Run the packet sampling method over the packets in the PCAP
 def sample_flows(pcap_filepath, flow_count_threshold, time_threshold):
     pkt_count, ip_pkt_count = 0, 0

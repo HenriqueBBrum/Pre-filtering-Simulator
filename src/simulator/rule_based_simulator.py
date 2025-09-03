@@ -94,21 +94,19 @@ def find_suspicious_packets(sim_config, pcap_filepath, matches, no_content_match
                 if "eRBF" in sim_config["scenario"] and (pkt.tcp or pkt.udp):
                     flow = pkt.header["src_ip"]+str(pkt.header["sport"])+pkt.header["dst_ip"]+str(pkt.header["dport"]) 
                     reversed_flow = pkt.header["dst_ip"]+str(pkt.header["dport"])+pkt.header["src_ip"]+str(pkt.header["sport"]) # Invert order to match flow
-                    if "tls" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) == 0x16:
-                        suspicious_pkt = (pkt_count, "tls")
-                        header_check+=1
-                    elif "ftp" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x30:
+    
+                    if "ftp" in matches_key and ord(pkt.payload_buffers["pkt_data"][0][0]) >= 0x30:
                         suspicious_pkt = (pkt_count, "ftp") 
-                        header_check+=2
+                        header_check+=1
                     elif DNS in scapy_pkt and scapy_pkt[DNS].opcode == 0 and scapy_pkt[DNS].ancount == 0 and DNSQR in scapy_pkt:
                         suspicious_pkt = (pkt_count, "dns")
-                        header_check+=3
+                        header_check+=2 # Did the if on FTP and DNS
                     elif pkt.tcp:
                         suspicious_pkt = tcp_tracker(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker)
-                        header_check+=4
+                        header_check+=3 # Did the if on FTP, DNS and TCP
 
                     if not suspicious_pkt:
-                        header_check+=4
+                        header_check+=3
             
                 # Go over the offloaded rules to find a match or not
                 if not suspicious_pkt: 
