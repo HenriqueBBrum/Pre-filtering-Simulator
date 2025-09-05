@@ -1,4 +1,4 @@
-### This file contains a class that parsers the network variables defined by Snort and Suricata
+### This file contains a class that parsers the network variables defined by Snort
 ## The config files to parse are based on Snort 2.* config format
 
 import re
@@ -24,7 +24,6 @@ class NIDSConfiguration():
         self.__parse_classification_priority(priority_classification_file)
 
     # Translates the ip and port variables to their real values (e.g: $HOME_NET ->[10.0.0.1, 10.0.02, ...])
-    # For more info, go to -> https://suricata.readthedocs.io/en/suricata-4.1.4/rules/intro.html#source-and-destination
     def __parse_ip_port_vars(self, ip_port_vars):
         with open(ip_port_vars, 'r') as config_file:
             lines  = config_file.readlines()

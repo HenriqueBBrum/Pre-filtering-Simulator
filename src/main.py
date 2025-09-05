@@ -86,8 +86,6 @@ def generate_simulation(name, dataset, nids, pcaps_path):
     simulation_config["nids_config_path"] = os.path.join(base_path, f"../etc/{dataset}/nids_configuration/{nids}/{nids}.{file_ending}")
     if nids == "snort":
         simulation_config["ruleset_path"] = os.path.join(base_path, "../etc/rules/snort3-registered/")
-    else:
-        simulation_config["ruleset_path"] = os.path.join(base_path, "../etc/rules/suricata-emerging/emerging-all.rules")
 
     simulation_config["ipvars_config_path"] = os.path.join(base_path, f"../etc/{dataset}/nids_configuration/")
     return simulation_config
@@ -96,10 +94,10 @@ def generate_simulation(name, dataset, nids, pcaps_path):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run a simulation for packet sampling or rule-based pre-filtering.")
 
-    parser.add_argument("--name", type=str, help="Name of the simulation.", nargs='?', default="")
+    parser.add_argument("--name", type=str, help="Name of the simulation.", nargs='?', default="test")
     parser.add_argument("-t", "--type", choices=["flow_sampling", "rule_based"], help="Type of simulation to run.", required=True)
     parser.add_argument("-d", "--dataset", choices=["CICIDS2017", "CICIoT2023"], help="Dataset name (CICIDS2017 or CICIoT2023).", required=True)
-    parser.add_argument("-n" ,"--nids", choices=["snort", "suricata"], help="Target NIDS (snort or suricata).", required=True)
+    parser.add_argument("-n" ,"--nids", choices=["snort"], help="Target NIDS (snort).", required=True)
     parser.add_argument("-p", "--pcaps_path", type=str, help="Folder path for the pcaps to input for the simulator", required=True)
 
     main(parser.parse_args())

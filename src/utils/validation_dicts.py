@@ -1,4 +1,4 @@
-# This file contains sets and dictionaries with the names of possible actions, protocol, options, classification, etc. for Snort and Suricata rules.
+# This file contains sets and dictionaries with the names of possible actions, protocol, options, classification, etc. for Snort rules.
 
 from typing import Any
 
@@ -22,7 +22,7 @@ class Dicts():
         else:
             raise ValueError("Invalid action specified", action)
 
-    # Validates protocols/services that are used by the Snort 3 Community and Registered rulesets, and Suricat 8.0.0
+    # Validates protocols/services that are used by the Snort 3 Community and Registered rulesets
     @staticmethod
     def proto(proto: str) -> str:
         protos = {
@@ -398,78 +398,6 @@ class Dicts():
                 return False
         else:
             return snort_sticky_buffers
-        
-    @staticmethod
-    def supported_suricata_sticky_buffers(option: str = None) -> Any:
-        suricata_sticky_buffers = {  
-                            "http.method",
-                            "http.uri",
-                            "http.uri.raw",
-                            "http.host",
-                            "http.server",
-                            "http.header",
-                            "http.header.raw",
-                            "http.header_names",
-                            "http.stat_code",
-                            "http.stat_msg",
-                            "http.response_body",
-                            "http.user_agent",
-                            "http.request_body",
-                            "http.content_type",
-                            "http.content_len",
-                            "http.connection",
-                            "http.cookie",
-                            "http.accept_lang",
-                            "http.accept_enc",
-                            "http.accept",
-                            "http.referer",
-                            "http.location", 
-                            "http_method",
-                            "http_uri",	
-                            "http_raw_uri",	
-                            "http_header",
-                            "http_raw_header",	
-                            "http_header_names",	
-                            "http_stat_code",
-                            "http_stat_msg",
-                            "http_user_agent",
-                            "http_client_body",	
-                            "http_cookie",
-                            "http_referer",
-                            "dns.query",
-                            "dns_query"
-                        }
-        if option:
-            if option in suricata_sticky_buffers:
-                return option
-            else:
-                return False
-        else:
-            return suricata_sticky_buffers
-
-
-    @staticmethod
-    def suricata_only_options(option: str = None) -> Any:
-        suricata_only_options = {  "asn1",
-                            "threshold",
-                            "bsize",
-                            "urilen",
-                            "target",
-                            "dotprefix",
-                            "xbits",
-                            "noalert",
-                            "flowint",
-                            "app-layer-event",
-                            "app-layer-protocol"     
-                        }
-        if option:
-            if option in suricata_only_options:
-                return option
-            else:
-                return False
-        else:
-            return suricata_only_options
-        
 
     # Check if a rule option is a valid option type 
     def is_option(self, option):
@@ -483,8 +411,6 @@ class Dicts():
             return "post_detect", True
         if option in self.content_modifiers():
             return "payload", True
-        if option in self.suricata_only_options():
-            return "suricata_only", True
         if option in self.sticky_buffers():
             return "sticky_buffers", True
         

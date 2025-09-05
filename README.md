@@ -37,9 +37,9 @@ git clone https://github.com/HenriqueBBrum/Pre-filtering-Simulator.git
 
 ## Install Dependencies
 
-The simulator is written in Python. Python 3.10.12 was used for development.
+The simulator is written in Python. Python 3.12.3 was used for development.
 
-Install the required Python libraries:
+Create a venv  and install the required Python libraries:
 
 ```bash
 pip install -r requirements.txt
@@ -59,11 +59,9 @@ Before running the simulator, dowload the datasets. Both of them are quite heavy
 - [CICIDS2017](https://www.unb.ca/cic/datasets/ids-2017.html)
 - [CICIoT2023](https://www.unb.ca/cic/datasets/iotdataset-2023.html)
 
-## Install Snort and Suricata
+## Install Snort
 
-The last step before running the simulator is to install the NIDS:
-- [Snort](https://www.snort.org/downloads#snort3-downloads)
-- [Suricata](https://suricata.io/download/)
+The last step before running the simulator is to install [Snort](https://www.snort.org/downloads#snort3-downloads).
 
 ## Running the Simulator
 
@@ -80,7 +78,7 @@ python3 src/main.py --name <NAME> -t <TYPE> -d <DATASET> -n <NIDS> -p <PCAPS_PAT
 - `<NAME>`: (Optional) Name identifying the experiment you are running  
 - `<TYPE>`: Type of simulation to run (`flow_sampling` or `rule_based`)
 - `<DATASET>`: Dataset name (`CICIDS2017` or `CICIoT2023`)
-- `<NIDS>`: NIDS name (`snort` or `suricata`)
+- `<NIDS>`: NIDS name (`snort`)
 - `<PCAPS_PATH>`: Path to the dataset's pcap folders
 
 To obtain the results presented in the paper and generate the final graphs, run the following scripts.
@@ -104,6 +102,4 @@ python3 plotting_results.py
 
 | NIDS | Ruleset | Download date | Rules removed |
 |:---:|:---:|:---:|---|
-| Snort++ 3.3.7.0 | [Snort 3 Ruleset snapshot-31470](https://www.snort.org/downloads/registered/snortrules-snapshot-31470.tar.gz) | 4 April 2025 |300039:1, 300046:1 |
-| Suricata 7.0.8 | [Emerging Threats Suricata 7.0.3](https://rules.emergingthreatspro.com/open/suricata-7.0.3/) | 17 Fev 2025 | - |
-
+| Snort++ 3.7.4 | [Snort 3 Ruleset snapshot-31470](https://www.snort.org/downloads/registered/snortrules-snapshot-31470.tar.gz) | 4 April 2025 |300039:1, 300046:1 |

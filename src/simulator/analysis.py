@@ -47,7 +47,7 @@ def compare_to_baseline(sim_config, current_trace, suspicious_pkts, info):
     info[current_trace]["signatures_false_negative"] = missed_signatures
     info[current_trace]["signatures_false_positive"] = aditional_signatures
 
-# Run Snort or Suricata with the final pcap after pre-filtering or packet sampling
+# Run NIDS with the final pcap after pre-filtering or packet sampling
 def nids_with_suspicious_pcap(sim_config, current_trace, suspicious_pkts):
     suspicious_pkts_pcap = sim_config["output_folder"]+current_trace+".pcap"
     pcap_writer = PcapWriter(suspicious_pkts_pcap, 1)
@@ -72,10 +72,6 @@ def nids_with_suspicious_pcap(sim_config, current_trace, suspicious_pkts):
         
         new_filepath = sim_config["output_folder"]+current_trace+".log"
         os.rename(sim_config["output_folder"]+"alert_json.txt", new_filepath)
-    else:
-        subprocess.run(["suricata", "-c", sim_config["nids_config_path"], "-S", sim_config["ruleset_path"], "-r",suspicious_pkts_pcap, "-l",sim_config["output_folder"]], stdout=subprocess.DEVNULL)
-        new_filepath = sim_config["output_folder"]+current_trace+".log"
-        os.rename(sim_config["output_folder"]+"fast.log", new_filepath)
 
     os.remove(suspicious_pkts_pcap)
     return new_filepath, time() - start
@@ -91,13 +87,7 @@ def parse_alerts(alerts_filepath, nids_name):
                 parsed_line = json.loads(line)
                 signature = parsed_line["rule"].split(':')[1]
                 alert_id = parsed_line["proto"]+" - "+parsed_line["src_ap"]+" - "+parsed_line["dst_ap"]+" - "+signature
-            elif nids_name == "suricata":
-                l = line.strip()
-                signature = re.search("\[\d*:\d*:\d*]", l).group(0).split(':')[1]   
-                proto = re.search(r"\{([a-zA-Z]+)\}", l).group(1)
-                src_ap, dst_ap = re.search(r"(\d+\.\d+\.\d+\.\d+:\d+) -> (\d+\.\d+\.\d+\.\d+:\d+)", l).groups()
-                alert_id = proto+" - "+src_ap+" - "+dst_ap+" - "+signature
-
+            
             if signature in signatures:
                 signatures[signature]+=1
             else:

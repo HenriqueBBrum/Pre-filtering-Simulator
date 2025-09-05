@@ -1,0 +1,212 @@
+Generating graphs for CICIDS2017 with snort...
+Friday
+FS N=5 T=50s: 25.55% packets fowarded and 95.03% alerts correctly identified compared to baseline
+FS N=50 T=5s: 54.07% packets fowarded and 98.89% alerts correctly identified compared to baseline
+Header Only: 98.50% packets fowarded and 98.97% alerts correctly identified compared to baseline
+Fast-Pattern: 44.52% packets fowarded and 87.97% alerts correctly identified compared to baseline
+eRBF: 24.75% packets fowarded and 95.41% alerts correctly identified compared to baseline
+
+
+Monday
+FS N=5 T=50s: 16.74% packets fowarded and 91.91% alerts correctly identified compared to baseline
+FS N=50 T=5s: 43.48% packets fowarded and 97.76% alerts correctly identified compared to baseline
+Header Only: 98.70% packets fowarded and 97.85% alerts correctly identified compared to baseline
+Fast-Pattern: 48.59% packets fowarded and 88.01% alerts correctly identified compared to baseline
+eRBF: 16.63% packets fowarded and 92.63% alerts correctly identified compared to baseline
+
+
+Thursday
+FS N=5 T=50s: 18.25% packets fowarded and 90.76% alerts correctly identified compared to baseline
+FS N=50 T=5s: 44.73% packets fowarded and 98.28% alerts correctly identified compared to baseline
+Header Only: 98.17% packets fowarded and 98.45% alerts correctly identified compared to baseline
+Fast-Pattern: 47.80% packets fowarded and 89.10% alerts correctly identified compared to baseline
+eRBF: 17.43% packets fowarded and 93.38% alerts correctly identified compared to baseline
+
+
+Tuesday
+FS N=5 T=50s: 14.45% packets fowarded and 45.47% alerts correctly identified compared to baseline
+FS N=50 T=5s: 41.11% packets fowarded and 99.14% alerts correctly identified compared to baseline
+Header Only: 98.68% packets fowarded and 99.20% alerts correctly identified compared to baseline
+Fast-Pattern: 49.78% packets fowarded and 72.74% alerts correctly identified compared to baseline
+eRBF: 14.34% packets fowarded and 96.66% alerts correctly identified compared to baseline
+
+
+Wednesday
+FS N=5 T=50s: 22.01% packets fowarded and 54.79% alerts correctly identified compared to baseline
+FS N=50 T=5s: 48.55% packets fowarded and 99.82% alerts correctly identified compared to baseline
+Header Only: 98.89% packets fowarded and 99.85% alerts correctly identified compared to baseline
+Fast-Pattern: 47.78% packets fowarded and 60.48% alerts correctly identified compared to baseline
+eRBF: 23.04% packets fowarded and 97.28% alerts correctly identified compared to baseline
+
+
+Generating graphs for CICIoT2023 with snort...
+Backdoor_Malware
+FS N=5 T=50s: 29.51% packets fowarded and 99.25% alerts correctly identified compared to baseline
+FS N=50 T=5s: 78.93% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 85.13% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 16.18% packets fowarded and 88.06% alerts correctly identified compared to baseline
+eRBF: 15.10% packets fowarded and 100.00% alerts correctly identified compared to baseline
+
+
+BenignTraffic
+FS N=5 T=50s: 17.95% packets fowarded and 99.35% alerts correctly identified compared to baseline
+FS N=50 T=5s: 43.03% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 95.62% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 13.43% packets fowarded and 99.32% alerts correctly identified compared to baseline
+eRBF: 12.71% packets fowarded and 99.54% alerts correctly identified compared to baseline
+
+
+BenignTraffic1
+FS N=5 T=50s: 8.16% packets fowarded and 99.67% alerts correctly identified compared to baseline
+FS N=50 T=5s: 30.16% packets fowarded and 99.96% alerts correctly identified compared to baseline
+Header Only: 95.90% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 9.33% packets fowarded and 99.15% alerts correctly identified compared to baseline
+eRBF: 4.82% packets fowarded and 99.67% alerts correctly identified compared to baseline
+
+
+BenignTraffic2
+FS N=5 T=50s: 8.33% packets fowarded and 99.51% alerts correctly identified compared to baseline
+FS N=50 T=5s: 30.94% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 95.80% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 6.37% packets fowarded and 98.51% alerts correctly identified compared to baseline
+eRBF: 4.95% packets fowarded and 99.35% alerts correctly identified compared to baseline
+
+
+BenignTraffic3
+FS N=5 T=50s: 8.48% packets fowarded and 99.23% alerts correctly identified compared to baseline
+FS N=50 T=5s: 31.42% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 95.81% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 5.88% packets fowarded and 96.92% alerts correctly identified compared to baseline
+eRBF: 5.02% packets fowarded and 98.71% alerts correctly identified compared to baseline
+
+
+BrowserHijacking
+FS N=5 T=50s: 18.24% packets fowarded and 100.00% alerts correctly identified compared to baseline
+FS N=50 T=5s: 56.07% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 92.05% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 19.07% packets fowarded and 98.65% alerts correctly identified compared to baseline
+eRBF: 13.56% packets fowarded and 100.00% alerts correctly identified compared to baseline
+
+
+CommandInjection
+FS N=5 T=50s: 27.67% packets fowarded and 100.00% alerts correctly identified compared to baseline
+FS N=50 T=5s: 64.92% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 88.83% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 31.12% packets fowarded and 60.67% alerts correctly identified compared to baseline
+eRBF: 13.06% packets fowarded and 100.00% alerts correctly identified compared to baseline
+
+
+DDoS-SlowLoris
+FS N=5 T=50s: 35.20% packets fowarded and 98.56% alerts correctly identified compared to baseline
+FS N=50 T=5s: 75.45% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 81.06% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 8.02% packets fowarded and 98.56% alerts correctly identified compared to baseline
+eRBF: 20.71% packets fowarded and 99.52% alerts correctly identified compared to baseline
+
+
+DNS_Spoofing
+FS N=5 T=50s: 14.49% packets fowarded and 95.15% alerts correctly identified compared to baseline
+FS N=50 T=5s: 43.98% packets fowarded and 97.57% alerts correctly identified compared to baseline
+Header Only: 94.68% packets fowarded and 98.65% alerts correctly identified compared to baseline
+Fast-Pattern: 15.48% packets fowarded and 94.61% alerts correctly identified compared to baseline
+eRBF: 6.23% packets fowarded and 97.30% alerts correctly identified compared to baseline
+
+
+DictionaryBruteForce
+FS N=5 T=50s: 23.68% packets fowarded and 58.54% alerts correctly identified compared to baseline
+FS N=50 T=5s: 77.03% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 82.01% packets fowarded and 56.10% alerts correctly identified compared to baseline
+Fast-Pattern: 11.11% packets fowarded and 55.69% alerts correctly identified compared to baseline
+eRBF: 14.91% packets fowarded and 81.30% alerts correctly identified compared to baseline
+
+
+DoS-HTTP_Flood
+FS N=5 T=50s: 26.69% packets fowarded and 49.16% alerts correctly identified compared to baseline
+FS N=50 T=5s: 97.75% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 71.68% packets fowarded and 99.25% alerts correctly identified compared to baseline
+Fast-Pattern: 11.26% packets fowarded and 60.00% alerts correctly identified compared to baseline
+eRBF: 67.66% packets fowarded and 89.12% alerts correctly identified compared to baseline
+
+
+MITM-ArpSpoofing
+FS N=5 T=50s: 8.33% packets fowarded and 99.04% alerts correctly identified compared to baseline
+FS N=50 T=5s: 24.95% packets fowarded and 99.73% alerts correctly identified compared to baseline
+Header Only: 96.69% packets fowarded and 99.73% alerts correctly identified compared to baseline
+Fast-Pattern: 25.34% packets fowarded and 87.53% alerts correctly identified compared to baseline
+eRBF: 4.51% packets fowarded and 99.18% alerts correctly identified compared to baseline
+
+
+Recon-HostDiscovery
+FS N=5 T=50s: 59.10% packets fowarded and 99.25% alerts correctly identified compared to baseline
+FS N=50 T=5s: 85.00% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 87.02% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 9.77% packets fowarded and 98.50% alerts correctly identified compared to baseline
+eRBF: 53.57% packets fowarded and 99.87% alerts correctly identified compared to baseline
+
+
+Recon-OSScan
+FS N=5 T=50s: 47.32% packets fowarded and 76.65% alerts correctly identified compared to baseline
+FS N=50 T=5s: 71.81% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 93.63% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 10.34% packets fowarded and 24.93% alerts correctly identified compared to baseline
+eRBF: 37.77% packets fowarded and 90.37% alerts correctly identified compared to baseline
+
+
+Recon-PingSweep
+FS N=5 T=50s: 31.96% packets fowarded and 47.62% alerts correctly identified compared to baseline
+FS N=50 T=5s: 67.05% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 84.34% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 12.75% packets fowarded and 28.57% alerts correctly identified compared to baseline
+eRBF: 18.39% packets fowarded and 76.19% alerts correctly identified compared to baseline
+
+
+Recon-PortScan
+FS N=5 T=50s: 59.44% packets fowarded and 88.77% alerts correctly identified compared to baseline
+FS N=50 T=5s: 84.72% packets fowarded and 99.80% alerts correctly identified compared to baseline
+Header Only: 92.92% packets fowarded and 99.80% alerts correctly identified compared to baseline
+Fast-Pattern: 10.64% packets fowarded and 15.48% alerts correctly identified compared to baseline
+eRBF: 48.75% packets fowarded and 94.69% alerts correctly identified compared to baseline
+
+
+SqlInjection
+FS N=5 T=50s: 45.41% packets fowarded and 99.76% alerts correctly identified compared to baseline
+FS N=50 T=5s: 88.25% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 88.80% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 16.05% packets fowarded and 75.36% alerts correctly identified compared to baseline
+eRBF: 28.53% packets fowarded and 100.00% alerts correctly identified compared to baseline
+
+
+Uploading_Attack
+FS N=5 T=50s: 38.26% packets fowarded and 96.23% alerts correctly identified compared to baseline
+FS N=50 T=5s: 82.73% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 85.89% packets fowarded and 92.45% alerts correctly identified compared to baseline
+Fast-Pattern: 19.07% packets fowarded and 62.26% alerts correctly identified compared to baseline
+eRBF: 18.90% packets fowarded and 98.11% alerts correctly identified compared to baseline
+
+
+VulnerabilityScan
+FS N=5 T=50s: 37.47% packets fowarded and 98.73% alerts correctly identified compared to baseline
+FS N=50 T=5s: 78.36% packets fowarded and 99.87% alerts correctly identified compared to baseline
+Header Only: 89.70% packets fowarded and 99.87% alerts correctly identified compared to baseline
+Fast-Pattern: 17.42% packets fowarded and 95.12% alerts correctly identified compared to baseline
+eRBF: 25.71% packets fowarded and 99.36% alerts correctly identified compared to baseline
+
+
+XSS
+FS N=5 T=50s: 33.85% packets fowarded and 100.00% alerts correctly identified compared to baseline
+FS N=50 T=5s: 80.12% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Header Only: 85.19% packets fowarded and 100.00% alerts correctly identified compared to baseline
+Fast-Pattern: 15.17% packets fowarded and 75.86% alerts correctly identified compared to baseline
+eRBF: 13.72% packets fowarded and 98.85% alerts correctly identified compared to baseline
+
+Overview
+Plotting FS N=5 T=50s for CICIDS2017: 19.4% of packets fowarded 75.59% of alerts correctly identified
+Plotting FS N=50 T=5s for CICIDS2017: 46.39% of packets fowarded 98.78% of alerts correctly identified
+Plotting Fast-Pattern for CICIDS2017: 47.69% of packets fowarded 79.66% of alerts correctly identified
+Plotting Header Only for CICIDS2017: 98.59% of packets fowarded 98.86% of alerts correctly identified
+Plotting eRBF for CICIDS2017: 19.24% of packets fowarded 95.07% of alerts correctly identified
+Plotting FS N=5 T=50s for CICIoT2023: 28.98% of packets fowarded 90.22% of alerts correctly identified
+Plotting FS N=50 T=5s for CICIoT2023: 64.63% of packets fowarded 99.85% of alerts correctly identified
+Plotting Fast-Pattern for CICIoT2023: 14.19% of packets fowarded 75.69% of alerts correctly identified
+Plotting Header Only for CICIoT2023: 89.14% of packets fowarded 97.29% of alerts correctly identified
+Plotting eRBF for CICIoT2023: 21.43% of packets fowarded 96.06% of alerts correctly identified

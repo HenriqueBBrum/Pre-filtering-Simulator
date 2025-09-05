@@ -80,7 +80,7 @@ class MatchTree:
        for key, node in self.nodes.items():
            print(node.parents, node.name, node.children, len(node.matches))
 
-### Parsing Snort/Suricata rules from multiple files, and the subsequent deduplication, replacement of system variables, port groupping and fixing negated headers 
+### Parsing NIDS rules from multiple files, and the subsequent deduplication, replacement of system variables, port groupping and fixing negated headers 
 def convert_rules_to_matches(simulation_config, nids_config):
     print(f'---- Parsing rules from { simulation_config["ruleset_path"]} ----')
     parser = RulesParser(simulation_config, nids_config)

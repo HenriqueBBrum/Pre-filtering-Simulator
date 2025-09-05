@@ -42,7 +42,7 @@ class Match(object):
     def __init__(self, header_fields, payload_fields, pre_filtering_scenario):
         self.header_key = header_fields["ip_port_key"]
         self.service = []
-        # Adjust some services based on Snort, suricata and getservbyport 
+        # Adjust some services based on Snort and getservbyport 
         if "service" in payload_fields:
             for service in payload_fields["service"]:
                 if service == "ssl":

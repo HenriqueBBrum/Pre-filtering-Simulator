@@ -40,7 +40,7 @@ class Rule(object):
 
         
 ### 
-#   Parses Snort/Suricata rules and returns two lists with all the rules parsed:
+#   Parses NIDS rules and returns two lists with all the rules parsed:
 #       One contains the original rules with minimals changes
 #       The other contains only supported rules, without system variables and no bidirectional rules (divided into two) 
 #   If there are invalid options in the rule an Error is raised. 
@@ -356,7 +356,6 @@ class RulesParser(object):
         
     ### OPTIONS PARSING FUNCTIONS ###
     # Parses the rule body or options, validates it and returns a dictionary where each option is now a list. 
-    # Parses for both snort and suricata rules
     def __parse_options(self, rule):
         options_list = self.__get_options_as_list(rule)
         options_dict = {}
@@ -368,24 +367,15 @@ class RulesParser(object):
             if ':' in option_string:
                 key, value = option_string.split(":", 1)
             
-            if not self.dicts.is_option(key) or (snort and self.dicts.suricata_only_options(key)):
+            if not self.dicts.is_option(key):
                 raise KeyError("Unrecognized option: ", key)
             
             # Save the current buffer
             if self.dicts.sticky_buffers(key):
-                if (snort and self.dicts.supported_snort_sticky_buffers(key)) or \
-                    (not snort and self.dicts.supported_suricata_sticky_buffers(key)): # Save the current buffer keyword
+                if (snort and self.dicts.supported_snort_sticky_buffers(key)): # Save the current buffer keyword
                     current_buffer = self.__simplify_buffers(key) 
                 else:
                     current_buffer = "pkt_data"
-                continue
-
-            # Suricata only: Add content modifiers to the last content option
-            if not snort and self.dicts.content_modifiers(key):
-                if "content_pcre" not in options_dict:
-                    raise Exception("Content modifiers without a content")
-                if  options_dict["content_pcre"][-1][0] == 0:
-                    options_dict["content_pcre"][-1][-1].append(option_string)
                 continue
 
             if key == "content":
@@ -464,7 +454,7 @@ class RulesParser(object):
 
         return parsed_value
 
-    # Fix PCRE parsing for suricata since it has sticky buffers on the options
+    # PCRE parsing
     def __parse_pcre(self, value, buffer_name):
         negate = re.search('^!', value)
         if negate:

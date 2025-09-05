@@ -189,7 +189,7 @@ def get_applayer_proto(pkt, proto_str):
         if pkt.payload_size == 0:
             applayer_proto = proto_str
             
-        if applayer_proto in change_map: # getservbyport and Snort and Suricata have different ideas on the app layer proto for the same port
+        if applayer_proto in change_map: # getservbyport and Snort have different ideas on the app layer proto for the same port
             applayer_proto = change_map[applayer_proto]
 
         if applayer_proto == "http" and not (pkt.http_res or pkt.http_req):
@@ -198,7 +198,7 @@ def get_applayer_proto(pkt, proto_str):
     return applayer_proto 
 
 
-# Check Snort and Suricata flow requirements
+# Check NIDS flow requirements
 def tcp_tracker(pkt, pkt_count, flow, reversed_flow, tcp_stream_tracker):
     if pkt.header["flags"] & 2 == 2: # SYN in flags
         return (pkt_count, "syn")

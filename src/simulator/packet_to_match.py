@@ -143,7 +143,7 @@ class PacketToMatch(object):
 
         return self.__normalize_http_text("http_cookie", cookie) if normalized else cookie
 
-    # Snort/SUricata Normalization of HTTP fields (more or less). Replaces hex escaped (e.g. %3d) and normalizes path for uri
+    # NIDS Normalization of HTTP fields (more or less). Replaces hex escaped (e.g. %3d) and normalizes path for uri
     def __normalize_http_text(self, header_name, raw_http_text, normalized_start=""):        
         normalized_text = ""
         uri_segment = 0 # 0 - path, 1 - query, 2 - fragment

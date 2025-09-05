@@ -46,6 +46,9 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
         ax.set_xticklabels(group["experiment"], size=8)
         max_value = pkts_processed_unique[pcap][0] if len(pkts_processed_unique[pcap]) > 0 else 0
 
+        pkts_fowarded = group["pkts_fowarded_absolute"]
+        pkts_percent = (pkts_fowarded / max_value) * 100 if max_value > 0 else 0
+
         # Add a horizontal line delimiting the max value for the primary Y-axis
         if max_value > 0:
             ax.axhline(y=max_value, color='coral', linestyle='--', linewidth=1, label="Max suspicious packets")
@@ -64,7 +67,15 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
         ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
         max_value = total_baseline_alerts_unique[pcap][0]
         ax2.set_ylim([0, 1])
+
+        # Print the percentage of alerts correctly identified compared to the baseline
+        print(pcap)
+        alerts_true_positive = group["alerts_true_positive_absolute"]
+        alerts_percent = (alerts_true_positive / max_value) * 100 if max_value > 0 else 0
+        for i, (ppercent, apercent) in enumerate(zip(pkts_percent, alerts_percent)):
+            print(f"{group['experiment'].iloc[i]}: {ppercent:.2f}% packets fowarded and {apercent:.2f}% alerts correctly identified compared to baseline")
         
+        print("\n")
         # Add a horizontal line delimiting the max value for the secondary Y-axis
         if max_value > 0:
             ax2.axhline(y=max_value, color='royalblue', linestyle='--', linewidth=1)
@@ -76,58 +87,6 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
         plt.tight_layout()
         plt.savefig(f"{graph_output_dir}/{pcap}.png", dpi=300)
         plt.close()
-
-
-# Scatter plot showing the overview of packets fowarded and alerts correctly identified as percentage of the total number of packets and alerts of the baseline for each NIDS
-def overview_forwardedXalerts(data_for_global_plot, graph_output_dir):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    dataset_colors = {
-        "CICIDS2017": "#9c1412",
-        "CICIoT2023": "#f5aa32"
-    }
-    experiment_markers = {"FS N=5 T=50s": "P", "FS N=50 T=5s": "X", "Header Only": "^", "Fast-Pattern": "s", "eRBF": "p"}
-
-    for key, values in data_for_global_plot.items():
-        experiment, dataset = key.split("#")
-        # print(f"Plotting {experiment} for {dataset}: {values}")
-        ax.scatter(
-            values["alerts_true_positive_percent"], 
-            values["pkts_fowarded_percent"], 
-            color=dataset_colors.get(dataset, "black"), 
-            edgecolor="red" if experiment=="eRBF" else "black", 
-            linewidth=1.5 if experiment=="eRBF" else 0.8, 
-            s=175 if experiment=="eRBF" else 150, 
-            marker=experiment_markers.get(experiment, ""),
-            label=dataset
-        )
-
-    ax.set_xlim([0, 102])
-    ax.xaxis.set_major_formatter(mtick.PercentFormatter())
-    ax.set_xlabel("% of alerts correctly identified " + r"($\bf{higher}$ is better)")
-    ax.set_ylim([0, 102])
-    ax.yaxis.set_major_formatter(mtick.PercentFormatter())
-    ax.set_ylabel("% of packets fowarded " +  r"($\bf{lower}$ is better)")
-    ax.set_title("Packets Fowarded vs Alerts Correctly Identified")    
-    
-    # Create the NIDS and marker legends individually
-    nids_legend = [
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=color, markersize=10, label=key)
-        for key, color in dataset_colors.items()
-    ]
-    legend1 =  ax.legend(handles=nids_legend, loc="upper left", bbox_to_anchor=(1.025, 1), title="Dataset", fontsize=10)
-    ax.add_artist(legend1)
-    experiment_legend = [
-        plt.Line2D([0], [0], marker=marker, color="white", markeredgecolor=("red" if key=="eRBF" else "black"), linestyle='None', markersize=(11 if key=="eRBF" else 10), label=key)
-        for key, marker in experiment_markers.items()
-    ]
-    ax.legend(handles=experiment_legend, loc="upper left", bbox_to_anchor=(1, 0.85), title="Method", fontsize=10)
-    ax.grid(True, linestyle="--", alpha=0.6)
-
-    plt.tight_layout()
-    plt.savefig(f"{graph_output_dir}/overview_forwardedXalerts.png", dpi=300)
-    plt.show()
-
-
 
 # Scatter plot showing the overview of packets fowarded and alerts correctly identified as percentage of the total number of packets and alerts of the baseline for each NIDS
 def overview_traces_forwardedXalerts(data_for_global_plot, graph_output_dir):
@@ -142,6 +101,7 @@ def overview_traces_forwardedXalerts(data_for_global_plot, graph_output_dir):
                             "Fast-Pattern": {"type": "s", "size":100}, 
                             "eRBF": {"type": "p", "size":180}}
 
+    print("Overview")
     for key, values in data_for_global_plot.items():
         experiment, dataset = key.split("#")
         avg_alerts = float("{:.2f}".format(np.mean(values["alerts_true_positive_percent"])))
@@ -244,7 +204,6 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--simulation_results_dir", type=str, default="../simulation_results/", help="Folder containing simulation results files.")
     args = parser.parse_args()
 
-    overview_data = {}
     overview_trace_data = {}
     performance_data = {}
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -253,7 +212,7 @@ if __name__ == "__main__":
         graph_output_dir = f"{OUTPUT_FOLDER}/{dataset_name}_{target_nids}"
         os.makedirs(graph_output_dir, exist_ok=True)
 
-        # print(f"Generating graphs for {dataset_name} with {target_nids}...")
+        print(f"Generating graphs for {dataset_name} with {target_nids}...")
         data = pd.read_csv(f"csv/{dataset_name}_{target_nids}.csv")
         df = data[data['experiment'].isin(experiment_mapping)]            
         df.loc[:, 'experiment'] = df['experiment'].map(experiment_mapping)
@@ -268,11 +227,6 @@ if __name__ == "__main__":
 
             # Add all for NIDS data irrespective of the dataset
             key = exp+"#"+dataset_name
-
-            pkts_fowarded_percentage = (total_pkts_fowarded/total_pkts_processed) * 100
-            alerts_percentage = (total_experiment_alerts/total_baseline_alerts) * 100
-            overview_data[key] = {"pkts_fowarded_percent": pkts_fowarded_percentage, "alerts_true_positive_percent": alerts_percentage}
-            
             overview_trace_data[key] = {
                 "pkts_fowarded_percent": group["pkts_fowarded_percent"].to_list(),
                 "alerts_true_positive_percent": group["alerts_true_positive_percent"].to_list()
@@ -301,7 +255,6 @@ if __name__ == "__main__":
         fowardedXalerts(df, dataset_name, target_nids, graph_output_dir)
 
     performance(performance_data, OUTPUT_FOLDER)
-    overview_forwardedXalerts(overview_data, OUTPUT_FOLDER)
     overview_traces_forwardedXalerts(overview_trace_data, OUTPUT_FOLDER)
 
    
