@@ -85,7 +85,7 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
 
         plt.title(f"{pcap} ({dataset_name}, {nids_name.title()})")
         plt.tight_layout()
-        plt.savefig(f"{graph_output_dir}/{pcap}.png", dpi=300)
+        plt.savefig(f"{graph_output_dir}/{pcap}.png", dpi=400)
         plt.close()
 
 # Scatter plot showing the overview of packets fowarded and alerts correctly identified as percentage of the total number of packets and alerts of the baseline for each NIDS
@@ -120,10 +120,11 @@ def overview_traces_forwardedXalerts(data_for_global_plot, graph_output_dir):
 
     ax.set_xlim([0, 102])
     ax.xaxis.set_major_formatter(mtick.PercentFormatter())
-    ax.set_xlabel("% of alerts correctly identified " + r"($\bf{higher}$ is better)")
+    ax.set_xlabel("% of alerts correctly identified " + r"($\bf{higher}$ is better)", size=12)
     ax.set_ylim([0, 102])
     ax.yaxis.set_major_formatter(mtick.PercentFormatter())
-    ax.set_ylabel("% of packets fowarded " +  r"($\bf{lower}$ is better)")
+    ax.set_ylabel("% of packets fowarded " +  r"($\bf{lower}$ is better)", size=12)
+    ax.tick_params(axis='both', which='major', labelsize=12)
     ax.set_title("Packets Fowarded vs Alerts Correctly Identified")    
     
     # Create the NIDS and marker legends individually
@@ -141,7 +142,7 @@ def overview_traces_forwardedXalerts(data_for_global_plot, graph_output_dir):
     ax.grid(True, linestyle="--", alpha=0.6)
 
     plt.tight_layout()
-    plt.savefig(f"{graph_output_dir}/overview_traces_forwardedXalerts.png", dpi=300)
+    plt.savefig(f"{graph_output_dir}/overview_traces_forwardedXalerts.png", dpi=400)
     plt.show()
 
 # Boxplot graphs shwoing the number of comparisons done by all packet for the rule-based pre-filtering methods
