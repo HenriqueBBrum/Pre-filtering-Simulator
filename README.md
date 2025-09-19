@@ -53,15 +53,20 @@ sudo apt-get install littler
 
 That's it!
 
-## Download the Datsets
+## Download the Datasets
 
-Before running the simulator, dowload the datasets. Both of them are quite heavy so allocated enough space. 
+Before running the simulator, dowload the datasets and its pcaps. Both of them are quite heavy so allocated enough space. 
+
 - [CICIDS2017](https://www.unb.ca/cic/datasets/ids-2017.html)
 - [CICIoT2023](https://www.unb.ca/cic/datasets/iotdataset-2023.html)
 
+For ease of use, create a folder for each dataset, named `CICIDS2017` or `CICIoT2023`, and place the corresponding PCAPs inside
+
+When using the `CICIoT2023` dataset, exclude all PCAPs whose filenames start with `DoS`, `DDoS`, `Mirai`, or `MITM`. The only exceptions are `DDoS-SlowLoris.pcap`, `MITM-ArpSpoofing.pcap`, and `DoS-HTTP_Flood.pcap`, which should be included. All other PCAPs in the dataset were used.
+
 ## Install Snort
 
-The last step before running the simulator is to install [Snort](https://www.snort.org/downloads#snort3-downloads).
+The last step before running the simulator is to install [Snort 3](https://www.snort.org/downloads#snort3-downloads). Please refer to their official installation guide, as the process can be somewhat complex.
 
 ## Running the Simulator
 
@@ -77,9 +82,9 @@ python3 src/main.py --name <NAME> -t <TYPE> -d <DATASET> -n <NIDS> -p <PCAPS_PAT
 
 - `<NAME>`: (Optional) Name identifying the experiment you are running  
 - `<TYPE>`: Type of simulation to run (`flow_sampling` or `rule_based`)
-- `<DATASET>`: Dataset name (`CICIDS2017` or `CICIoT2023`)
+- `<DATASET>`: Dataset name (`CICIDS2017` or `CICIoT2023`) 
 - `<NIDS>`: NIDS name (`snort`)
-- `<PCAPS_PATH>`: Path to the dataset's pcap folders
+- `<PCAPS_PATH>`: Path to the dataset's pcap folders. The dataset name is used with this option to find the path to the pcaps 
 
 To obtain the results presented in the paper and generate the final graphs, run the following scripts.
 
