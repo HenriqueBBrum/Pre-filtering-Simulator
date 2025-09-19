@@ -40,7 +40,7 @@ def fowardedXalerts(df, dataset_name, nids_name, graph_output_dir):
                group["pkts_fowarded_absolute"], 
                width=bar_width, 
                color='coral', alpha=0.8, hatch='//', label="# suspicious packets")
-        ax.set_ylabel("# of packets fowarded", color='coral')
+        ax.set_ylabel("# of packets fowarded", color='coral') 
         ax.tick_params(axis='y', labelcolor='coral')
         ax.set_xticks(x)
         ax.set_xticklabels(group["experiment"], size=8)

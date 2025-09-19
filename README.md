@@ -1,6 +1,6 @@
 # Pre-filtering Simulator
 
-This repository contains the code and instructions needed to reproduce the experiments for the paper: []()
+This repository contains the code and instructions needed to reproduce the experiments for the paper: [Rethinking NIDS Rule-Based Pre-Filtering]()
 
 This project simulates the pre-filtering of packets for a Network Intrusion Detection System (NIDS) based on its own rules. Two main pre-filtering methods are implemented: flow sampling and rule-based pre-filtering. 
 
@@ -103,3 +103,10 @@ python3 plotting_results.py
 | NIDS | Ruleset | Download date | Rules removed |
 |:---:|:---:|:---:|---|
 | Snort++ 3.7.4 | [Snort 3 Ruleset snapshot-31470](https://www.snort.org/downloads/registered/snortrules-snapshot-31470.tar.gz) | 4 April 2025 |300039:1, 300046:1 |
+
+
+## Raw data used in the paper
+
+This [link](https://drive.google.com/drive/folders/1XO0U8dH7sWBnpu1fjq4jxlD0sL-sIANB?usp=sharing) contains the raw simulation data that was used to generate the plots. 
+
+To generate the plots, download the folders in this link and add to the `simulation_results/` in this repo. Then, run the previous steps with the R language and Python.
